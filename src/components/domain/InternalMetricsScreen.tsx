@@ -45,50 +45,8 @@ export interface InternalMetricsData {
 
 interface InternalMetricsScreenProps {
   currentUserRole: 'owner' | 'operator' | 'accountant' | 'staff' | 'client_user';
-  metrics?: InternalMetricsData;
+  metrics: InternalMetricsData;
 }
-
-export const defaultMockMetrics: InternalMetricsData = {
-  summary: {
-    total_active_review_seconds: 185,
-    total_active_review_minutes: 3.1,
-    total_fields_corrected: 1,
-    total_entries_edited: 1,
-    total_issues_resolved: 1,
-    total_provider_calls: 3,
-    total_provider_cost_mad: 0.042,
-    accepted_files_count: 1,
-    average_cost_per_file_mad: 0.042,
-    provider_cost_label_fr: 'Coût fournisseurs par dossier validé',
-    provider_cost_label_en: 'Provider cost per accepted file',
-  },
-  files: [
-    {
-      work_request_id: 'wr-atlas-001',
-      status: 'approved',
-      client_name: 'Société Atlas Négoce SARL',
-      period_name: '2026-10',
-      file_review_seconds: 185,
-      file_fields_corrected: 1,
-      file_entries_edited: 1,
-      file_issues_resolved: 1,
-      provider_cost_mad: 0.042,
-      cost_per_accepted_file_mad: 0.042,
-      billable_units: 1,
-      users: [
-        {
-          user_id: 'usr-staff-01',
-          user_name: 'Youssef Bennani (Collaborateur)',
-          user_email: 'youssef@fiduciaire-atlas.ma',
-          active_review_seconds: 185,
-          fields_corrected: 1,
-          entries_edited: 1,
-          issues_resolved: 1,
-        },
-      ],
-    },
-  ],
-};
 
 function formatSeconds(totalSeconds: number): string {
   const mins = Math.floor(totalSeconds / 60);
@@ -98,7 +56,7 @@ function formatSeconds(totalSeconds: number): string {
 
 export function InternalMetricsScreen({
   currentUserRole,
-  metrics = defaultMockMetrics,
+  metrics,
 }: InternalMetricsScreenProps) {
   // Enforce Part A / Prompt 01 RBAC: owner and operator only
   if (currentUserRole !== 'owner' && currentUserRole !== 'operator') {

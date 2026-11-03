@@ -1,8 +1,8 @@
 {
-  "name": "fiscai-preclear",
+  "name": "avenel-web",
   "private": true,
   "version": "1.0.0",
-  "description": "FiscAI PreClear — plateforme agentique de pré-contrôle fiscal et douanier pour le Maroc",
+  "description": "AVENEL console (Vite SPA)",
   "type": "module",
   "scripts": {
     "dev": "vite",

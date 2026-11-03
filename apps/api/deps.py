@@ -29,6 +29,15 @@ def problem_response(status: int, title: str, detail: str, type_uri: str = "abou
     )
 
 
+def auth_test_mode_enabled() -> bool:
+    """True only when the pytest suite sets AVENEL_AUTH_TEST_MODE=1.
+
+    Outside the test suite, identity comes exclusively from a verified OIDC JWT:
+    no subject header, no plain token, and MFA state only from token claims.
+    """
+    return os.environ.get("AVENEL_AUTH_TEST_MODE") == "1"
+
+
 def get_db_url() -> str:
     return os.environ.get("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/avenel")
 
@@ -64,11 +73,16 @@ def get_current_session(
                     status_code=401,
                     detail=f"Échec de l'authentification JWT: {e}",
                 ) from e
-        else:
-            # Fallback for plain subject test tokens
+        elif auth_test_mode_enabled():
+            # Test suite only: plain subject tokens (AVENEL_AUTH_TEST_MODE=1, set by tests/conftest.py)
             subject = token
+        else:
+            raise HTTPException(
+                status_code=401,
+                detail="Jeton d'authentification invalide.",
+            )
 
-    if not subject and x_identity_subject:
+    if not subject and x_identity_subject and auth_test_mode_enabled():
         subject = x_identity_subject
 
     if not subject:
@@ -109,8 +123,9 @@ def get_current_session(
             detail="Session invalide ou appartenance active introuvable pour cet utilisateur.",
         )
 
-    # Allow test header overrides when testing outside real OIDC Keycloak tokens
-    if jwt_claims is None:
+    # Test suite only: header overrides for MFA state. Never reachable without
+    # AVENEL_AUTH_TEST_MODE=1, because every non-JWT path above is gated on it.
+    if jwt_claims is None and auth_test_mode_enabled():
         import time
         x_auth_time = request.headers.get("x-auth-time")
         x_mfa = request.headers.get("x-mfa-authenticated")

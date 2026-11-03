@@ -24,6 +24,7 @@ PG_BIN = r"C:\Program Files\PostgreSQL\16\bin"
 DEFAULT_TEST_PORT = 5439
 
 # Ensure RIB encryption key is available for integration tests
+os.environ["AVENEL_AUTH_TEST_MODE"] = "1"  # enables subject-header auth in tests only (apps/api/deps.py)
 os.environ.setdefault("AVENEL_KMS_KEY", "avenel-test-kms-key-fixture-32chars-min-ok")
 
 

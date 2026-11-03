@@ -225,7 +225,7 @@ export function DocumentViewer({
           className="flex-1 overflow-auto bg-surface p-6 flex justify-center items-start border-r border-line"
         >
           <div
-            className="relative bg-paper shadow-sm border border-line transition-transform origin-top"
+            className="relative bg-paper  border border-line transition-transform origin-top"
             style={{
               width: `${(activePage.width * zoomLevel) / 100}px`,
               height: `${(activePage.height * zoomLevel) / 100}px`,
@@ -287,7 +287,7 @@ export function DocumentViewer({
             {currentBbox && (
               <div
                 data-testid="bbox-overlay"
-                className="absolute pointer-events-none z-20 border-2 border-sky bg-[#E3F3F9]/40 motion-reduce:transition-none"
+                className="absolute pointer-events-none z-20 border-2 border-sky bg-sky-wash/40 motion-reduce:transition-none"
                 style={{
                   left: `${currentBbox[0] * 100}%`,
                   top: `${currentBbox[1] * 100}%`,
@@ -321,7 +321,7 @@ export function DocumentViewer({
             {isQuarantined && (
               <div
                 data-testid="antivirus-paused-banner"
-                className="mb-4 p-3 bg-amber-50 border border-amber-200 text-amber-900 rounded text-xs font-medium"
+                className="mb-4 p-3 bg-pink-wash border border-pink text-pink-ink rounded text-xs font-medium"
               >
                 Analyse antivirus indisponible. Les pièces reçues seront traitées dès son rétablissement.
               </div>

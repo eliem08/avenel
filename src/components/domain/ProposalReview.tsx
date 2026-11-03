@@ -262,7 +262,7 @@ export function ProposalReview({
               type="button"
               data-testid="save-edits-btn"
               onClick={handleSaveEdits}
-              className="px-3 py-1 bg-emerald-600 text-white rounded text-xs font-medium hover:bg-emerald-700 transition-colors"
+              className="px-3 py-1 bg-ok text-ink rounded text-xs font-medium hover:bg-ok transition-colors"
             >
               Enregistrer
             </button>
@@ -273,7 +273,7 @@ export function ProposalReview({
               type="button"
               data-testid="confirm-line-btn"
               onClick={() => handleConfirmLine(focusedLineNo)}
-              className="px-3 py-1 bg-ink text-paper rounded text-xs font-medium hover:bg-black transition-colors flex items-center space-x-1"
+              className="px-3 py-1 bg-ink text-ink rounded text-xs font-medium hover:bg-ink transition-colors flex items-center space-x-1"
             >
               <Check className="w-3.5 h-3.5 mr-1" />
               <span>Confirmer la ligne</span>
@@ -285,7 +285,7 @@ export function ProposalReview({
       {/* Main Split Pane Layout per Part E */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left: Document Viewer with Bbox Overlay */}
-        <div className="w-1/2 border-r border-line flex flex-col bg-slate-50 relative">
+        <div className="w-1/2 border-r border-line flex flex-col bg-surface relative">
           {/* Viewer toolbar */}
           <div className="flex items-center justify-between border-b border-line px-3 py-1.5 bg-surface text-xs text-ink-2">
             <div className="flex items-center space-x-2">
@@ -337,7 +337,7 @@ export function ProposalReview({
           {/* Page Canvas Container */}
           <div className="flex-1 overflow-auto p-4 flex items-center justify-center relative">
             <div
-              className="relative shadow bg-white transition-transform duration-100 ease-out origin-center"
+              className="relative shadow-float bg-paper transition-transform duration-100 ease-out origin-center"
               style={{
                 width: `${(600 * zoomLevel) / 100}px`,
                 height: `${(850 * zoomLevel) / 100}px`,
@@ -394,7 +394,7 @@ export function ProposalReview({
                 {activeProposal.rule_refs.map((ref) => (
                   <span
                     key={ref}
-                    className="inline-flex items-center text-[10px] px-2 py-0.5 rounded bg-sky-wash text-[#02435c] border border-sky/30 font-mono font-medium"
+                    className="inline-flex items-center text-[10px] px-2 py-0.5 rounded bg-sky-wash text-ink border border-sky/30 font-mono font-medium"
                   >
                     <Tag className="w-2.5 h-2.5 mr-1" />
                     {ref}
@@ -431,7 +431,7 @@ export function ProposalReview({
                       className={`cursor-pointer transition-colors duration-100 ${
                         isFocused
                           ? 'bg-sky-wash/50 border-l-2 border-l-sky'
-                          : 'hover:bg-slate-50'
+                          : 'hover:bg-surface'
                       }`}
                     >
                       <td className="py-2 px-3 text-center font-mono text-ink-2">
@@ -444,7 +444,7 @@ export function ProposalReview({
                         <div className="flex items-center space-x-1.5">
                           <span>{line.label}</span>
                           {line.tax_code && (
-                            <span className="text-[10px] px-1 py-0.2 bg-slate-100 text-ink-2 rounded border border-line">
+                            <span className="text-[10px] px-1 py-0.2 bg-surface text-ink-2 rounded border border-line">
                               {line.tax_code}
                             </span>
                           )}
@@ -478,7 +478,7 @@ export function ProposalReview({
                           <span className="text-ink-2 opacity-30">—</span>
                         )}
                         {isConfirmed && (
-                          <Check className="w-3.5 h-3.5 text-emerald-600 inline ml-1" />
+                          <Check className="w-3.5 h-3.5 text-ok inline ml-1" />
                         )}
                       </td>
                     </tr>
@@ -518,18 +518,18 @@ export function ProposalReview({
               data-testid="balance-indicator"
               className={`flex items-center space-x-1.5 px-2.5 py-1 rounded font-medium ${
                 isBalanced
-                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                  : 'bg-rose-50 text-rose-800 border border-rose-200'
+                  ? 'bg-surface text-ok border border-line'
+                  : 'bg-surface text-fail border border-line'
               }`}
             >
               {isBalanced ? (
                 <>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-ok" />
                   <span>Équilibré (Δ = 0,00 MAD)</span>
                 </>
               ) : (
                 <>
-                  <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                  <AlertTriangle className="w-3.5 h-3.5 text-fail" />
                   <span>
                     Déséquilibré (Δ ={' '}
                     {delta.toLocaleString('fr-FR', {
@@ -549,7 +549,7 @@ export function ProposalReview({
       {toastMessage && (
         <div
           data-testid="toast-message"
-          className="fixed bottom-4 right-4 bg-ink text-paper px-4 py-2 rounded shadow text-xs font-medium"
+          className="fixed bottom-4 right-4 bg-ink text-ink px-4 py-2 rounded shadow-float text-xs font-medium"
         >
           {toastMessage}
         </div>
@@ -557,8 +557,8 @@ export function ProposalReview({
 
       {/* Keyboard Shortcuts Modal */}
       {showShortcuts && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg border border-line p-5 max-w-sm w-full text-xs shadow-lg">
+        <div className="fixed inset-0 bg-ink/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-paper rounded-panel border border-line p-5 max-w-sm w-full text-xs ">
             <h3 className="font-heading font-medium text-sm text-ink mb-3">Raccourcis clavier</h3>
             <ul className="space-y-2 text-ink-2">
               <li className="flex justify-between">
@@ -586,7 +586,7 @@ export function ProposalReview({
               <button
                 type="button"
                 onClick={() => setShowShortcuts(false)}
-                className="px-3 py-1 bg-paper border border-line rounded text-ink hover:bg-slate-100"
+                className="px-3 py-1 bg-paper border border-line rounded text-ink hover:bg-surface"
               >
                 Fermer
               </button>

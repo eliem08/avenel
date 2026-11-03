@@ -62,11 +62,11 @@ export function InternalMetricsScreen({
   if (currentUserRole !== 'owner' && currentUserRole !== 'operator') {
     return (
       <div className="max-w-4xl mx-auto py-12 px-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 flex items-start gap-4">
-          <ShieldAlert className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
+        <div className="bg-surface border border-line rounded-panel p-6 flex items-start gap-4">
+          <ShieldAlert className="w-6 h-6 text-fail flex-shrink-0 mt-0.5" />
           <div>
-            <h2 className="text-lg font-semibold text-red-900">Accès restreint</h2>
-            <p className="text-sm text-red-700 mt-1">
+            <h2 className="text-lg font-semibold text-fail">Accès restreint</h2>
+            <p className="text-sm text-fail mt-1">
               Cette page d'indicateurs internes est réservée exclusivement aux associés du cabinet
               (propriétaires) et aux opérateurs de la plateforme.
             </p>
@@ -83,14 +83,14 @@ export function InternalMetricsScreen({
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-[#02435c]">
+            <h1 className="text-2xl font-bold text-ink">
               Indicateurs internes — Effort de révision & coûts
             </h1>
-            <p className="text-sm text-slate-600 mt-1">
+            <p className="text-sm text-ink-2 mt-1">
               Mesure de l'effort humain actif et coût réel de traitement par dossier mensuel validé.
             </p>
           </div>
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-marine-100 text-[#02435c] border border-marine-200">
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-surface text-ink border border-line">
             Rôle : {currentUserRole === 'owner' ? 'Associé (Owner)' : 'Opérateur (Operator)'}
           </span>
         </div>
@@ -98,54 +98,54 @@ export function InternalMetricsScreen({
 
       {/* Aggregate KPI tiles */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
-          <div className="flex items-center gap-3 text-slate-600 mb-2">
-            <Clock className="w-5 h-5 text-[#02435c]" />
+        <div className="bg-paper border border-line rounded-panel p-5 ">
+          <div className="flex items-center gap-3 text-ink-2 mb-2">
+            <Clock className="w-5 h-5 text-ink" />
             <span className="text-xs uppercase tracking-wider font-semibold">Temps actif moyen / dossier</span>
           </div>
-          <div className="text-2xl font-bold text-slate-900" data-testid="metric-review-time">
+          <div className="text-2xl font-bold text-ink" data-testid="metric-review-time">
             {formatSeconds(summary.total_active_review_seconds)}
           </div>
-          <div className="text-xs text-slate-500 mt-1">
+          <div className="text-xs text-ink-2 mt-1">
             Total : {summary.total_active_review_minutes} min sur {files.length} dossier(s)
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
-          <div className="flex items-center gap-3 text-slate-600 mb-2">
-            <Edit3 className="w-5 h-5 text-amber-600" />
+        <div className="bg-paper border border-line rounded-panel p-5 ">
+          <div className="flex items-center gap-3 text-ink-2 mb-2">
+            <Edit3 className="w-5 h-5 text-pink-ink" />
             <span className="text-xs uppercase tracking-wider font-semibold">Corrections humaines</span>
           </div>
-          <div className="text-2xl font-bold text-slate-900" data-testid="metric-corrections">
+          <div className="text-2xl font-bold text-ink" data-testid="metric-corrections">
             {summary.total_fields_corrected} champ(s)
           </div>
-          <div className="text-xs text-slate-500 mt-1">
+          <div className="text-xs text-ink-2 mt-1">
             {summary.total_entries_edited} écriture(s) modifiée(s)
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
-          <div className="flex items-center gap-3 text-slate-600 mb-2">
-            <CheckSquare className="w-5 h-5 text-emerald-700" />
+        <div className="bg-paper border border-line rounded-panel p-5 ">
+          <div className="flex items-center gap-3 text-ink-2 mb-2">
+            <CheckSquare className="w-5 h-5 text-ok" />
             <span className="text-xs uppercase tracking-wider font-semibold">Anomalies résolues</span>
           </div>
-          <div className="text-2xl font-bold text-slate-900" data-testid="metric-issues-resolved">
+          <div className="text-2xl font-bold text-ink" data-testid="metric-issues-resolved">
             {summary.total_issues_resolved}
           </div>
-          <div className="text-xs text-slate-500 mt-1">
+          <div className="text-xs text-ink-2 mt-1">
             Revue document et rapprochement
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
-          <div className="flex items-center gap-3 text-slate-600 mb-2">
-            <DollarSign className="w-5 h-5 text-emerald-800" />
+        <div className="bg-paper border border-line rounded-panel p-5 ">
+          <div className="flex items-center gap-3 text-ink-2 mb-2">
+            <DollarSign className="w-5 h-5 text-ok" />
             <span className="text-xs uppercase tracking-wider font-semibold">Coût fournisseurs par dossier validé</span>
           </div>
-          <div className="text-2xl font-bold text-slate-900" data-testid="metric-cost-per-file">
+          <div className="text-2xl font-bold text-ink" data-testid="metric-cost-per-file">
             {summary.average_cost_per_file_mad.toFixed(4)} MAD
           </div>
-          <div className="text-xs text-slate-500 mt-1">
+          <div className="text-xs text-ink-2 mt-1">
             Provider cost per accepted file ({summary.total_provider_calls} appel(s))
           </div>
         </div>
@@ -153,40 +153,40 @@ export function InternalMetricsScreen({
 
       {/* Placeholders for compute and reviewer cost models (pilot telemetry) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-        <div className="bg-slate-50 border border-dashed border-slate-300 rounded-lg p-4 flex items-center justify-between">
+        <div className="bg-surface border border-dashed border-line rounded-panel p-4 flex items-center justify-between">
           <div>
-            <span className="text-xs uppercase tracking-wider font-semibold text-slate-500">Coût calcul serveur (estimé) / Compute cost</span>
-            <div className="text-sm font-medium text-slate-700 mt-0.5">Inférence locale & runtime conteneurs</div>
+            <span className="text-xs uppercase tracking-wider font-semibold text-ink-2">Coût calcul serveur (estimé) / Compute cost</span>
+            <div className="text-sm font-medium text-ink mt-0.5">Inférence locale & runtime conteneurs</div>
           </div>
-          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-slate-200 text-slate-700 border border-slate-300">
+          <span className="inline-flex items-center px-2.5 py-1 rounded-panel text-xs font-medium bg-line text-ink border border-line">
             Non calculé (pilote)
           </span>
         </div>
 
-        <div className="bg-slate-50 border border-dashed border-slate-300 rounded-lg p-4 flex items-center justify-between">
+        <div className="bg-surface border border-dashed border-line rounded-panel p-4 flex items-center justify-between">
           <div>
-            <span className="text-xs uppercase tracking-wider font-semibold text-slate-500">Coût réviseur humain / Reviewer cost</span>
-            <div className="text-sm font-medium text-slate-700 mt-0.5">Taux horaire collaborateur par dossier</div>
+            <span className="text-xs uppercase tracking-wider font-semibold text-ink-2">Coût réviseur humain / Reviewer cost</span>
+            <div className="text-sm font-medium text-ink mt-0.5">Taux horaire collaborateur par dossier</div>
           </div>
-          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-slate-200 text-slate-700 border border-slate-300">
+          <span className="inline-flex items-center px-2.5 py-1 rounded-panel text-xs font-medium bg-line text-ink border border-line">
             Non calculé (pilote)
           </span>
         </div>
       </div>
 
       {/* Files breakdown table */}
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700">
+      <div className="bg-paper border border-line rounded-panel  overflow-hidden">
+        <div className="px-6 py-4 border-b border-line bg-surface flex items-center justify-between">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-ink">
             Détail par dossier mensuel
           </h2>
-          <span className="text-xs text-slate-500">
+          <span className="text-xs text-ink-2">
             {files.length} dossier(s) audité(s)
           </span>
         </div>
 
-        <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
-          <thead className="bg-slate-50 text-xs font-semibold text-slate-600 uppercase">
+        <table className="min-w-full divide-y divide-line text-left text-sm">
+          <thead className="bg-surface text-xs font-semibold text-ink-2 uppercase">
             <tr>
               <th className="px-6 py-3">Entreprise cliente</th>
               <th className="px-4 py-3">Période</th>
@@ -198,32 +198,32 @@ export function InternalMetricsScreen({
               <th className="px-6 py-3 text-right">Coût fournisseurs</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-200 bg-white">
+          <tbody className="divide-y divide-line bg-paper">
             {files.map((file) => (
               <React.Fragment key={file.work_request_id}>
                 {file.users.map((user) => (
-                  <tr key={`${file.work_request_id}-${user.user_id}`} className="hover:bg-slate-50">
-                    <td className="px-6 py-4 font-medium text-slate-900">
+                  <tr key={`${file.work_request_id}-${user.user_id}`} className="hover:bg-surface">
+                    <td className="px-6 py-4 font-medium text-ink">
                       <div>{file.client_name}</div>
                     </td>
-                    <td className="px-4 py-4 font-mono text-slate-700">{file.period_name}</td>
-                    <td className="px-4 py-4 text-slate-700">
+                    <td className="px-4 py-4 font-mono text-ink">{file.period_name}</td>
+                    <td className="px-4 py-4 text-ink">
                       <div>{user.user_name}</div>
-                      <div className="text-xs text-slate-500">{user.user_email}</div>
+                      <div className="text-xs text-ink-2">{user.user_email}</div>
                     </td>
-                    <td className="px-4 py-4 text-right font-mono text-slate-800">
+                    <td className="px-4 py-4 text-right font-mono text-ink">
                       {formatSeconds(user.active_review_seconds)}
                     </td>
-                    <td className="px-4 py-4 text-right font-mono text-amber-700 font-semibold">
+                    <td className="px-4 py-4 text-right font-mono text-pink-ink font-semibold">
                       {user.fields_corrected}
                     </td>
-                    <td className="px-4 py-4 text-right font-mono text-slate-700">
+                    <td className="px-4 py-4 text-right font-mono text-ink">
                       {user.entries_edited}
                     </td>
-                    <td className="px-4 py-4 text-right font-mono text-emerald-700 font-semibold">
+                    <td className="px-4 py-4 text-right font-mono text-ok font-semibold">
                       {user.issues_resolved}
                     </td>
-                    <td className="px-6 py-4 text-right font-mono font-medium text-slate-900">
+                    <td className="px-6 py-4 text-right font-mono font-medium text-ink">
                       {file.provider_cost_mad.toFixed(4)} MAD
                     </td>
                   </tr>

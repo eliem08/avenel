@@ -63,22 +63,22 @@ export function PortalRequests({
         <div
           role="status"
           aria-live="polite"
-          className="rounded-lg bg-emerald-50 p-4 border border-emerald-200 text-emerald-800 flex items-center gap-2"
+          className="rounded-panel bg-surface p-4 border border-line text-ok flex items-center gap-2"
         >
-          <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+          <CheckCircle2 className="h-5 w-5 text-ok" />
           <span className="font-medium text-sm">{toastMessage}</span>
         </div>
       )}
 
       {/* Header */}
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="rounded-panel border border-line bg-paper p-6 ">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-lg bg-indigo-50 text-indigo-600">
+          <div className="p-2.5 rounded-panel bg-sky-wash text-sky-ink">
             <MessageSquare className="h-6 w-6" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-slate-900">Demandes de précision en attente</h1>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <h1 className="text-xl font-bold text-ink">Demandes de précision en attente</h1>
+            <p className="text-xs text-ink-2 mt-0.5">
               Votre comptable a besoin d'éléments complémentaires pour finaliser votre dossier.
             </p>
           </div>
@@ -87,10 +87,10 @@ export function PortalRequests({
 
       {/* Requests List */}
       {requests.length === 0 ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-12 text-center shadow-sm">
-          <CheckCircle2 className="h-12 w-12 text-emerald-500 mx-auto" />
-          <h2 className="text-base font-bold text-slate-900 mt-4">Aucune demande en attente</h2>
-          <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+        <div className="rounded-panel border border-line bg-paper p-12 text-center ">
+          <CheckCircle2 className="h-12 w-12 text-ok mx-auto" />
+          <h2 className="text-base font-bold text-ink mt-4">Aucune demande en attente</h2>
+          <p className="text-xs text-ink-2 mt-1 max-w-sm mx-auto">
             Toutes les demandes de justificatifs et de précisions ont été traitées.
           </p>
         </div>
@@ -99,36 +99,36 @@ export function PortalRequests({
           {requests.map((req) => (
             <div
               key={req.id}
-              className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-4 hover:border-slate-300 transition-colors"
+              className="rounded-panel border border-line bg-paper p-6  space-y-4 hover:border-line transition-colors"
             >
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-line pb-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded bg-surface text-ink">
                     {req.code}
                   </span>
-                  <span className="font-semibold text-sm text-slate-900">{req.legal_name}</span>
+                  <span className="font-semibold text-sm text-ink">{req.legal_name}</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                <div className="flex items-center gap-1.5 text-xs text-ink-2">
                   <Clock className="h-3.5 w-3.5" />
                   <span>{new Date(req.created_at).toLocaleDateString('fr-FR')}</span>
                 </div>
               </div>
 
               <div>
-                <p className="text-xs font-medium text-slate-500">Objet de l'anomalie :</p>
-                <p className="text-sm text-slate-800 mt-0.5">{req.message}</p>
+                <p className="text-xs font-medium text-ink-2">Objet de l'anomalie :</p>
+                <p className="text-sm text-ink mt-0.5">{req.message}</p>
               </div>
 
-              <div className="bg-indigo-50/50 p-3.5 rounded-lg border border-indigo-100">
-                <p className="text-xs font-semibold text-indigo-950">Message de votre cabinet :</p>
-                <p className="text-sm text-indigo-900 mt-1">{req.prompt}</p>
+              <div className="bg-sky-wash/50 p-3.5 rounded-panel border border-sky">
+                <p className="text-xs font-semibold text-sky-ink">Message de votre cabinet :</p>
+                <p className="text-sm text-sky-ink mt-1">{req.prompt}</p>
               </div>
 
               <div className="flex justify-end pt-2">
                 <button
                   type="button"
                   onClick={() => handleOpenAnswerModal(req)}
-                  className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-xs sm:text-sm transition-colors flex items-center gap-1.5 shadow-sm"
+                  className="px-4 py-2 rounded-panel bg-sky hover:bg-sky text-ink font-medium text-xs sm:text-sm transition-colors flex items-center gap-1.5 "
                 >
                   <Send className="h-3.5 w-3.5" />
                   <span>Répondre à la demande</span>
@@ -141,33 +141,33 @@ export function PortalRequests({
 
       {/* Answer Modal */}
       {activeRequest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
-          <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl border border-slate-200 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-4">
+          <div className="w-full max-w-lg rounded-panel bg-paper p-6  border border-line space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-900">Répondre au cabinet comptable</h3>
+              <h3 className="text-lg font-bold text-ink">Répondre au cabinet comptable</h3>
               <button
                 type="button"
                 aria-label="Fermer le dialogue de réponse"
                 onClick={() => setActiveRequest(null)}
-                className="text-slate-400 hover:text-slate-600 text-xl font-bold"
+                className="text-ink-2 hover:text-ink-2 text-xl font-bold"
               >
                 &times;
               </button>
             </div>
 
-            <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs space-y-1">
-              <p className="text-slate-500 font-medium">Demande : {activeRequest.code}</p>
-              <p className="text-slate-800 font-semibold">{activeRequest.prompt}</p>
+            <div className="bg-surface p-3 rounded-panel border border-line text-xs space-y-1">
+              <p className="text-ink-2 font-medium">Demande : {activeRequest.code}</p>
+              <p className="text-ink font-semibold">{activeRequest.prompt}</p>
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="portal-explanation-input" className="block text-xs font-semibold text-slate-700">Votre explication</label>
+              <label htmlFor="portal-explanation-input" className="block text-xs font-semibold text-ink">Votre explication</label>
               <textarea
                 id="portal-explanation-input"
                 value={responseText}
                 onChange={(e) => setResponseText(e.target.value)}
                 placeholder="Indiquez ici vos précisions, la nature de l'opération ou les références demandées..."
-                className="w-full h-32 rounded-lg border border-slate-300 p-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+                className="w-full h-32 rounded-panel border border-line p-3 text-sm focus:border-sky focus:ring-1 focus:ring-sky outline-none"
               />
             </div>
 
@@ -175,7 +175,7 @@ export function PortalRequests({
               <button
                 type="button"
                 onClick={() => setActiveRequest(null)}
-                className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 text-sm font-medium"
+                className="px-4 py-2 rounded-panel border border-line text-ink hover:bg-surface text-sm font-medium"
               >
                 Annuler
               </button>
@@ -183,7 +183,7 @@ export function PortalRequests({
                 type="button"
                 onClick={handleSubmitAnswer}
                 disabled={!responseText.trim() || isSubmitting}
-                className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium disabled:opacity-50 flex items-center gap-1.5 shadow-sm"
+                className="px-4 py-2 rounded-panel bg-sky hover:bg-sky text-ink text-sm font-medium disabled:opacity-50 flex items-center gap-1.5 "
               >
                 <Send className="h-3.5 w-3.5" />
                 <span>Envoyer la réponse</span>

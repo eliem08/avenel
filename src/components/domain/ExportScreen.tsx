@@ -97,9 +97,9 @@ export function ExportScreen({
         <div
           role="status"
           aria-live="polite"
-          className="rounded-lg bg-emerald-50 p-4 border border-emerald-200 text-emerald-800 flex items-center gap-2"
+          className="rounded-panel bg-surface p-4 border border-line text-ok flex items-center gap-2"
         >
-          <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+          <CheckCircle2 className="h-5 w-5 text-ok" />
           <span className="font-medium text-sm">{toastMessage}</span>
         </div>
       )}
@@ -108,29 +108,29 @@ export function ExportScreen({
       {errorMessage && (
         <div
           role="alert"
-          className="rounded-lg bg-rose-50 p-4 border border-rose-200 text-rose-800 flex items-center gap-2"
+          className="rounded-panel bg-surface p-4 border border-line text-fail flex items-center gap-2"
         >
-          <AlertCircle className="h-5 w-5 text-rose-600 shrink-0" />
+          <AlertCircle className="h-5 w-5 text-fail shrink-0" />
           <span className="font-medium text-sm">{errorMessage}</span>
         </div>
       )}
 
       {/* Header & Dossier Context */}
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-slate-100">
+      <div className="rounded-panel border border-line bg-paper p-6 ">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-line">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700">
+              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-surface text-ok">
                 Dossier validé
               </span>
-              <span className="text-xs text-slate-500">Période {periodCode}</span>
+              <span className="text-xs text-ink-2">Période {periodCode}</span>
             </div>
-            <h1 className="text-2xl font-bold text-slate-900 mt-1">{clientName}</h1>
+            <h1 className="text-2xl font-bold text-ink mt-1">{clientName}</h1>
           </div>
-          <div className="flex items-center gap-2 text-xs font-mono bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-            <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
-            <span className="text-slate-600">Empreinte validée :</span>
-            <span className="text-slate-900 font-semibold truncate max-w-xs" title={approvedSubjectHash}>
+          <div className="flex items-center gap-2 text-xs font-mono bg-surface p-2.5 rounded-panel border border-line">
+            <ShieldCheck className="h-4 w-4 text-ok shrink-0" />
+            <span className="text-ink-2">Empreinte validée :</span>
+            <span className="text-ink font-semibold truncate max-w-xs" title={approvedSubjectHash}>
               {approvedSubjectHash.slice(0, 16)}...
             </span>
           </div>
@@ -138,61 +138,61 @@ export function ExportScreen({
 
         {/* Target Profile Selection */}
         <div className="mt-6 space-y-4">
-          <div id="format-label" className="block text-sm font-semibold text-slate-900">
+          <div id="format-label" className="block text-sm font-semibold text-ink">
             Format du progiciel comptable
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4" role="radiogroup" aria-labelledby="format-label">
             <button
               type="button"
               onClick={() => setSelectedTarget('sage100_csv')}
-              className={`p-4 rounded-xl border text-left transition-all ${
+              className={`p-4 rounded-panel border text-left transition-all ${
                 selectedTarget === 'sage100_csv'
-                  ? 'border-indigo-600 bg-indigo-50/40 ring-1 ring-indigo-600'
-                  : 'border-slate-200 bg-white hover:border-slate-300'
+                  ? 'border-sky bg-sky-wash/40 ring-1 ring-sky'
+                  : 'border-line bg-paper hover:border-line'
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-900 text-sm">Sage 100 (CSV)</span>
-                <FileSpreadsheet className="h-5 w-5 text-indigo-600" />
+                <span className="font-bold text-ink text-sm">Sage 100 (CSV)</span>
+                <FileSpreadsheet className="h-5 w-5 text-sky-ink" />
               </div>
-              <p className="text-xs text-slate-500 mt-1">CP1252, délimiteur point-virgule, CRLF</p>
+              <p className="text-xs text-ink-2 mt-1">CP1252, délimiteur point-virgule, CRLF</p>
             </button>
 
             <button
               type="button"
               onClick={() => setSelectedTarget('sage100_pnm')}
-              className={`p-4 rounded-xl border text-left transition-all ${
+              className={`p-4 rounded-panel border text-left transition-all ${
                 selectedTarget === 'sage100_pnm'
-                  ? 'border-indigo-600 bg-indigo-50/40 ring-1 ring-indigo-600'
-                  : 'border-slate-200 bg-white hover:border-slate-300'
+                  ? 'border-sky bg-sky-wash/40 ring-1 ring-sky'
+                  : 'border-line bg-paper hover:border-line'
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-900 text-sm">Sage 100 (PNM)</span>
-                <FileSpreadsheet className="h-5 w-5 text-indigo-600" />
+                <span className="font-bold text-ink text-sm">Sage 100 (PNM)</span>
+                <FileSpreadsheet className="h-5 w-5 text-sky-ink" />
               </div>
-              <p className="text-xs text-slate-500 mt-1">Format natif PNM, CP1252, CRLF</p>
+              <p className="text-xs text-ink-2 mt-1">Format natif PNM, CP1252, CRLF</p>
             </button>
 
             <button
               type="button"
               onClick={() => setSelectedTarget('odoo_csv')}
-              className={`p-4 rounded-xl border text-left transition-all ${
+              className={`p-4 rounded-panel border text-left transition-all ${
                 selectedTarget === 'odoo_csv'
-                  ? 'border-indigo-600 bg-indigo-50/40 ring-1 ring-indigo-600'
-                  : 'border-slate-200 bg-white hover:border-slate-300'
+                  ? 'border-sky bg-sky-wash/40 ring-1 ring-sky'
+                  : 'border-line bg-paper hover:border-line'
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-900 text-sm">Odoo (CSV)</span>
-                <FileSpreadsheet className="h-5 w-5 text-indigo-600" />
+                <span className="font-bold text-ink text-sm">Odoo (CSV)</span>
+                <FileSpreadsheet className="h-5 w-5 text-sky-ink" />
               </div>
-              <p className="text-xs text-slate-500 mt-1">UTF-8, écritures multi-lignes, CRLF</p>
+              <p className="text-xs text-ink-2 mt-1">UTF-8, écritures multi-lignes, CRLF</p>
             </button>
           </div>
 
           {activeProfile?.verified_round_trip_at ? (
-            <div className="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-200">
+            <div className="flex items-center gap-2 text-xs text-ok bg-surface px-3 py-2 rounded-panel border border-line">
               <CheckCircle2 className="h-4 w-4" />
               <span>
                 Aller-retour vérifié avec succès sur le logiciel pilote le{' '}
@@ -200,8 +200,8 @@ export function ExportScreen({
               </span>
             </div>
           ) : (
-            <div className="flex items-center gap-2 text-xs text-amber-800 bg-amber-50 px-3 py-2 rounded-lg border border-amber-200">
-              <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
+            <div className="flex items-center gap-2 text-xs text-pink-ink bg-pink-wash px-3 py-2 rounded-panel border border-pink">
+              <AlertCircle className="h-4 w-4 text-pink-ink shrink-0" />
               <span>Format non vérifié sur votre logiciel</span>
             </div>
           )}
@@ -211,7 +211,7 @@ export function ExportScreen({
               type="button"
               onClick={handleGenerate}
               disabled={isGenerating || isLoading}
-              className="px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
+              className="px-5 py-2.5 rounded-panel bg-sky hover:bg-sky text-ink font-medium text-sm transition-colors  disabled:opacity-50 flex items-center gap-2"
             >
               {isGenerating ? (
                 <RefreshCw className="h-4 w-4 animate-spin" />
@@ -226,21 +226,21 @@ export function ExportScreen({
 
       {/* Export Deliverables Card */}
       {exportData && (
-        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-6">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+        <div className="rounded-panel border border-line bg-paper p-6  space-y-6">
+          <div className="flex items-center justify-between border-b border-line pb-4">
             <div>
-              <h2 className="text-lg font-bold text-slate-900">Livrables prêts au téléchargement</h2>
-              <p className="text-xs text-slate-500">
+              <h2 className="text-lg font-bold text-ink">Livrables prêts au téléchargement</h2>
+              <p className="text-xs text-ink-2">
                 Fichier d'import comptable validé et dossier probant horodaté.
               </p>
             </div>
             {isHashMatching ? (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-surface text-ok border border-line">
                 <ShieldCheck className="h-3.5 w-3.5" />
                 Empreinte vérifiée
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-surface text-fail border border-line">
                 <AlertCircle className="h-3.5 w-3.5" />
                 Empreinte divergente
               </span>
@@ -249,20 +249,20 @@ export function ExportScreen({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Accounting File Box */}
-            <div className="p-5 rounded-xl border border-slate-200 bg-slate-50/50 space-y-3">
+            <div className="p-5 rounded-panel border border-line bg-surface/50 space-y-3">
               <div className="flex items-start justify-between">
                 <div>
-                  <h3 className="font-bold text-slate-900 text-sm">Écritures comptables</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <h3 className="font-bold text-ink text-sm">Écritures comptables</h3>
+                  <p className="text-xs text-ink-2 mt-0.5">
                     Format {exportData.target} ({exportData.encoding})
                   </p>
                 </div>
-                <FileSpreadsheet className="h-6 w-6 text-indigo-600" />
+                <FileSpreadsheet className="h-6 w-6 text-sky-ink" />
               </div>
 
-              <div className="text-xs font-mono text-slate-600 bg-white p-2.5 rounded-lg border border-slate-200 space-y-1">
-                <p className="text-slate-400 text-[10px]">SHA-256 du fichier :</p>
-                <p className="truncate text-slate-900" title={exportData.file_sha256}>
+              <div className="text-xs font-mono text-ink-2 bg-paper p-2.5 rounded-panel border border-line space-y-1">
+                <p className="text-ink-2 text-[10px]">SHA-256 du fichier :</p>
+                <p className="truncate text-ink" title={exportData.file_sha256}>
                   {exportData.file_sha256}
                 </p>
               </div>
@@ -270,7 +270,7 @@ export function ExportScreen({
               <button
                 type="button"
                 onClick={() => onDownloadFile(exportData.id)}
-                className="w-full py-2.5 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm transition-colors flex items-center justify-center gap-2 shadow-sm"
+                className="w-full py-2.5 px-4 rounded-panel bg-sky hover:bg-sky text-ink font-medium text-sm transition-colors flex items-center justify-center gap-2 "
               >
                 <Download className="h-4 w-4" />
                 <span>Télécharger les écritures</span>
@@ -278,20 +278,20 @@ export function ExportScreen({
             </div>
 
             {/* Evidence Pack Box */}
-            <div className="p-5 rounded-xl border border-slate-200 bg-slate-50/50 space-y-3">
+            <div className="p-5 rounded-panel border border-line bg-surface/50 space-y-3">
               <div className="flex items-start justify-between">
                 <div>
-                  <h3 className="font-bold text-slate-900 text-sm">Pack de preuves (ZIP)</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <h3 className="font-bold text-ink text-sm">Pack de preuves (ZIP)</h3>
+                  <p className="text-xs text-ink-2 mt-0.5">
                     Manifeste JSON + Synthèse PDF + Pièces d'origine
                   </p>
                 </div>
-                <FileArchive className="h-6 w-6 text-purple-600" />
+                <FileArchive className="h-6 w-6 text-sky-ink" />
               </div>
 
-              <div className="text-xs font-mono text-slate-600 bg-white p-2.5 rounded-lg border border-slate-200 space-y-1">
-                <p className="text-slate-400 text-[10px]">SHA-256 de l'archive :</p>
-                <p className="truncate text-slate-900" title={exportData.evidence_pack_sha256}>
+              <div className="text-xs font-mono text-ink-2 bg-paper p-2.5 rounded-panel border border-line space-y-1">
+                <p className="text-ink-2 text-[10px]">SHA-256 de l'archive :</p>
+                <p className="truncate text-ink" title={exportData.evidence_pack_sha256}>
                   {exportData.evidence_pack_sha256}
                 </p>
               </div>
@@ -299,7 +299,7 @@ export function ExportScreen({
               <button
                 type="button"
                 onClick={() => onDownloadEvidencePack(exportData.id)}
-                className="w-full py-2.5 px-4 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-medium text-sm transition-colors flex items-center justify-center gap-2 shadow-sm"
+                className="w-full py-2.5 px-4 rounded-panel bg-sky hover:bg-sky text-ink font-medium text-sm transition-colors flex items-center justify-center gap-2 "
               >
                 <Download className="h-4 w-4" />
                 <span>Télécharger le pack de preuves</span>

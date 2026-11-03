@@ -1,0 +1,12 @@
+{
+  "_comment": "Synthetic data for the docker-compose e2e stack only. No tax values. user_subject must equal the user id in docker/keycloak/realm-export-test.json.",
+  "tenant_id": "5c1e2e00-0000-4000-8000-0000000000a1",
+  "tenant_name": "Cabinet E2E",
+  "user_subject": "5c1e2e00-0000-4000-8000-000000000001",
+  "user_email": "ci-accountant@test.internal",
+  "role": "accountant",
+  "clients": [
+    { "legal_name": "Atlas Distribution SARL", "period_code": "2026-09", "status": "awaiting_approval" },
+    { "legal_name": "Riad Menara SARL", "period_code": "2026-09", "status": "extracting" }
+  ]
+}

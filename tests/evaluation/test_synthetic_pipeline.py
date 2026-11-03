@@ -11,7 +11,7 @@ import os
 from pathlib import Path
 import pytest
 
-from avenel.extraction.synthetic_pipeline import (
+from tests.evaluation.synthetic_pipeline import (
     format_synthetic_pipeline_report,
     generate_synthetic_pipeline_markdown_report,
     get_default_synthetic_set,

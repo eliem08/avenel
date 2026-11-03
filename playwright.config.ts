@@ -1,20 +1,19 @@
 import { defineConfig, devices } from '@playwright/test';
 
+// Runs against the docker-compose stack only (`make e2e` starts it and checks health first).
+// No webServer: Playwright never starts a static preview, and no request is intercepted (Part K 26).
 export default defineConfig({
   testDir: './e2e',
-  fullyParallel: true,
+  fullyParallel: false,
+  workers: 1,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 1,
-  reporter: [['html', { open: 'never' }], ['list']],
+  retries: 0,
+  reporter: [['list'], ['html', { open: 'never' }]],
+  outputDir: 'test-results',
   use: {
-    baseURL: 'http://localhost:4173',
-    trace: 'on-first-retry',
+    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:5173',
+    trace: 'retain-on-failure',
+    locale: 'fr-FR',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
-  webServer: {
-    command: 'npm run preview -- --port 4173 --strictPort',
-    url: 'http://localhost:4173',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
 });

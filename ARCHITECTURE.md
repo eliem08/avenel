@@ -99,7 +99,7 @@ One modular monolith plus one worker process type. One PostgreSQL database. One 
 
 | Concern | Choice | Reason |
 |---|---|---|
-| Web | Vite + React 18 SPA (ADR-001), TypeScript strict, Tailwind with Part E tokens only | Decoupled REST API, static delivery via Nginx, zero Node.js SSR runtime attack surface |
+| Web | Vite + React 18 SPA at the repository root (ADR-001, ADR-002), TypeScript strict, Tailwind with Part E tokens only, OIDC Authorization Code + PKCE (`oidc-client-ts`), API client generated from `contracts/openapi.yaml` | Decoupled REST API, static delivery via Nginx, zero Node.js SSR runtime attack surface |
 | API | FastAPI, Pydantic v2, SQLAlchemy 2 Core (no ORM magic in domain code) | Typed contracts, explicit SQL |
 | Database | PostgreSQL 16 with `pgcrypto`, `citext`, `btree_gist` | RLS, exclusion constraints, `NULLS NOT DISTINCT` |
 | Jobs and workflow | Procrastinate (Postgres-backed) plus the explicit state machine in Part D | Transactional enqueue, one datastore, no extra service |
@@ -115,7 +115,10 @@ Temporal, Kafka, Kubernetes, vector databases, and separate services per domain 
 ## C.3 Repository layout
 
 ```
-/apps/web                 Next.js console and portal
+/index.html, /vite.config.ts  Vite console and portal entry (ADR-002)
+/src                      Console source: /api (generated client), /auth (OIDC), /components, /screens, /styles
+/public/fonts             Self-hosted Readex Pro, IBM Plex Sans, IBM Plex Sans Arabic
+/e2e                      Playwright tests against the docker-compose stack (no network interception)
 /apps/api                 FastAPI app (routes only, thin)
 /avenel                   Python domain package
   /tenancy  /clients  /periods  /documents  /extraction
@@ -124,8 +127,9 @@ Temporal, Kafka, Kubernetes, vector databases, and separate services per domain 
 /jurisdiction/ma          Versioned rule pack (YAML) + loader + schema
 /db/migrations            Numbered SQL migrations, forward and down
 /contracts/openapi.yaml   API contract (OpenAPI 3.1), source of truth
-/tests                    unit, integration, rls, golden, e2e
-/fixtures                 Synthetic invoices, statements, provider recordings
+/tests                    unit, integration, rls, golden (pytest)
+/tests/fixtures           Synthetic invoices, statements, provider recordings
+/scripts/guards           CI guards (Part K 25–28)
 /docs                     plans, ADRs, open-questions, runbooks
 AGENTS.md                 Short pointer to this file; CLAUDE.md and .cursor/rules link to it
 ```

@@ -1,6 +1,6 @@
-2026-11-04T00:05:26.941Z [login-queue] GET http://localhost:8000/v1/me -> 200 bearer_jwt=true
-2026-11-04T00:05:26.968Z [login-queue] GET http://localhost:8000/v1/client-entities -> 200 bearer_jwt=true
-2026-11-04T00:05:26.970Z [login-queue] GET http://localhost:8000/v1/work-requests -> 200 bearer_jwt=true
-2026-11-04T00:05:59.877Z [api-down] GET http://localhost:8000/v1/me -> FAILED net::ERR_CONNECTION_REFUSED
-2026-11-04T00:05:59.883Z [api-down] GET http://localhost:8000/v1/work-requests -> FAILED net::ERR_CONNECTION_REFUSED
-2026-11-04T00:05:59.884Z [api-down] GET http://localhost:8000/v1/client-entities -> FAILED net::ERR_CONNECTION_REFUSED
+2026-11-04T12:23:51.340Z [login-queue] GET http://localhost:8000/v1/me -> 200 bearer_jwt=true
+2026-11-04T12:23:51.350Z [login-queue] GET http://localhost:8000/v1/work-requests -> 200 bearer_jwt=true
+2026-11-04T12:23:51.351Z [login-queue] GET http://localhost:8000/v1/client-entities -> 200 bearer_jwt=true
+2026-11-04T12:24:03.382Z [api-down] GET http://localhost:8000/v1/me -> FAILED net::ERR_CONNECTION_REFUSED
+2026-11-04T12:24:03.384Z [api-down] GET http://localhost:8000/v1/work-requests -> FAILED net::ERR_CONNECTION_REFUSED
+2026-11-04T12:24:03.384Z [api-down] GET http://localhost:8000/v1/client-entities -> FAILED net::ERR_CONNECTION_REFUSED

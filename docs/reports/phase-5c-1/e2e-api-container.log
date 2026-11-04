@@ -1,0 +1,40 @@
+avenel-api  | 2026-11-04T12:23:33.740657539Z INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+avenel-api  | 2026-11-04T12:23:33.740998518Z INFO:     Started parent process [1]
+avenel-api  | 2026-11-04T12:23:36.845204080Z INFO:     Started server process [9]
+avenel-api  | 2026-11-04T12:23:36.845254578Z INFO:     Started server process [8]
+avenel-api  | 2026-11-04T12:23:36.845259049Z INFO:     Waiting for application startup.
+avenel-api  | 2026-11-04T12:23:36.845262533Z INFO:     Waiting for application startup.
+avenel-api  | 2026-11-04T12:23:36.847252743Z INFO:     Application startup complete.
+avenel-api  | 2026-11-04T12:23:36.847593812Z INFO:     Application startup complete.
+avenel-api  | 2026-11-04T12:23:38.389645292Z [OPS_ALERT] clamav_intake_paused: ClamAV virus signatures are older than 48 hours (5957.0h old)
+avenel-api  | 2026-11-04T12:23:38.389685124Z [METRIC] clamav_intake_paused_total=1 age_hours=5957.0 scanner_down=0
+avenel-api  | 2026-11-04T12:23:38.415885360Z INFO:     127.0.0.1:49384 - "GET /health/ready HTTP/1.1" 200 OK
+avenel-api  | 2026-11-04T12:23:39.543994901Z [OPS_ALERT] clamav_intake_paused: ClamAV virus signatures are older than 48 hours (5957.0h old)
+avenel-api  | 2026-11-04T12:23:39.544022362Z [METRIC] clamav_intake_paused_total=1 age_hours=5957.0 scanner_down=0
+avenel-api  | 2026-11-04T12:23:39.556075528Z INFO:     192.168.32.1:34840 - "GET /health/ready HTTP/1.1" 200 OK
+avenel-api  | 2026-11-04T12:23:48.860384386Z [OPS_ALERT] clamav_intake_paused: ClamAV virus signatures are older than 48 hours (5957.0h old)
+avenel-api  | 2026-11-04T12:23:48.860424458Z [METRIC] clamav_intake_paused_total=1 age_hours=5957.0 scanner_down=0
+avenel-api  | 2026-11-04T12:23:48.875857993Z INFO:     127.0.0.1:58492 - "GET /health/ready HTTP/1.1" 200 OK
+avenel-api  | 2026-11-04T12:23:50.982673654Z INFO:     192.168.32.1:46882 - "OPTIONS /v1/me HTTP/1.1" 200 OK
+avenel-api  | 2026-11-04T12:23:50.992354666Z INFO:     192.168.32.1:46898 - "OPTIONS /v1/client-entities HTTP/1.1" 200 OK
+avenel-api  | 2026-11-04T12:23:50.993471798Z INFO:     192.168.32.1:46896 - "OPTIONS /v1/work-requests HTTP/1.1" 200 OK
+avenel-api  | 2026-11-04T12:23:51.339144351Z INFO:     192.168.32.1:46882 - "GET /v1/me HTTP/1.1" 200 OK
+avenel-api  | 2026-11-04T12:23:51.343276700Z INFO:     192.168.32.1:46898 - "GET /v1/work-requests HTTP/1.1" 200 OK
+avenel-api  | 2026-11-04T12:23:51.346564117Z INFO:     192.168.32.1:46902 - "GET /v1/client-entities HTTP/1.1" 200 OK
+avenel-api  | 2026-11-04T12:23:51.975403574Z INFO:     192.168.32.1:46918 - "GET /v1/me HTTP/1.1" 200 OK
+avenel-api  | 2026-11-04T12:23:52.016694669Z INFO:     192.168.32.1:46918 - "GET /v1/me HTTP/1.1" 401 Unauthorized
+avenel-api  | 2026-11-04T12:23:52.108825461Z INFO:     192.168.32.1:46918 - "GET /v1/me HTTP/1.1" 401 Unauthorized
+avenel-api  | 2026-11-04T12:23:53.379181646Z INFO:     Received SIGTERM, exiting.
+avenel-api  | 2026-11-04T12:23:53.379799424Z INFO:     Terminated child process [8]
+avenel-api  | 2026-11-04T12:23:53.379821442Z INFO:     Terminated child process [9]
+avenel-api  | 2026-11-04T12:23:53.379825234Z INFO:     Waiting for child process [8]
+avenel-api  | 2026-11-04T12:23:53.437424740Z INFO:     Shutting down
+avenel-api  | 2026-11-04T12:23:53.439065076Z INFO:     Shutting down
+avenel-api  | 2026-11-04T12:23:53.538228948Z INFO:     Waiting for application shutdown.
+avenel-api  | 2026-11-04T12:23:53.538707767Z INFO:     Application shutdown complete.
+avenel-api  | 2026-11-04T12:23:53.538757605Z INFO:     Finished server process [9]
+avenel-api  | 2026-11-04T12:23:53.539696885Z INFO:     Waiting for application shutdown.
+avenel-api  | 2026-11-04T12:23:53.540178122Z INFO:     Application shutdown complete.
+avenel-api  | 2026-11-04T12:23:53.540340134Z INFO:     Finished server process [8]
+avenel-api  | 2026-11-04T12:23:53.557553768Z INFO:     Waiting for child process [9]
+avenel-api  | 2026-11-04T12:23:53.557765468Z INFO:     Stopping parent process [1]

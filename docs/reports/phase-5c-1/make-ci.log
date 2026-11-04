@@ -5,8 +5,7 @@ All checks passed!
 .venv/Scripts/python.exe scripts/check_migration_hashes.py
 SUCCESS: All 16 frozen migrations (001�008) verified intact.
 .venv/Scripts/python.exe scripts/check_test_count.py
-[TEST COUNT CHECK] Collected: 224 | Required Baseline: 219
-[INFO] Updated test count baseline to 224.
+[TEST COUNT CHECK] Collected: 224 | Required Baseline: 224
 [TEST COUNT CHECK PASSED] Test count maintained or increased.
 .venv/Scripts/python.exe scripts/generate_expert_sign_off.py --check
 PASS: C:\Users\21263\Downloads\avenel-split\docs\pilot\expert-sign-off-sheet.md is up to date with 28 needs_expert rules.
@@ -86,8 +85,8 @@ Applying migration 008_round_trips_and_approval_policy from 008_round_trips_and_
 Applied 008_round_trips_and_approval_policy successfully.
 Applying migration 009_review_metrics_and_rate_limits from 009_review_metrics_and_rate_limits.up.sql...
 Applied 009_review_metrics_and_rate_limits successfully.
-[AUDIT-VERIFY] Seeded 5 audit events for test tenant baa8a295-f648-401a-b995-9fbc298aeba3
-  - Tenant baa8a295-f648-401a-b995-9fbc298aeba3: verified 5 audit events in linear sequence.
+[AUDIT-VERIFY] Seeded 5 audit events for test tenant d30c9c8d-1b82-4c70-bd98-c647c98c71ac
+  - Tenant d30c9c8d-1b82-4c70-bd98-c647c98c71ac: verified 5 audit events in linear sequence.
 
 [AUDIT-VERIFY PASSED] All 5 audit events across 1 tenant(s) verified linear and intact.
 .venv/Scripts/python.exe -m pytest -v tests
@@ -335,10 +334,10 @@ tests/unit/test_scanner.py::test_clamd_reply_nul_terminator_is_stripped PASSED [
     from starlette.testclient import TestClient as TestClient  # noqa
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-================== 223 passed, 1 warning in 99.11s (0:01:39) ==================
+================= 223 passed, 1 warning in 101.35s (0:01:41) ==================
 npx openapi-typescript contracts/openapi.yaml -o src/api/schema.d.ts
 ✨ openapi-typescript 7.13.0
-🚀 contracts/openapi.yaml → src/api/schema.d.ts [126.3ms]
+🚀 contracts/openapi.yaml → src/api/schema.d.ts [125.6ms]
 git diff --exit-code -- src/api/schema.d.ts
 npx tsc -b --noEmit
 npm run build
@@ -355,14 +354,15 @@ computing gzip size...
 [2mdist/[22m[35massets/index-BvidOXGP.css  [39m[1m[2m 22.50 kB[22m[1m[22m[2m │ gzip:  4.85 kB[22m
 [2mdist/[22m[36massets/index-BgS7rDRl.js   [39m[1m[2m 91.69 kB[22m[1m[22m[2m │ gzip: 25.75 kB[22m
 [2mdist/[22m[36massets/vendor-BaSD_dze.js  [39m[1m[2m163.76 kB[22m[1m[22m[2m │ gzip: 53.41 kB[22m
-[32m✓ built in 5.16s[39m
+[32m✓ built in 3.82s[39m
 npx vitest run --reporter=default --reporter=json --outputFile=.vitest-results.json
 
 [1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mC:/Users/21263/Downloads/avenel-split[39m
 
- [32m✓[39m scripts/guards/check_css_palette.test.mjs [2m([22m[2m4 tests[22m[2m)[22m[90m 23[2mms[22m[39m
- [32m✓[39m src/auth/oidc.test.ts [2m([22m[2m7 tests[22m[2m)[22m[90m 48[2mms[22m[39m
- [32m✓[39m scripts/guards/guards.test.mjs [2m([22m[2m9 tests[22m[2m)[22m[90m 70[2mms[22m[39m
+ [32m✓[39m scripts/guards/check_css_palette.test.mjs [2m([22m[2m4 tests[22m[2m)[22m[90m 14[2mms[22m[39m
+ [32m✓[39m scripts/guards/guards.test.mjs [2m([22m[2m9 tests[22m[2m)[22m[90m 22[2mms[22m[39m
+ [32m✓[39m src/auth/oidc.test.ts [2m([22m[2m7 tests[22m[2m)[22m[90m 14[2mms[22m[39m
+ [32m✓[39m src/components/domain/ProposalReview.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 809[2mms[22m[39m
 [90mstderr[2m | src/screens/QueueScreen.test.tsx[2m > [22m[2mQueueScreen states (stubbed fetch)[2m > [22m[2mshows the error state when the API is unreachable
 [22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
@@ -382,8 +382,7 @@ This ensures that you're testing the behavior the user would see in the browser.
     at Router (C:\Users\21263\Downloads\avenel-split\node_modules\react-router\dist\umd\react-router.development.js:1203:17)
     at MemoryRouter (C:\Users\21263\Downloads\avenel-split\node_modules\react-router\dist\umd\react-router.development.js:1097:7)
 
- [32m✓[39m src/screens/QueueScreen.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 471[2mms[22m[39m
-   [33m[2m✓[22m[39m QueueScreen states (stubbed fetch)[2m > [22mshows the error state when the API is unreachable [33m340[2mms[22m[39m
+ [32m✓[39m src/screens/QueueScreen.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[90m 205[2mms[22m[39m
 [90mstderr[2m | src/components/domain/ReconciliationScreen.test.tsx[2m > [22m[2mReconciliationScreen component[2m > [22m[2mtriggers onAcceptMatch when clicking Rapprocher button
 [22m[39mWarning: An update to ReconciliationScreen inside a test was not wrapped in act(...).
 
@@ -436,17 +435,14 @@ act(() => {
 This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
     at ReconciliationScreen (C:\Users\21263\Downloads\avenel-split\src\components\domain\ReconciliationScreen.tsx:15:3)
 
- [32m✓[39m src/components/domain/ReconciliationScreen.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 1460[2mms[22m[39m
-   [33m[2m✓[22m[39m ReconciliationScreen component[2m > [22mrenders bank lines and candidate matches correctly [33m916[2mms[22m[39m
- [32m✓[39m src/components/domain/ProposalReview.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 1788[2mms[22m[39m
-   [33m[2m✓[22m[39m ProposalReview Component[2m > [22mrenders balanced entry with accounts, totals and balance badge [33m1082[2mms[22m[39m
- [32m✓[39m src/components/domain/Phase5Screens.test.tsx [2m([22m[2m11 tests[22m[2m)[22m[33m 1508[2mms[22m[39m
-   [33m[2m✓[22m[39m Phase 5 UI Components[2m > [22mApprovalScreen[2m > [22mrenders dossier metadata, balanced totals, and allows approval when eligible [33m746[2mms[22m[39m
+ [32m✓[39m src/components/domain/ReconciliationScreen.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 557[2mms[22m[39m
+ [32m✓[39m src/components/domain/Phase5Screens.test.tsx [2m([22m[2m11 tests[22m[2m)[22m[33m 1029[2mms[22m[39m
+   [33m[2m✓[22m[39m Phase 5 UI Components[2m > [22mApprovalScreen[2m > [22mrenders dossier metadata, balanced totals, and allows approval when eligible [33m405[2mms[22m[39m
 
 [2m Test Files [22m [1m[32m7 passed[39m[22m[90m (7)[39m
 [2m      Tests [22m [1m[32m46 passed[39m[22m[90m (46)[39m
-[2m   Start at [22m 13:16:37
-[2m   Duration [22m 12.30s[2m (transform 2.90s, setup 12.10s, collect 6.55s, tests 5.37s, environment 34.81s, prepare 4.94s)[22m
+[2m   Start at [22m 13:20:27
+[2m   Duration [22m 7.68s[2m (transform 1.01s, setup 6.87s, collect 2.42s, tests 2.65s, environment 26.58s, prepare 4.25s)[22m
 
 JSON report written to C:/Users/21263/Downloads/avenel-split/.vitest-results.json
 node scripts/guards/check_web_test_count.mjs
@@ -458,7 +454,544 @@ no_test_code_in_prod: 0 violation(s)
 node scripts/guards/no_e2e_interception.mjs
 no_e2e_interception: 0 violation(s)
 node scripts/guards/no_legacy_terms.mjs
-no_legacy_terms: ARCHITECTURE.md:1418: 'PreClear'
-no_legacy_terms: 1 violation(s)
-make: *** [Makefile:68: guards] Error 1
-MAKE_CI_EXIT=2
+no_legacy_terms: 0 violation(s)
+docker compose up -d --build postgres keycloak clamav freshclam ocr migrate seed api worker web
+Compose can now delegate builds to bake for better performance.
+ To do so, set COMPOSE_BAKE=true.
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [migrate internal] load build definition from Dockerfile.api
+#1 transferring dockerfile: 1.82kB 0.0s done
+#1 DONE 0.0s
+
+#2 [migrate] resolve image config for docker-image://docker.io/docker/dockerfile:1
+#2 DONE 1.2s
+
+#3 [migrate] docker-image://docker.io/docker/dockerfile:1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
+#3 CACHED
+
+#4 [migrate internal] load metadata for docker.io/library/python:3.12-slim
+#4 DONE 0.0s
+
+#5 [migrate internal] load .dockerignore
+#5 transferring context: 2B done
+#5 DONE 0.0s
+
+#6 [migrate builder 1/5] FROM docker.io/library/python:3.12-slim
+#6 DONE 0.0s
+
+#7 [migrate internal] load build context
+#7 transferring context: 7.16kB 3.5s done
+#7 DONE 3.5s
+
+#8 [migrate runner  2/10] WORKDIR /app
+#8 CACHED
+
+#9 [migrate builder 3/5] RUN apt-get update && apt-get install -y --no-install-recommends     build-essential     libpq-dev     && rm -rf /var/lib/apt/lists/*
+#9 CACHED
+
+#10 [migrate runner  6/10] COPY --chown=appuser:appgroup avenel /app/avenel
+#10 CACHED
+
+#11 [migrate builder 5/5] RUN pip install --no-cache-dir --user -r requirements.txt
+#11 CACHED
+
+#12 [migrate runner  5/10] COPY --from=builder --chown=appuser:appgroup /root/.local /home/appuser/.local
+#12 CACHED
+
+#13 [migrate builder 4/5] COPY requirements.txt .
+#13 CACHED
+
+#14 [migrate runner  8/10] COPY --chown=appuser:appgroup jurisdiction /app/jurisdiction
+#14 CACHED
+
+#15 [migrate runner  3/10] RUN apt-get update && apt-get install -y --no-install-recommends     libpq5     ca-certificates     && rm -rf /var/lib/apt/lists/*
+#15 CACHED
+
+#16 [migrate runner  4/10] RUN groupadd -g 10001 appgroup &&     useradd -u 10001 -g appgroup -s /bin/false -m appuser
+#16 CACHED
+
+#17 [migrate runner  9/10] COPY --chown=appuser:appgroup db /app/db
+#17 CACHED
+
+#18 [migrate builder 2/5] WORKDIR /build
+#18 CACHED
+
+#19 [migrate runner  7/10] COPY --chown=appuser:appgroup apps /app/apps
+#19 CACHED
+
+#20 [migrate runner 10/10] COPY --chown=appuser:appgroup contracts /app/contracts
+#20 CACHED
+
+#21 [migrate] exporting to image
+#21 exporting layers done
+#21 writing image sha256:aea8ace849c5094d8228f4c7c1a4d0d042987a718df9f4b7ec510d2b6159a286 0.1s done
+#21 naming to docker.io/library/avenel-split-migrate
+#21 naming to docker.io/library/avenel-split-migrate done
+#21 DONE 0.1s
+
+#22 [migrate] resolving provenance for metadata file
+#22 DONE 0.0s
+
+#23 [seed internal] load build definition from Dockerfile.api
+#23 transferring dockerfile: 1.82kB done
+#23 DONE 0.0s
+
+#2 [seed] resolve image config for docker-image://docker.io/docker/dockerfile:1
+#2 DONE 1.5s
+
+#3 [seed] docker-image://docker.io/docker/dockerfile:1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
+#3 CACHED
+
+#4 [seed internal] load metadata for docker.io/library/python:3.12-slim
+#4 DONE 0.0s
+
+#24 [seed internal] load .dockerignore
+#24 transferring context: 2B done
+#24 DONE 0.0s
+
+#6 [seed builder 1/5] FROM docker.io/library/python:3.12-slim
+#6 DONE 0.0s
+
+#25 [seed internal] load build context
+#25 transferring context: 7.16kB 0.0s done
+#25 DONE 0.0s
+
+#8 [seed runner  2/10] WORKDIR /app
+#8 CACHED
+
+#16 [seed runner  4/10] RUN groupadd -g 10001 appgroup &&     useradd -u 10001 -g appgroup -s /bin/false -m appuser
+#16 CACHED
+
+#26 [seed runner  6/10] COPY --chown=appuser:appgroup avenel /app/avenel
+#26 CACHED
+
+#18 [seed builder 2/5] WORKDIR /build
+#18 CACHED
+
+#27 [seed builder 4/5] COPY requirements.txt .
+#27 CACHED
+
+#28 [seed builder 5/5] RUN pip install --no-cache-dir --user -r requirements.txt
+#28 CACHED
+
+#29 [seed runner  5/10] COPY --from=builder --chown=appuser:appgroup /root/.local /home/appuser/.local
+#29 CACHED
+
+#9 [seed builder 3/5] RUN apt-get update && apt-get install -y --no-install-recommends     build-essential     libpq-dev     && rm -rf /var/lib/apt/lists/*
+#9 CACHED
+
+#30 [seed runner  7/10] COPY --chown=appuser:appgroup apps /app/apps
+#30 CACHED
+
+#31 [seed runner  8/10] COPY --chown=appuser:appgroup jurisdiction /app/jurisdiction
+#31 CACHED
+
+#32 [seed runner  9/10] COPY --chown=appuser:appgroup db /app/db
+#32 CACHED
+
+#15 [seed runner  3/10] RUN apt-get update && apt-get install -y --no-install-recommends     libpq5     ca-certificates     && rm -rf /var/lib/apt/lists/*
+#15 CACHED
+
+#33 [seed runner 10/10] COPY --chown=appuser:appgroup contracts /app/contracts
+#33 CACHED
+
+#34 [seed] exporting to image
+#34 exporting layers done
+#34 writing image sha256:c3b971e8b27540e2e4d51267b6fbe98797044b11c89106968e36a0be488feef9 done
+#34 naming to docker.io/library/avenel-split-seed done
+#34 DONE 0.0s
+
+#35 [seed] resolving provenance for metadata file
+#35 DONE 0.0s
+
+#36 [api internal] load build definition from Dockerfile.api
+#36 transferring dockerfile: 1.82kB done
+#36 DONE 0.0s
+
+#2 [api] resolve image config for docker-image://docker.io/docker/dockerfile:1
+#2 DONE 1.7s
+
+#3 [api] docker-image://docker.io/docker/dockerfile:1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
+#3 CACHED
+
+#4 [api internal] load metadata for docker.io/library/python:3.12-slim
+#4 DONE 0.0s
+
+#37 [api internal] load .dockerignore
+#37 transferring context: 2B done
+#37 DONE 0.0s
+
+#6 [api builder 1/5] FROM docker.io/library/python:3.12-slim
+#6 DONE 0.0s
+
+#38 [api internal] load build context
+#38 transferring context: 7.16kB 0.0s done
+#38 DONE 0.0s
+
+#18 [api builder 2/5] WORKDIR /build
+#18 CACHED
+
+#16 [api runner  4/10] RUN groupadd -g 10001 appgroup &&     useradd -u 10001 -g appgroup -s /bin/false -m appuser
+#16 CACHED
+
+#9 [api builder 3/5] RUN apt-get update && apt-get install -y --no-install-recommends     build-essential     libpq-dev     && rm -rf /var/lib/apt/lists/*
+#9 CACHED
+
+#39 [api runner  9/10] COPY --chown=appuser:appgroup db /app/db
+#39 CACHED
+
+#40 [api runner  5/10] COPY --from=builder --chown=appuser:appgroup /root/.local /home/appuser/.local
+#40 CACHED
+
+#41 [api builder 5/5] RUN pip install --no-cache-dir --user -r requirements.txt
+#41 CACHED
+
+#42 [api runner  8/10] COPY --chown=appuser:appgroup jurisdiction /app/jurisdiction
+#42 CACHED
+
+#8 [api runner  2/10] WORKDIR /app
+#8 CACHED
+
+#43 [api runner  7/10] COPY --chown=appuser:appgroup apps /app/apps
+#43 CACHED
+
+#44 [api runner  6/10] COPY --chown=appuser:appgroup avenel /app/avenel
+#44 CACHED
+
+#15 [api runner  3/10] RUN apt-get update && apt-get install -y --no-install-recommends     libpq5     ca-certificates     && rm -rf /var/lib/apt/lists/*
+#15 CACHED
+
+#45 [api builder 4/5] COPY requirements.txt .
+#45 CACHED
+
+#46 [api runner 10/10] COPY --chown=appuser:appgroup contracts /app/contracts
+#46 CACHED
+
+#47 [api] exporting to image
+#47 exporting layers done
+#47 writing image sha256:fed46dbd16da286436f8cf7c076083ba20305233b3a7d7d06d12768988ab3445 done
+#47 naming to docker.io/library/avenel-split-api done
+#47 DONE 0.0s
+
+#48 [api] resolving provenance for metadata file
+#48 DONE 0.0s
+
+#49 [worker internal] load build definition from Dockerfile.api
+#49 transferring dockerfile: 1.82kB done
+#49 DONE 0.0s
+
+#50 [web internal] load build definition from Dockerfile.web
+#50 transferring dockerfile: 690B done
+#50 DONE 0.0s
+
+#2 [web] resolve image config for docker-image://docker.io/docker/dockerfile:1
+#2 DONE 2.0s
+
+#3 [web] docker-image://docker.io/docker/dockerfile:1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
+#3 CACHED
+
+#51 [web internal] load metadata for docker.io/nginxinc/nginx-unprivileged:alpine
+#51 ...
+
+#4 [worker internal] load metadata for docker.io/library/python:3.12-slim
+#4 DONE 0.0s
+
+#52 [worker internal] load .dockerignore
+#52 transferring context: 2B done
+#52 DONE 0.0s
+
+#6 [worker builder 1/5] FROM docker.io/library/python:3.12-slim
+#6 DONE 0.0s
+
+#53 [worker internal] load build context
+#53 transferring context: 7.16kB 0.0s done
+#53 DONE 0.0s
+
+#54 [worker builder 4/5] COPY requirements.txt .
+#54 CACHED
+
+#16 [worker runner  4/10] RUN groupadd -g 10001 appgroup &&     useradd -u 10001 -g appgroup -s /bin/false -m appuser
+#16 CACHED
+
+#8 [worker runner  2/10] WORKDIR /app
+#8 CACHED
+
+#55 [worker runner  6/10] COPY --chown=appuser:appgroup avenel /app/avenel
+#55 CACHED
+
+#18 [worker builder 2/5] WORKDIR /build
+#18 CACHED
+
+#56 [worker runner  9/10] COPY --chown=appuser:appgroup db /app/db
+#56 CACHED
+
+#9 [worker builder 3/5] RUN apt-get update && apt-get install -y --no-install-recommends     build-essential     libpq-dev     && rm -rf /var/lib/apt/lists/*
+#9 CACHED
+
+#57 [worker runner  5/10] COPY --from=builder --chown=appuser:appgroup /root/.local /home/appuser/.local
+#57 CACHED
+
+#15 [worker runner  3/10] RUN apt-get update && apt-get install -y --no-install-recommends     libpq5     ca-certificates     && rm -rf /var/lib/apt/lists/*
+#15 CACHED
+
+#58 [worker runner  8/10] COPY --chown=appuser:appgroup jurisdiction /app/jurisdiction
+#58 CACHED
+
+#59 [worker builder 5/5] RUN pip install --no-cache-dir --user -r requirements.txt
+#59 CACHED
+
+#60 [worker runner  7/10] COPY --chown=appuser:appgroup apps /app/apps
+#60 CACHED
+
+#61 [worker runner 10/10] COPY --chown=appuser:appgroup contracts /app/contracts
+#61 CACHED
+
+#62 [worker] exporting to image
+#62 exporting layers done
+#62 writing image sha256:a1c8990459b621ce6959df671b9968e5d08a7c7696bc40cd945d7c4b45ce02e8 done
+#62 naming to docker.io/library/avenel-split-worker done
+#62 DONE 0.0s
+
+#63 [worker] resolving provenance for metadata file
+#63 DONE 0.0s
+
+#64 [web internal] load metadata for docker.io/library/node:20-alpine
+#64 DONE 0.8s
+
+#51 [web internal] load metadata for docker.io/nginxinc/nginx-unprivileged:alpine
+#51 DONE 0.8s
+
+#65 [web internal] load .dockerignore
+#65 transferring context: 2B done
+#65 DONE 0.0s
+
+#66 [web runner 1/3] FROM docker.io/nginxinc/nginx-unprivileged:alpine@sha256:b5047b9b76845eac124358373c6852377c52e4b05834a47647e955dd91cb8f1e
+#66 DONE 0.0s
+
+#67 [web builder 1/6] FROM docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
+#67 DONE 0.0s
+
+#68 [web internal] load build context
+#68 transferring context: 74.61MB 5.0s
+#68 transferring context: 147.62MB 10.1s
+#68 transferring context: 233.32MB 15.3s
+#68 transferring context: 316.99MB 20.4s
+#68 transferring context: 397.34MB 25.4s
+#68 transferring context: 469.05MB 30.5s
+#68 transferring context: 553.82MB 35.6s
+#68 transferring context: 629.39MB 40.6s
+#68 transferring context: 701.54MB 45.7s
+#68 transferring context: 753.16MB 50.8s
+#68 transferring context: 798.93MB 55.9s
+#68 transferring context: 870.80MB 61.0s
+#68 transferring context: 914.69MB 64.2s done
+#68 DONE 64.5s
+
+#69 [web builder 2/6] WORKDIR /build
+#69 CACHED
+
+#70 [web builder 3/6] COPY package*.json ./
+#70 CACHED
+
+#71 [web builder 4/6] RUN npm ci --no-audit
+#71 CACHED
+
+#72 [web builder 5/6] COPY . .
+#72 DONE 12.7s
+
+#73 [web builder 6/6] RUN npm run build
+#73 1.273 
+#73 1.273 > avenel-web@1.0.0 build
+#73 1.273 > tsc -b && vite build
+#73 1.273 
+#73 7.006 vite v5.4.21 building for production...
+#73 7.384 transforming...
+#73 11.22 ✓ 1590 modules transformed.
+#73 11.67 rendering chunks...
+#73 11.78 computing gzip size...
+#73 11.81 dist/index.html                   0.47 kB │ gzip:  0.29 kB
+#73 11.81 dist/assets/index-BvidOXGP.css   22.50 kB │ gzip:  4.85 kB
+#73 11.81 dist/assets/index-BgS7rDRl.js    91.69 kB │ gzip: 25.75 kB
+#73 11.81 dist/assets/vendor-BaSD_dze.js  163.76 kB │ gzip: 53.41 kB
+#73 11.81 ✓ built in 4.77s
+#73 DONE 11.9s
+
+#74 [web runner 2/3] COPY --from=builder /build/dist /usr/share/nginx/html
+#74 CACHED
+
+#75 [web runner 3/3] COPY docker/nginx.conf /etc/nginx/nginx.conf
+#75 CACHED
+
+#76 [web] exporting to image
+#76 exporting layers done
+#76 writing image sha256:7e7885b0479db8d71bab253c3e2d43501fc366f2187603c27f8453568822b2d7 done
+#76 naming to docker.io/library/avenel-split-web done
+#76 DONE 0.0s
+
+#77 [web] resolving provenance for metadata file
+#77 DONE 0.0s
+ api  Built
+ migrate  Built
+ seed  Built
+ web  Built
+ worker  Built
+ Network avenel-split_default  Creating
+ Network avenel-split_default  Created
+ Volume "avenel-split_clamav_db"  Creating
+ Volume "avenel-split_clamav_db"  Created
+ Volume "avenel-split_pgdata"  Creating
+ Volume "avenel-split_pgdata"  Created
+ Container avenel-freshclam  Creating
+ Container avenel-keycloak  Creating
+ Container avenel-postgres  Creating
+ Container avenel-ocr-stub  Creating
+ Container avenel-clamav  Creating
+ Container avenel-ocr-stub  Created
+ Container avenel-keycloak  Created
+ Container avenel-clamav  Created
+ Container avenel-postgres  Created
+ Container avenel-migrate  Creating
+ Container avenel-migrate  Created
+ Container avenel-seed  Creating
+ Container avenel-seed  Created
+ Container avenel-api  Creating
+ Container avenel-api  Created
+ Container avenel-web  Creating
+ Container avenel-worker  Creating
+ Container avenel-web  Created
+ Container avenel-worker  Created
+ Container avenel-freshclam  Created
+ Container avenel-freshclam  Starting
+ Container avenel-postgres  Starting
+ Container avenel-ocr-stub  Starting
+ Container avenel-clamav  Starting
+ Container avenel-keycloak  Starting
+ Container avenel-postgres  Started
+ Container avenel-postgres  Waiting
+ Container avenel-clamav  Started
+ Container avenel-freshclam  Started
+ Container avenel-ocr-stub  Started
+ Container avenel-keycloak  Started
+ Container avenel-postgres  Healthy
+ Container avenel-migrate  Starting
+ Container avenel-migrate  Started
+ Container avenel-migrate  Waiting
+ Container avenel-migrate  Exited
+ Container avenel-seed  Starting
+ Container avenel-seed  Started
+ Container avenel-keycloak  Waiting
+ Container avenel-clamav  Waiting
+ Container avenel-seed  Waiting
+ Container avenel-seed  Exited
+ Container avenel-clamav  Healthy
+ Container avenel-keycloak  Healthy
+ Container avenel-api  Starting
+ Container avenel-api  Started
+ Container avenel-api  Waiting
+ Container avenel-api  Waiting
+ Container avenel-api  Healthy
+ Container avenel-api  Healthy
+ Container avenel-worker  Starting
+ Container avenel-web  Starting
+ Container avenel-worker  Started
+ Container avenel-web  Started
+node scripts/guards/wait_for_stack.mjs
+wait_for_stack: api /health/ready green: http://localhost:8000/health/ready {"status":"ready","service":"avenel-api","database":"ok","kms":"ok","clamav":"quarantined_fallback","intake_paused":true}
+wait_for_stack: keycloak realm green: http://localhost:8080/realms/avenel/.well-known/openid-configuration {"issuer":"http://localhost:8080/realms/avenel","authorization_endpoint":"http://localhost:8080/realms/avenel/protocol/openid-connect/auth","token_endpoint":"ht
+wait_for_stack: web /healthz (nginx) green: http://localhost:5173/healthz healthy 
+npx playwright install chromium
+rm -f docs/reports/phase-5c-1/e2e-browser-api-requests.log
+npx playwright test --grep-invert @api-down
+
+Running 1 test using 1 worker
+
+2026-11-04T12:23:51.340Z [login-queue] GET http://localhost:8000/v1/me -> 200 bearer_jwt=true
+2026-11-04T12:23:51.350Z [login-queue] GET http://localhost:8000/v1/work-requests -> 200 bearer_jwt=true
+2026-11-04T12:23:51.351Z [login-queue] GET http://localhost:8000/v1/client-entities -> 200 bearer_jwt=true
+[login-queue] direct GET http://localhost:8000/v1/me -> 200 tenant_id=5c1e2e00-0000-4000-8000-0000000000a1 role=accountant
+  ok 1 [chromium] › e2e\login-queue.spec.ts:6:1 › accountant logs in with TOTP, sees seeded queue from the API, logs out (5.4s)
+
+  1 passed (7.7s)
+docker compose stop api
+ Container avenel-api  Stopping
+ Container avenel-api  Stopped
+npx playwright test --grep @api-down
+
+Running 1 test using 1 worker
+
+2026-11-04T12:24:03.382Z [api-down] GET http://localhost:8000/v1/me -> FAILED net::ERR_CONNECTION_REFUSED
+2026-11-04T12:24:03.384Z [api-down] GET http://localhost:8000/v1/work-requests -> FAILED net::ERR_CONNECTION_REFUSED
+2026-11-04T12:24:03.384Z [api-down] GET http://localhost:8000/v1/client-entities -> FAILED net::ERR_CONNECTION_REFUSED
+  ok 1 [chromium] › e2e\queue-api-down.spec.ts:6:1 › @api-down queue shows the error state when the API is down (6.0s)
+
+  1 passed (7.1s)
+docker compose start api
+ Container avenel-postgres  Waiting
+ Container avenel-postgres  Healthy
+ Container avenel-migrate  Starting
+ Container avenel-migrate  Started
+ Container avenel-migrate  Waiting
+ Container avenel-migrate  Exited
+ Container avenel-seed  Starting
+ Container avenel-seed  Started
+ Container avenel-keycloak  Waiting
+ Container avenel-clamav  Waiting
+ Container avenel-seed  Waiting
+ Container avenel-clamav  Healthy
+ Container avenel-keycloak  Healthy
+ Container avenel-seed  Exited
+ Container avenel-api  Starting
+ Container avenel-api  Started
+C:/ProgramData/chocolatey/lib/make/tools/install/bin/make.exe e2e-down
+make[1]: Entering directory 'C:/Users/21263/Downloads/avenel-split'
+docker compose logs --no-color --timestamps api > docs/reports/phase-5c-1/e2e-api-container.log 2>&1 || true
+docker compose down -v
+ Container avenel-worker  Stopping
+ Container avenel-web  Stopping
+ Container avenel-freshclam  Stopping
+ Container avenel-ocr-stub  Stopping
+ Container avenel-freshclam  Stopped
+ Container avenel-freshclam  Removing
+ Container avenel-freshclam  Removed
+ Container avenel-web  Stopped
+ Container avenel-web  Removing
+ Container avenel-web  Removed
+ Container avenel-worker  Stopped
+ Container avenel-worker  Removing
+ Container avenel-worker  Removed
+ Container avenel-api  Stopping
+ Container avenel-ocr-stub  Stopped
+ Container avenel-ocr-stub  Removing
+ Container avenel-ocr-stub  Removed
+ Container avenel-api  Stopped
+ Container avenel-api  Removing
+ Container avenel-api  Removed
+ Container avenel-clamav  Stopping
+ Container avenel-keycloak  Stopping
+ Container avenel-seed  Stopping
+ Container avenel-seed  Stopped
+ Container avenel-seed  Removing
+ Container avenel-seed  Removed
+ Container avenel-migrate  Stopping
+ Container avenel-migrate  Stopped
+ Container avenel-migrate  Removing
+ Container avenel-migrate  Removed
+ Container avenel-postgres  Stopping
+ Container avenel-clamav  Stopped
+ Container avenel-clamav  Removing
+ Container avenel-clamav  Removed
+ Container avenel-postgres  Stopped
+ Container avenel-postgres  Removing
+ Container avenel-postgres  Removed
+ Container avenel-keycloak  Stopped
+ Container avenel-keycloak  Removing
+ Container avenel-keycloak  Removed
+ Network avenel-split_default  Removing
+ Volume avenel-split_pgdata  Removing
+ Volume avenel-split_clamav_db  Removing
+ Volume avenel-split_pgdata  Removed
+ Volume avenel-split_clamav_db  Removed
+ Network avenel-split_default  Removed
+make[1]: Leaving directory 'C:/Users/21263/Downloads/avenel-split'
+MAKE_CI_EXIT=0

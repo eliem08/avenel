@@ -1,7 +1,7 @@
 // Helpers for e2e tests against the docker-compose stack. Observation only: no request is modified.
 import { readFileSync, mkdirSync, appendFileSync } from 'node:fs';
 import { expect, type Page } from '@playwright/test';
-import { TOTP } from 'otpauth';
+import { Secret, TOTP } from 'otpauth';
 
 interface RealmCredential { type: string; value?: string; secretData?: string }
 const realm = JSON.parse(readFileSync('docker/keycloak/realm-export-test.json', 'utf8')) as {
@@ -26,11 +26,12 @@ mkdirSync(SHOTS, { recursive: true });
 /** Records every browser request to the API with its response status (page.on, no interception). */
 export function recordApiTraffic(page: Page, label: string): string[] {
   const lines: string[] = [];
-  page.on('response', (res) => {
+  page.on('response', async (res) => {
     const req = res.request();
-    if (!req.url().startsWith(API_ORIGIN)) return;
+    if (!req.url().startsWith(API_ORIGIN) || req.method() === 'OPTIONS') return;
     const hasBearer = (req.headers()['authorization'] ?? '').startsWith('Bearer ey');
-    const line = `${new Date().toISOString()} [${label}] ${req.method()} ${req.url()} -> ${res.status()} bearer_jwt=${hasBearer}`;
+    const detail = res.status() >= 400 ? ` body=${(await res.text().catch(() => '')).slice(0, 300)}` : '';
+    const line = `${new Date().toISOString()} [${label}] ${req.method()} ${req.url()} -> ${res.status()} bearer_jwt=${hasBearer}${detail}`;
     lines.push(line);
     appendFileSync(API_LOG, line + '\n');
     console.log(line);
@@ -47,7 +48,8 @@ export function recordApiTraffic(page: Page, label: string): string[] {
 
 /** Current TOTP code from the test realm secret, avoiding the last 3 s of a window. */
 export async function currentTotp(): Promise<string> {
-  const totp = new TOTP({ secret: otpSecret, digits: 6, period: 30, algorithm: 'SHA1' });
+  // Keycloak stores the raw secret string; the authenticator key is its bytes (not a base32 decode).
+  const totp = new TOTP({ secret: Secret.fromLatin1(otpSecret), digits: 6, period: 30, algorithm: 'SHA1' });
   const remaining = 30 - (Math.floor(Date.now() / 1000) % 30);
   if (remaining < 3) await new Promise((r) => setTimeout(r, remaining * 1000 + 200));
   return totp.generate();

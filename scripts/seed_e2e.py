@@ -50,7 +50,7 @@ def main() -> None:
             )
         set_rls_context(conn, t_id, u_id)
         for c in SEED["clients"]:
-            client = create_client_entity(conn, t_id, c["legal_name"], str(u_id))
+            client = create_client_entity(conn, t_id, c["legal_name"], str(u_id), ice=c["ice"])
             year, month = (int(x) for x in c["period_code"].split("-"))
             starts = datetime.date(year, month, 1)
             ends = datetime.date(year, month, calendar.monthrange(year, month)[1])

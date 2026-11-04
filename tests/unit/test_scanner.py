@@ -125,3 +125,26 @@ def test_check_intake_health_active_when_fresh():
 
 
 
+
+
+def test_clamd_reply_nul_terminator_is_stripped(monkeypatch):
+    """Phase 5c-1: real clamd replies 'stream: OK\0'; the NUL broke JSONB inserts."""
+    import avenel.documents.scanner as scanner
+
+    class _Sock:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def sendall(self, _b):
+            return None
+
+        def recv(self, _n):
+            return b"stream: OK\x00"
+
+    monkeypatch.setattr(scanner.socket, "create_connection", lambda *a, **k: _Sock())
+    res = scanner._scan_stream_clamd(b"%PDF-1.4 clean", "127.0.0.1", 3310)
+    assert res.is_clean is True
+    assert "\x00" not in res.details["clamd_response"]

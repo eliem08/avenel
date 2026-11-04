@@ -29,7 +29,7 @@ services:
       -c checkpoint_completion_target=0.9
 
   clamav:
-    image: clamav/clamav:1.4.1@sha256:7bc508bfb2a2657e28bcebca693441ef31ce03ca9bbf8787ad36d1eb2f59fa9e
+    image: clamav/clamav:1.4.3@sha256:75fb5fd95fcbe1d7e6d240c369c1572b686ee2c95949d1042b5148de8eddebb4
     container_name: avenel-prod-clamav
     restart: unless-stopped
     volumes:
@@ -41,7 +41,7 @@ services:
       retries: 5
 
   freshclam:
-    image: clamav/clamav:1.4.1@sha256:7bc508bfb2a2657e28bcebca693441ef31ce03ca9bbf8787ad36d1eb2f59fa9e
+    image: clamav/clamav:1.4.3@sha256:75fb5fd95fcbe1d7e6d240c369c1572b686ee2c95949d1042b5148de8eddebb4
     container_name: avenel-prod-freshclam
     restart: unless-stopped
     command: ["freshclam", "-d", "-c", "24"]

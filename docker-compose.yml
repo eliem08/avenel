@@ -60,7 +60,7 @@ services:
       retries: 30
 
   clamav:
-    image: clamav/clamav:1.4.1@sha256:7bc508bfb2a2657e28bcebca693441ef31ce03ca9bbf8787ad36d1eb2f59fa9e
+    image: clamav/clamav:1.4.3@sha256:75fb5fd95fcbe1d7e6d240c369c1572b686ee2c95949d1042b5148de8eddebb4
     container_name: avenel-clamav
     restart: unless-stopped
     ports:
@@ -68,16 +68,20 @@ services:
     volumes:
       - clamav_db:/var/lib/clamav
     healthcheck:
-      test: ["CMD", "clamdscan", "--ping", "127.0.0.1:3310"]
+      test: ["CMD", "clamdcheck.sh"]
       interval: 10s
-      timeout: 5s
+      timeout: 10s
       retries: 5
+      start_period: 300s
 
   freshclam:
-    image: clamav/clamav:1.4.1@sha256:7bc508bfb2a2657e28bcebca693441ef31ce03ca9bbf8787ad36d1eb2f59fa9e
+    image: clamav/clamav:1.4.3@sha256:75fb5fd95fcbe1d7e6d240c369c1572b686ee2c95949d1042b5148de8eddebb4
     container_name: avenel-freshclam
     restart: unless-stopped
-    command: ["freshclam", "-d", "-c", "24"]
+    command: ["freshclam", "-d", "--foreground", "-c", "24"]
+    # The image healthcheck pings clamd, which does not run in this container.
+    healthcheck:
+      disable: true
     volumes:
       - clamav_db:/var/lib/clamav
 

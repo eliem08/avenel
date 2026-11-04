@@ -129,21 +129,20 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/avenel
           PYTHON: python
 
-      - name: Build Web Application
-        run: |
-          npm run build
+      - name: Web — generated API client matches contract
+        run: make web-gen-api
 
-      - name: Run Frontend Tests
-        run: |
-          npm test
+      - name: Web — typecheck
+        run: make web-typecheck
 
-      - name: Install Playwright Browsers
-        run: |
-          npx playwright install --with-deps chromium
+      - name: Web — unit tests and test-count baseline
+        run: make web-test
 
-      - name: Run Playwright E2E & Accessibility Suite
-        run: |
-          npx playwright test e2e/accessibility.spec.ts e2e/pilot-journey.spec.ts
+      - name: Web — Part E palette check on built CSS
+        run: make css-check
+
+      - name: Guards — Part K 25, 26, 27
+        run: make guards
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -159,3 +158,33 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/avenel
           AVENEL_KMS_KEY: "avenel-test-kms-key-fixture-32chars-min-ok"
+
+  e2e-stack:
+    # Part K 28: browser e2e against the real docker-compose stack. No Postgres service here:
+    # the compose stack owns ports 5432, 8000, 8080 and 5173.
+    name: E2E against docker-compose (Keycloak + API + DB)
+    runs-on: ubuntu-latest
+    needs: quality-gate
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Start stack, require health, run e2e (make e2e)
+        run: make e2e
+      - name: Keep logs and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-evidence
+          path: |
+            docs/reports/phase-5c-1/
+            playwright-report/
+            test-results/
+      - name: Container logs on failure
+        if: failure()
+        run: docker compose logs --no-color --timestamps > compose.log; tail -300 compose.log

@@ -96,6 +96,11 @@
 - **Exigence :** Le chiffrement TLS 1.3 avec en-têtes de sécurité stricts (HSTS, CSP, Permissions-Policy) est actif en production. L'authentification multi-facteurs (MFA RFC 9470) est formellement activée et obligatoire pour l'ensemble des comptes utilisateurs de la fiduciaire. L'accès d'assistance technique opérateur (`role: operator`) est **désactivé par défaut** et ne peut être ouvert que sur demande explicite consignée en audit.
 - **Statut :** `[ ] NON EFFECTUÉ` (Bloquant)
 - **Preuve requise :** Rapport de scan de conformité TLS (Qualys SSL Labs A+) et export de configuration Keycloak.
+- **Ajout Phase 5c-1 (corrections, voir `docs/reports/phase-5b-corrections.md`) :**
+  - La variable `AVENEL_AUTH_TEST_MODE` est **absente** de l'environnement de l'API et du worker en production (vérifier `docker inspect` / manifeste). Si elle vaut `1`, l'API accepte une identité par en-tête : bloquant.
+  - La CSP de `docker/nginx.conf` autorise l'hôte Keycloak de **production** dans `connect-src` et `frame-src` (aujourd'hui seule `http://localhost:8080`, valeur de test, y figure).
+  - Le client `avenel-web` du realm de production a des URI de redirection `…/callback`, `…/silent-renew` et de déconnexion correspondant au domaine réel, PKCE S256, et un mapper d'audience `avenel-api`.
+  - Connexion navigateur avec MFA vérifiée en e2e **sur le realm de test uniquement** ; le parcours de ré-authentification (step-up ≤ 5 min) avant validation n'est pas encore exercé dans le navigateur (écran de validation non câblé).
 - **Signataire désigné :**
   - **Nom du signataire :** ____________________________________
   - **Rôle / Titre :** Lead Architecte Sécurité

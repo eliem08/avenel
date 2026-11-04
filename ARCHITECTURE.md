@@ -1408,3 +1408,14 @@ The following 24 binding architectural decisions were established and recorded a
 24. **Deterministic Subject Hash (D.4 / Migration 008):**
     Approval binds to a canonical SHA-256 subject hash computed across all active proposals and accepted reconciliation matches, excluding volatile fields (timestamps, status, editor IDs). A hash mismatch during approval or export returns HTTP 409 `ApprovalStale`.
 
+25. **No test code in production (Phase 5c-1 / Part H):**
+    Production source (`src/` excluding `*.test.*` and `src/test/`, `avenel/`, `apps/`) never imports from `tests/`, `fixtures/` or `e2e/`, and declares no module or identifier named `mock*`, `fixture*` or `fake*`. The built bundle (`dist/`) must not contain those names. Enforced by `scripts/guards/no_test_code_in_prod.mjs` in `make guards`.
+
+26. **E2E tests never intercept the network (Phase 5c-1 / Part H):**
+    Files under `e2e/` and `playwright.config.ts` must not use `page.route`, `context.route`, `route.fulfill/abort/continue/fallback`, `routeFromHAR`, `routeWebSocket`, `unroute`, `setOffline`, MSW or nock. Observing traffic (`page.on('request'|'response')`) is allowed. Enforced by `scripts/guards/no_e2e_interception.mjs`.
+
+27. **No terms from the previous product (Phase 5c-1):**
+    Tracked source and the built bundle must not contain `PreClear`, `douane`, `douanier`, `PortNet`, `BADR`, `code SH`, `transitaire`, `riskScoring` or `fiscai` (case-insensitive). Exclusions: `docs/`, `TESTS_REMOVED.md`, the guard and its self-test. Three AVENEL backend lines where the word is the correct Moroccan term are allowlisted by file and exact text after human review (DPA legal text, the customs-declaration classifier keyword, one test note); any other occurrence fails. Enforced by `scripts/guards/no_legacy_terms.mjs`.
+
+28. **E2E runs only against a healthy docker-compose stack (Phase 5c-1 / Part H):**
+    `make e2e` starts Postgres, migrations, seed, API, worker, Keycloak (test realm), ClamAV and the OCR container, then `scripts/guards/wait_for_stack.mjs` requires `GET /health/ready` (`"status":"ready"`), the Keycloak realm discovery document and the web container's `/healthz` (`healthy`) before any Playwright test runs; otherwise the job fails. Each check matches an exact body marker so a different server on the same port cannot pass.

@@ -95,6 +95,14 @@ def resolve_user_session(
         tenant_id, membership_id, role, client_scope_ids = selected_row
         scope_uuids = [uuid.UUID(str(c)) for c in client_scope_ids] if client_scope_ids else []
 
+        # Transaction-local tenant context (Part C.5) for the tenant the SECURITY DEFINER
+        # resolver returned. Without it, forced RLS hides the membership row below when
+        # connected as avenel_app (Phase 5c-1 bug, tests/rls/test_session_resolution_as_app_role.py).
+        cur.execute(
+            "SELECT set_config('app.tenant_id', %s, true), set_config('app.user_id', %s, true);",
+            (str(tenant_id), str(user_id)),
+        )
+
         # 3. Check operator expiry & professional registration details
         cur.execute(
             """

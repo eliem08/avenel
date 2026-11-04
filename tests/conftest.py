@@ -25,6 +25,8 @@ DEFAULT_TEST_PORT = 5439
 
 # Ensure RIB encryption key is available for integration tests
 os.environ["AVENEL_AUTH_TEST_MODE"] = "1"  # enables subject-header auth in tests only (apps/api/deps.py)
+# A.2.7: never reach a live ClamAV (e.g. the docker-compose one on :3310) from the suite.
+os.environ["AVENEL_CLAMAV_PORT"] = "1"
 os.environ.setdefault("AVENEL_KMS_KEY", "avenel-test-kms-key-fixture-32chars-min-ok")
 
 

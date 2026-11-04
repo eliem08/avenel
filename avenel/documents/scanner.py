@@ -61,7 +61,8 @@ def _scan_stream_clamd(data: bytes, host: str, port: int, timeout: float = 3.0) 
             if b"\0" in chunk:
                 break
 
-    decoded = response.decode("utf-8", errors="ignore").strip()
+    # clamd terminates replies with NUL; strip it (Postgres JSONB rejects \u0000). Phase 5c-1 bug.
+    decoded = response.decode("utf-8", errors="ignore").replace("\x00", "").strip()
     if "OK" in decoded:
         return ScanResult(
             is_clean=True,

@@ -149,7 +149,9 @@ async def health_check() -> dict[str, Any]:
 @app.get("/health/ready", tags=["System"])
 async def readiness_check() -> dict[str, Any]:
     """Readiness probe checking database connectivity, KMS encryption key, and antivirus scanner."""
-    from apps.api.deps import get_db
+    import psycopg
+
+    from apps.api.deps import get_db_url
     from avenel.bank.rib import get_rib_encryption_raw_key
 
     # 1. KMS key check
@@ -169,9 +171,11 @@ async def readiness_check() -> dict[str, Any]:
     # 3. Database check
     db_status = "ok"
     try:
-        with next(get_db()) as conn, conn.cursor() as cur:
+        # Own the connection here: a temporary get_db() generator is collected at once and
+        # closes its connection before use (Phase 5c-1 bug, tests/api/test_health_ready.py).
+        with psycopg.connect(get_db_url(), connect_timeout=3) as conn, conn.cursor() as cur:
             cur.execute("SELECT 1;")
-    except (RuntimeError, OSError) as ex:
+    except (RuntimeError, OSError, psycopg.Error) as ex:
         raise HTTPException(
             status_code=503,
             detail=f"Service Unavailable: Database connection failed ({ex})",

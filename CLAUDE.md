@@ -1,3 +1,1 @@
-# CLAUDE.md
-
-See [AGENTS.md](AGENTS.md) and [ARCHITECTURE.md](ARCHITECTURE.md) for full system architecture and mandatory rules.
+Read ARCHITECTURE.md fully before any work. Part A and Part K are mandatory. Build only the current phase from Part G and stop for review at its exit criteria. STRATEGY.md is context only. Never claim a test hits the real stack without showing the API request log.

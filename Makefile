@@ -69,7 +69,7 @@ guards: web-build
 
 # ---------------------------------------------------------------- e2e (Part K 28)
 e2e-up:
-	$(COMPOSE) up -d --build postgres keycloak clamav freshclam ocr minio migrate seed api worker web
+	$(COMPOSE) up -d --build postgres keycloak clamav freshclam ocr migrate seed api worker web
 	node scripts/guards/wait_for_stack.mjs
 
 e2e-down:

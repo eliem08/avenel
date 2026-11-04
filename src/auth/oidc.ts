@@ -1,7 +1,13 @@
 import { InMemoryWebStorage, UserManager, WebStorageStateStore, type User } from 'oidc-client-ts';
 import { config } from '@/config';
 
-/** Part C.2 / Part K 5: tokens live in memory only. Nothing goes to localStorage or sessionStorage. */
+/**
+ * Tokens (access, refresh, id) live in memory only: never localStorage or sessionStorage.
+ * The one exception is the single-use authorization request state (PKCE code_verifier,
+ * state, nonce): it must survive the full-page redirect to Keycloak, so it sits in
+ * sessionStorage for the duration of the redirect and oidc-client-ts deletes it when
+ * /callback completes. It is not a credential: without the authorization code it is useless.
+ */
 export function createUserManager(origin: string = window.location.origin): UserManager {
   return new UserManager({
     authority: config.oidcAuthority,
@@ -13,7 +19,7 @@ export function createUserManager(origin: string = window.location.origin): User
     scope: 'openid profile email',
     automaticSilentRenew: true,
     userStore: new WebStorageStateStore({ store: new InMemoryWebStorage() }),
-    stateStore: new WebStorageStateStore({ store: new InMemoryWebStorage() }),
+    stateStore: new WebStorageStateStore({ store: window.sessionStorage, prefix: 'avenel.oidc.' }),
     monitorSession: false,
   });
 }

@@ -29,7 +29,7 @@ describe('hasFreshMfa (step-up, Part K 5)', () => {
 });
 
 describe('token storage', () => {
-  it('keeps the user and OIDC state in memory, never in Web Storage', async () => {
+  it('keeps the user (tokens) in memory, never in Web Storage', async () => {
     localStorage.clear();
     sessionStorage.clear();
     const um = createUserManager('http://localhost:5173');

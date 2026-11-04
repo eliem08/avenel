@@ -1,6 +1,6 @@
 # Rapport de Test du Pipeline Synthétique — Ingestion & Extraction
 
-**Date d'exécution :** 2026-11-04 00:03:39Z
+**Date d'exécution :** 2026-11-04 12:15:51Z
 **Moteur OCR :** `RapidOCR / PaddleOCR ONNX PP-OCRv4 + Multilingual v3` (version `1.4.4`)
 **Modèles de reconnaissance :** ONNX Latin & Arabe multilingues (ancrés par checksums SHA-256)
 **Taille du corpus synthétique :** **5 documents**
@@ -19,7 +19,7 @@
 | `invoice_number` | 5 | 5 | 0 | **100.00%** | >= 97.0% |
 | `invoice_date` | 5 | 5 | 0 | **100.00%** | >= 97.0% |
 | `supplier_ice` | 5 | 5 | 0 | **100.00%** | >= 97.0% |
-| `supplier_if` | 5 | 4 | 1 | **80.00%** | — |
+| `supplier_if` | 5 | 5 | 0 | **100.00%** | — |
 | `total_ht` | 5 | 5 | 0 | **100.00%** | >= 98.0% |
 | `total_vat` | 5 | 5 | 0 | **100.00%** | >= 98.0% |
 | `total_ttc` | 5 | 5 | 0 | **100.00%** | >= 98.0% |
@@ -31,7 +31,7 @@
 | `invoice_number` | 100.0% | 0.0% | 0.0% |
 | `invoice_date` | 100.0% | 0.0% | 0.0% |
 | `supplier_ice` | 100.0% | 0.0% | 0.0% |
-| `supplier_if` | 80.0% | 0.0% | 0.0% |
+| `supplier_if` | 100.0% | 0.0% | 0.0% |
 | `total_ht` | 100.0% | 0.0% | 0.0% |
 | `total_vat` | 100.0% | 0.0% | 0.0% |
 | `total_ttc` | 100.0% | 0.0% | 0.0% |
@@ -51,7 +51,7 @@
 | `invoice_number` | 0 | 0 | 0 | **0.00%** |
 | `invoice_date` | 0 | 0 | 0 | **0.00%** |
 | `supplier_ice` | 0 | 0 | 0 | **0.00%** |
-| `supplier_if` | 1 | 1 | 0 | **0.00%** |
+| `supplier_if` | 0 | 0 | 0 | **0.00%** |
 | `total_ht` | 0 | 0 | 0 | **0.00%** |
 | `total_vat` | 0 | 0 | 0 | **0.00%** |
 | `total_ttc` | 0 | 0 | 0 | **0.00%** |
@@ -60,5 +60,4 @@
 
 Détail des documents ayant présenté des écarts sous les perturbations de scan :
 
-- **Document `fr_inv_002`** (Langue: `fr`, Catégorie: `french_corporate`) :
-  - `supplier_if` : attendu `56789012`, extrait `None`
+Aucun échec constaté sur le corpus évalué.

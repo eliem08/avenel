@@ -31,6 +31,8 @@ export const ALLOWED_LINES = [
   ['avenel/compliance/dpa.py', "numéros d'identification fiscal et douanier (ICE, IF, RC)"],
   ['avenel/extraction/classifier.py', '["douane", "déclaration unique de marchandise", "dum", "جمارك"]'],
   ['tests/issues/test_issues.py', 'Écart de date justifié par le bon de réception du transitaire'],
+  // Part K 27 itself lists the forbidden terms.
+  ['ARCHITECTURE.md', 'Tracked source and the built bundle must not contain `PreClear`'],
 ];
 
 function isAllowed(path, line) {

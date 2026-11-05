@@ -6,6 +6,8 @@ export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,
   workers: 1,
+  // A second login may wait up to 30 s for a fresh TOTP window (e2e/stack.ts).
+  timeout: 90_000,
   forbidOnly: !!process.env.CI,
   retries: 0,
   reporter: [['list'], ['html', { open: 'never' }]],

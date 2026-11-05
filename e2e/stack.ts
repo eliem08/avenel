@@ -1,5 +1,5 @@
 // Helpers for e2e tests against the docker-compose stack. Observation only: no request is modified.
-import { readFileSync, mkdirSync, appendFileSync } from 'node:fs';
+import { readFileSync, mkdirSync, appendFileSync, writeFileSync } from 'node:fs';
 import { expect, type Page } from '@playwright/test';
 import { Secret, TOTP } from 'otpauth';
 
@@ -46,13 +46,31 @@ export function recordApiTraffic(page: Page, label: string): string[] {
   return lines;
 }
 
-/** Current TOTP code from the test realm secret, avoiding the last 3 s of a window. */
+// Keycloak rejects a one-time code that was already used, so two logins inside the same
+// 30 s window fail. Spec files run in separate processes, so the last used step is kept in a file.
+const LAST_STEP_FILE = 'test-results/.last-totp-step';
+
+/** TOTP code from the test realm secret: never reuses a time step, avoids the last 3 s of a window. */
 export async function currentTotp(): Promise<string> {
   // Keycloak stores the raw secret string; the authenticator key is its bytes (not a base32 decode).
   const totp = new TOTP({ secret: Secret.fromLatin1(otpSecret), digits: 6, period: 30, algorithm: 'SHA1' });
-  const remaining = 30 - (Math.floor(Date.now() / 1000) % 30);
-  if (remaining < 3) await new Promise((r) => setTimeout(r, remaining * 1000 + 200));
-  return totp.generate();
+  let last = -1;
+  try {
+    last = Number(readFileSync(LAST_STEP_FILE, 'utf8'));
+  } catch {
+    /* first login of the run */
+  }
+  for (;;) {
+    const now = Date.now() / 1000;
+    const step = Math.floor(now / 30);
+    const remaining = 30 - (now % 30);
+    if (step > last && remaining >= 3) {
+      mkdirSync('test-results', { recursive: true });
+      writeFileSync(LAST_STEP_FILE, String(step));
+      return totp.generate({ timestamp: step * 30 * 1000 });
+    }
+    await new Promise((r) => setTimeout(r, remaining * 1000 + 200));
+  }
 }
 
 /** Full Keycloak login: "/" → Keycloak password → Keycloak OTP → app. */

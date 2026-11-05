@@ -365,6 +365,47 @@ paths:
         "404":
           $ref: "#/components/responses/ProblemDetails"
 
+  /client-entities/{id}/chart-accounts/import-file:
+    post:
+      operationId: importChartAccountsFile
+      tags:
+        - Chart
+      summary: Import chart of accounts from a CSV or XLSX file
+      description: Parses one .csv or .xlsx file with the hardened server-side parsers (size, row, zip-bomb and XXE limits) and imports the account code and label pairs.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/IdempotencyKeyHeader"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Accounts imported successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportChartResponse"
+        "404":
+          $ref: "#/components/responses/ProblemDetails"
+        "415":
+          $ref: "#/components/responses/ProblemDetails"
+        "422":
+          $ref: "#/components/responses/ProblemDetails"
+
   /compliance/dpa:
     get:
       operationId: getDpaDocument

@@ -180,6 +180,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/client-entities/{id}/chart-accounts/import-file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import chart of accounts from a CSV or XLSX file
+         * @description Parses one .csv or .xlsx file with the hardened server-side parsers (size, row, zip-bomb and XXE limits) and imports the account code and label pairs.
+         */
+        post: operations["importChartAccountsFile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/compliance/dpa": {
         parameters: {
             query?: never;
@@ -1689,6 +1709,40 @@ export interface operations {
                 };
             };
             404: components["responses"]["ProblemDetails"];
+        };
+    };
+    importChartAccountsFile: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": components["parameters"]["IdempotencyKeyHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Accounts imported successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportChartResponse"];
+                };
+            };
+            404: components["responses"]["ProblemDetails"];
+            415: components["responses"]["ProblemDetails"];
+            422: components["responses"]["ProblemDetails"];
         };
     };
     getDpaDocument: {

@@ -35,7 +35,7 @@ def test_migrations_forward_and_rollback_cycle(postgres_url: str):
 
     # 2. Apply up
     applied_up = apply_migrations(postgres_url)
-    assert len(applied_up) == 9
+    assert len(applied_up) == 10
     assert applied_up == [
         "001_core",
         "002_rls",
@@ -46,6 +46,7 @@ def test_migrations_forward_and_rollback_cycle(postgres_url: str):
         "007_active_bq_proposal_unique",
         "008_round_trips_and_approval_policy",
         "009_review_metrics_and_rate_limits",
+        "010_issue_supersede_and_round_trip_grants",
     ]
 
     with get_connection(postgres_url) as conn:
@@ -59,6 +60,7 @@ def test_migrations_forward_and_rollback_cycle(postgres_url: str):
             "007",
             "008",
             "009",
+            "010",
         }
 
 

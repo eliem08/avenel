@@ -500,6 +500,19 @@ Total TTC: 1200.00 MAD
         assert ev_row is not None
         assert "supplier_ice" in ev_row[1]["field_updates"]
 
+    # Re-validation supersedes the earlier auto-detected issues; nothing is deleted (migration 010).
+    with db_conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT status, superseded_at IS NOT NULL
+            FROM issues WHERE subject_document_id = %s;
+            """,
+            (uuid.UUID(doc_id),),
+        )
+        rows = cur.fetchall()
+    assert any(status == "superseded" and has_ts for status, has_ts in rows), rows
+    assert all((status == "superseded") == has_ts for status, has_ts in rows), rows
+
 
 def test_scope_first_and_role_permissions(db_conn: psycopg.Connection):
     """Scope-first rule returns 404 for out-of-scope; unauthorized in-scope returns 403."""

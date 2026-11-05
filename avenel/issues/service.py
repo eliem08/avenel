@@ -219,7 +219,7 @@ def send_issue_to_client(
             """
             SELECT id, evidence_refs
             FROM issues
-            WHERE tenant_id = %s AND id = %s AND status NOT IN ('resolved', 'waived');
+            WHERE tenant_id = %s AND id = %s AND status NOT IN ('resolved', 'waived', 'superseded');
             """,
             (tenant_id, issue_id),
         )

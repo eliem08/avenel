@@ -65,3 +65,8 @@ This file records questions, ambiguities, and chosen restrictive interpretations
 - **Status**: Marked `needs_expert` in pack and registered in `docs/expert-register.md`.
 
 
+
+## Issue status `superseded` (Phase 1 completion, 5 Nov 2026)
+- **Context**: Re-validating a document after a field correction used to `DELETE` its open auto-detected issues. The application role has no DELETE on `issues`, so every real intake failed (hidden because API tests ran as a superuser).
+- **Decision (human, 5 Nov 2026)**: supersede, never delete. Migration 010 adds status `superseded` and `superseded_at`. Superseded issues are excluded wherever "active" issues are counted (approval blocking check, issue actions). Part D.2 does not list this status.
+- **Open**: should D.2 be amended to include `superseded`, and should the UI show superseded issues in a history view?

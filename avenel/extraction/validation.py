@@ -266,10 +266,11 @@ def persist_validation_results(
 ) -> None:
     """Updates extractions.validation and synchronizes issues and document status."""
     with conn.cursor() as cur:
-        # Clear previously auto-detected open issues for this document
+        # Supersede (never delete) previously auto-detected open issues for this document.
+        # Keeps the issue history; avenel_app has no DELETE on issues (migration 010).
         cur.execute(
             """
-            DELETE FROM issues
+            UPDATE issues SET status = 'superseded', superseded_at = now()
             WHERE tenant_id = %s AND subject_document_id = %s AND status = 'open';
             """,
             (tenant_id, document_id),

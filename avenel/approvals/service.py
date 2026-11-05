@@ -197,7 +197,7 @@ def check_work_request_quality_gate(
             SELECT code, severity, status
             FROM issues
             WHERE tenant_id = %s AND client_entity_id = %s AND work_request_id = %s
-              AND severity = 'blocking' AND status NOT IN ('resolved', 'waived');
+              AND severity = 'blocking' AND status NOT IN ('resolved', 'waived', 'superseded');
             """,
             (tenant_id, client_entity_id, work_request_id),
         )
@@ -216,7 +216,7 @@ def check_work_request_quality_gate(
             WHERE tenant_id = %s AND client_entity_id = %s AND work_request_id = %s
               AND severity = 'review'
               AND (
-                status NOT IN ('resolved', 'waived')
+                status NOT IN ('resolved', 'waived', 'superseded')
                 OR (resolution = 'accepted_as_is' AND (resolution_note IS NULL OR trim(resolution_note) = ''))
               );
             """,

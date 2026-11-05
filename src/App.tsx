@@ -6,6 +6,10 @@ import { CallbackScreen } from '@/screens/CallbackScreen';
 import { SilentRenewScreen } from '@/screens/SilentRenewScreen';
 import { QueueScreen } from '@/screens/QueueScreen';
 import { LaterScreen } from '@/screens/LaterScreen';
+import { ClientsScreen } from '@/screens/ClientsScreen';
+import { ClientScreen } from '@/screens/ClientScreen';
+import { SettingsScreen } from '@/screens/SettingsScreen';
+import { SessionProvider } from '@/session/SessionProvider';
 
 export function App() {
   return (
@@ -18,14 +22,17 @@ export function App() {
           <Route
             element={
               <RequireAuth>
-                <AppShell />
+                <SessionProvider>
+                  <AppShell />
+                </SessionProvider>
               </RequireAuth>
             }
           >
             <Route path="/queue" element={<QueueScreen />} />
-            <Route path="/clients" element={<LaterScreen title="Clients" />} />
+            <Route path="/clients" element={<ClientsScreen />} />
+            <Route path="/clients/:id" element={<ClientScreen />} />
             <Route path="/approvals" element={<LaterScreen title="Validations" />} />
-            <Route path="/settings" element={<LaterScreen title="Paramètres" />} />
+            <Route path="/settings" element={<SettingsScreen />} />
           </Route>
           <Route
             path="*"

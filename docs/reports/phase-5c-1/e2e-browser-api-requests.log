@@ -1,6 +1,29 @@
-2026-11-05T14:07:54.271Z [login-queue] GET http://localhost:8000/v1/me -> 200 bearer_jwt=true
-2026-11-05T14:07:54.274Z [login-queue] GET http://localhost:8000/v1/client-entities -> 200 bearer_jwt=true
-2026-11-05T14:07:54.275Z [login-queue] GET http://localhost:8000/v1/work-requests -> 200 bearer_jwt=true
-2026-11-05T14:08:03.963Z [api-down] GET http://localhost:8000/v1/me -> FAILED net::ERR_CONNECTION_REFUSED
-2026-11-05T14:08:03.975Z [api-down] GET http://localhost:8000/v1/work-requests -> FAILED net::ERR_CONNECTION_REFUSED
-2026-11-05T14:08:03.976Z [api-down] GET http://localhost:8000/v1/client-entities -> FAILED net::ERR_CONNECTION_REFUSED
+2026-11-05T20:16:03.278Z [login-queue] GET http://localhost:8000/v1/me -> 200 bearer_jwt=true
+2026-11-05T20:16:03.282Z [login-queue] GET http://localhost:8000/v1/work-requests -> 200 bearer_jwt=true
+2026-11-05T20:16:03.284Z [login-queue] GET http://localhost:8000/v1/client-entities -> 200 bearer_jwt=true
+2026-11-05T20:16:30.552Z [phase1-accountant] GET http://localhost:8000/v1/work-requests -> 200 bearer_jwt=true
+2026-11-05T20:16:30.640Z [phase1-accountant] GET http://localhost:8000/v1/client-entities -> 200 bearer_jwt=true
+2026-11-05T20:16:30.661Z [phase1-accountant] GET http://localhost:8000/v1/me -> 200 bearer_jwt=true
+2026-11-05T20:16:30.735Z [phase1-accountant] GET http://localhost:8000/v1/client-entities -> 200 bearer_jwt=true
+2026-11-05T20:16:31.577Z [phase1-accountant] POST http://localhost:8000/v1/client-entities -> 201 bearer_jwt=true
+2026-11-05T20:16:31.617Z [phase1-accountant] GET http://localhost:8000/v1/client-entities -> 200 bearer_jwt=true
+2026-11-05T20:16:31.982Z [phase1-accountant] GET http://localhost:8000/v1/client-entities/8d25c954-a818-42cf-8be6-e03321d3c3ef -> 200 bearer_jwt=true
+2026-11-05T20:16:32.078Z [phase1-accountant] GET http://localhost:8000/v1/client-entities/8d25c954-a818-42cf-8be6-e03321d3c3ef/chart-accounts -> 200 bearer_jwt=true
+2026-11-05T20:16:32.097Z [phase1-accountant] GET http://localhost:8000/v1/client-entities/8d25c954-a818-42cf-8be6-e03321d3c3ef/periods -> 200 bearer_jwt=true
+2026-11-05T20:16:32.199Z [phase1-accountant] POST http://localhost:8000/v1/client-entities/8d25c954-a818-42cf-8be6-e03321d3c3ef/periods -> 201 bearer_jwt=true
+2026-11-05T20:16:32.243Z [phase1-accountant] GET http://localhost:8000/v1/client-entities/8d25c954-a818-42cf-8be6-e03321d3c3ef/periods -> 200 bearer_jwt=true
+2026-11-05T20:16:32.518Z [phase1-accountant] POST http://localhost:8000/v1/client-entities/8d25c954-a818-42cf-8be6-e03321d3c3ef/periods -> 409 bearer_jwt=true body={"type":"about:blank","title":"Conflit d'état","status":409,"detail":"La période 2026-10 existe déjà pour cette entreprise.","instance":"/v1/client-entities/8d25c954-a818-42cf-8be6-e03321d3c3ef/periods"}
+2026-11-05T20:16:32.700Z [phase1-accountant] POST http://localhost:8000/v1/client-entities/8d25c954-a818-42cf-8be6-e03321d3c3ef/chart-accounts/seed-cgnc -> 200 bearer_jwt=true
+2026-11-05T20:16:32.748Z [phase1-accountant] GET http://localhost:8000/v1/client-entities/8d25c954-a818-42cf-8be6-e03321d3c3ef/chart-accounts -> 200 bearer_jwt=true
+2026-11-05T20:16:33.001Z [phase1-accountant] POST http://localhost:8000/v1/client-entities/8d25c954-a818-42cf-8be6-e03321d3c3ef/chart-accounts/import-file -> 200 bearer_jwt=true
+2026-11-05T20:16:33.062Z [phase1-accountant] GET http://localhost:8000/v1/client-entities/8d25c954-a818-42cf-8be6-e03321d3c3ef/chart-accounts -> 200 bearer_jwt=true
+2026-11-05T20:16:33.245Z [phase1-accountant] GET http://localhost:8000/v1/compliance/dpa -> 200 bearer_jwt=true
+2026-11-05T20:16:33.494Z [phase1-accountant] GET http://localhost:8000/v1/compliance/cndp-dossier -> 200 bearer_jwt=true
+2026-11-05T20:16:35.127Z [phase1-client-user] GET http://localhost:8000/v1/client-entities -> 200 bearer_jwt=true
+2026-11-05T20:16:35.139Z [phase1-client-user] GET http://localhost:8000/v1/work-requests -> 200 bearer_jwt=true
+2026-11-05T20:16:35.149Z [phase1-client-user] GET http://localhost:8000/v1/me -> 200 bearer_jwt=true
+2026-11-05T20:16:35.285Z [phase1-client-user] GET http://localhost:8000/v1/client-entities -> 200 bearer_jwt=true
+2026-11-05T20:16:35.549Z [phase1-client-user] GET http://localhost:8000/v1/client-entities/66eeddf6-a7d6-4c0c-bd08-76cb1e17e170 -> 404 bearer_jwt=true body={"type":"about:blank","title":"Ressource introuvable","status":404,"detail":"Entreprise cliente introuvable.","instance":"/v1/client-entities/66eeddf6-a7d6-4c0c-bd08-76cb1e17e170"}
+2026-11-05T20:17:02.769Z [api-down] GET http://localhost:8000/v1/work-requests -> FAILED net::ERR_CONNECTION_REFUSED
+2026-11-05T20:17:02.771Z [api-down] GET http://localhost:8000/v1/client-entities -> FAILED net::ERR_CONNECTION_REFUSED
+2026-11-05T20:17:02.772Z [api-down] GET http://localhost:8000/v1/me -> FAILED net::ERR_CONNECTION_REFUSED

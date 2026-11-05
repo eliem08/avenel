@@ -32,3 +32,4 @@ tests/fixtures/real/*
 !tests/fixtures/real/labels.schema.json
 !tests/fixtures/real/.gitkeep
 .vitest-results.json
+.e2e-state/

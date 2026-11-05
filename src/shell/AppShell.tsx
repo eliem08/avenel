@@ -1,9 +1,7 @@
-import { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { CheckSquare, Inbox, LogOut, Settings, Users } from 'lucide-react';
 import { useAuth } from '@/auth/AuthProvider';
-import { useApi } from '@/api/useApi';
-import type { UserSession } from '@/api/client';
+import { useSession } from '@/session/SessionProvider';
 
 const NAV = [
   { to: '/queue', label: 'File de travail', Icon: Inbox },
@@ -15,17 +13,10 @@ const NAV = [
 /**
  * GET /v1/me returns the single active membership resolved from the token.
  * The switcher lists exactly what the API returns; multi-firm listing needs an
- * endpoint that does not exist yet (Phase 5c-2).
+ * endpoint that does not exist yet.
  */
 function FirmSwitcher() {
-  const api = useApi();
-  const [me, setMe] = useState<UserSession | null>(null);
-  useEffect(() => {
-    api
-      .GET('/me')
-      .then(({ data }) => setMe(data ?? null))
-      .catch(() => setMe(null));
-  }, [api]);
+  const { me } = useSession();
   return (
     <label className="block px-4 pb-4">
       <span className="text-[0.8125rem] text-ink-2">Cabinet</span>

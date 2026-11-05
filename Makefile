@@ -78,7 +78,7 @@ e2e-down:
 
 e2e: e2e-up
 	npx playwright install chromium
-	rm -f docs/reports/phase-5c-1/e2e-browser-api-requests.log
+	rm -rf docs/reports/phase-5c-1/e2e-browser-api-requests.log .e2e-state
 	npx playwright test --grep-invert @api-down
 	$(COMPOSE) stop api
 	npx playwright test --grep @api-down

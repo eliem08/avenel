@@ -6,7 +6,22 @@
   "user_email": "ci-accountant@test.internal",
   "role": "accountant",
   "clients": [
-    { "legal_name": "Atlas Distribution SARL", "ice": "001500000000001", "period_code": "2026-09", "status": "awaiting_approval" },
-    { "legal_name": "Riad Menara SARL", "ice": "001500000000002", "period_code": "2026-09", "status": "extracting" }
-  ]
+    {
+      "legal_name": "Atlas Distribution SARL",
+      "ice": "001500000000001",
+      "period_code": "2026-09",
+      "status": "awaiting_approval"
+    },
+    {
+      "legal_name": "Riad Menara SARL",
+      "ice": "001500000000002",
+      "period_code": "2026-09",
+      "status": "extracting"
+    }
+  ],
+  "client_user": {
+    "subject": "5c1e2e00-0000-4000-8000-000000000002",
+    "email": "ci-client@test.internal",
+    "scoped_to": "Atlas Distribution SARL"
+  }
 }

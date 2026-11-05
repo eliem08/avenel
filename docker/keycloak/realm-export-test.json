@@ -73,6 +73,28 @@
       ],
       "id": "5c1e2e00-0000-4000-8000-000000000001",
       "emailVerified": true
+    },
+    {
+      "id": "5c1e2e00-0000-4000-8000-000000000002",
+      "username": "ci-client@test.internal",
+      "email": "ci-client@test.internal",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "CI",
+      "lastName": "Client",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "e2e-ECFIg6BvyQvWS-t_R9Vgz2CK",
+          "temporary": false
+        },
+        {
+          "type": "otp",
+          "userLabel": "CI Ephemeral Authenticator",
+          "secretData": "{\"value\": \"DA0F949554192871B56C\"}",
+          "credentialData": "{\"subType\": \"totp\", \"digits\": 6, \"period\": 30, \"algorithm\": \"HmacSHA1\", \"counter\": 0}"
+        }
+      ]
     }
   ]
 }

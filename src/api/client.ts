@@ -5,14 +5,24 @@ import { config } from '@/config';
 export type WorkRequest = components['schemas']['WorkRequest'];
 export type ClientEntity = components['schemas']['ClientEntity'];
 export type UserSession = components['schemas']['UserSession'];
+export type AccountingPeriod = components['schemas']['AccountingPeriod'];
+export type ChartAccount = components['schemas']['ChartAccount'];
 
-/** Typed client generated from contracts/openapi.yaml. Every call carries the in-memory bearer token. */
+const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+/**
+ * Typed client generated from contracts/openapi.yaml. Every call carries the in-memory bearer
+ * token; every mutating call carries a fresh Idempotency-Key (required by the API).
+ */
 export function createApiClient(getToken: () => string | undefined) {
   const client = createClient<paths>({ baseUrl: config.apiBaseUrl });
   const auth: Middleware = {
     onRequest({ request }) {
       const token = getToken();
       if (token) request.headers.set('Authorization', `Bearer ${token}`);
+      if (MUTATING.has(request.method) && !request.headers.has('Idempotency-Key')) {
+        request.headers.set('Idempotency-Key', crypto.randomUUID());
+      }
       return request;
     },
   };
@@ -21,3 +31,8 @@ export function createApiClient(getToken: () => string | undefined) {
 }
 
 export type ApiClient = ReturnType<typeof createApiClient>;
+
+/** Fresh Idempotency-Key header for a mutating call (contract: IdempotencyKeyHeader). */
+export function idem(): { 'Idempotency-Key': string } {
+  return { 'Idempotency-Key': crypto.randomUUID() };
+}

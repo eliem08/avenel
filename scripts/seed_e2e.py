@@ -48,6 +48,18 @@ def main() -> None:
                 "INSERT INTO memberships (id, user_id, tenant_id, role, status) VALUES (%s, %s, %s, %s, 'active');",
                 (uuid.uuid4(), u_id, t_id, SEED["role"]),
             )
+            # Client user (Phase 1 completion): sees only the company named in client_user.scoped_to.
+            cu = SEED["client_user"]
+            cu_id = uuid.uuid4()
+            cu_membership = uuid.uuid4()
+            cur.execute(
+                "INSERT INTO users (id, identity_subject, email, full_name, status) VALUES (%s, %s, %s, %s, 'active');",
+                (cu_id, cu["subject"], cu["email"], "CI Client"),
+            )
+            cur.execute(
+                "INSERT INTO memberships (id, user_id, tenant_id, role, status) VALUES (%s, %s, %s, 'client_user', 'active');",
+                (cu_membership, cu_id, t_id),
+            )
         set_rls_context(conn, t_id, u_id)
         for c in SEED["clients"]:
             client = create_client_entity(conn, t_id, c["legal_name"], str(u_id), ice=c["ice"])
@@ -64,6 +76,11 @@ def main() -> None:
                        VALUES (%s, %s, %s, 'monthly_bookkeeping', %s, %s);""",
                     (t_id, client.id, period_id, c["status"], u_id),
                 )
+                if c["legal_name"] == cu["scoped_to"]:
+                    cur.execute(
+                        "INSERT INTO membership_client_scopes (tenant_id, membership_id, client_entity_id) VALUES (%s, %s, %s);",
+                        (t_id, cu_membership, client.id),
+                    )
         conn.commit()
     print(f"seed_e2e: seeded tenant {t_id} with {len(SEED['clients'])} monthly files")
 

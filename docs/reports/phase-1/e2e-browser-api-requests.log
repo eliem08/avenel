@@ -1,0 +1,23 @@
+2026-11-05T20:26:30.464Z [phase1-accountant] GET http://localhost:8000/v1/work-requests -> 200 bearer_jwt=true
+2026-11-05T20:26:30.465Z [phase1-accountant] GET http://localhost:8000/v1/client-entities -> 200 bearer_jwt=true
+2026-11-05T20:26:30.486Z [phase1-accountant] GET http://localhost:8000/v1/me -> 200 bearer_jwt=true
+2026-11-05T20:26:30.526Z [phase1-accountant] GET http://localhost:8000/v1/client-entities -> 200 bearer_jwt=true
+2026-11-05T20:26:31.152Z [phase1-accountant] POST http://localhost:8000/v1/client-entities -> 201 bearer_jwt=true
+2026-11-05T20:26:31.179Z [phase1-accountant] GET http://localhost:8000/v1/client-entities -> 200 bearer_jwt=true
+2026-11-05T20:26:31.706Z [phase1-accountant] GET http://localhost:8000/v1/client-entities/45e738e8-0ec4-4b83-b101-f1393dcff0a2 -> 200 bearer_jwt=true
+2026-11-05T20:26:31.773Z [phase1-accountant] GET http://localhost:8000/v1/client-entities/45e738e8-0ec4-4b83-b101-f1393dcff0a2/periods -> 200 bearer_jwt=true
+2026-11-05T20:26:31.776Z [phase1-accountant] GET http://localhost:8000/v1/client-entities/45e738e8-0ec4-4b83-b101-f1393dcff0a2/chart-accounts -> 200 bearer_jwt=true
+2026-11-05T20:26:31.879Z [phase1-accountant] POST http://localhost:8000/v1/client-entities/45e738e8-0ec4-4b83-b101-f1393dcff0a2/periods -> 201 bearer_jwt=true
+2026-11-05T20:26:31.912Z [phase1-accountant] GET http://localhost:8000/v1/client-entities/45e738e8-0ec4-4b83-b101-f1393dcff0a2/periods -> 200 bearer_jwt=true
+2026-11-05T20:26:32.086Z [phase1-accountant] POST http://localhost:8000/v1/client-entities/45e738e8-0ec4-4b83-b101-f1393dcff0a2/periods -> 409 bearer_jwt=true body={"type":"about:blank","title":"Confl
+2026-11-05T20:26:32.620Z [phase1-accountant] POST http://localhost:8000/v1/client-entities/45e738e8-0ec4-4b83-b101-f1393dcff0a2/chart-accounts/seed-cgnc -> 200 bearer_jwt=true
+2026-11-05T20:26:32.647Z [phase1-accountant] GET http://localhost:8000/v1/client-entities/45e738e8-0ec4-4b83-b101-f1393dcff0a2/chart-accounts -> 200 bearer_jwt=true
+2026-11-05T20:26:33.114Z [phase1-accountant] POST http://localhost:8000/v1/client-entities/45e738e8-0ec4-4b83-b101-f1393dcff0a2/chart-accounts/import-file -> 200 bearer_jwt=true
+2026-11-05T20:26:33.162Z [phase1-accountant] GET http://localhost:8000/v1/client-entities/45e738e8-0ec4-4b83-b101-f1393dcff0a2/chart-accounts -> 200 bearer_jwt=true
+2026-11-05T20:26:33.313Z [phase1-accountant] GET http://localhost:8000/v1/compliance/dpa -> 200 bearer_jwt=true
+2026-11-05T20:26:33.509Z [phase1-accountant] GET http://localhost:8000/v1/compliance/cndp-dossier -> 200 bearer_jwt=true
+2026-11-05T20:26:35.001Z [phase1-client-user] GET http://localhost:8000/v1/client-entities -> 200 bearer_jwt=true
+2026-11-05T20:26:35.024Z [phase1-client-user] GET http://localhost:8000/v1/work-requests -> 200 bearer_jwt=true
+2026-11-05T20:26:35.042Z [phase1-client-user] GET http://localhost:8000/v1/me -> 200 bearer_jwt=true
+2026-11-05T20:26:35.249Z [phase1-client-user] GET http://localhost:8000/v1/client-entities -> 200 bearer_jwt=true
+2026-11-05T20:26:35.595Z [phase1-client-user] GET http://localhost:8000/v1/client-entities/757430a7-2502-463a-bb5b-061e7c61117b -> 404 bearer_jwt=true body={"type":"about:blank","title":"Ressource int

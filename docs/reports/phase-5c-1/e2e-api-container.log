@@ -1,93 +1,88 @@
-avenel-api  | 2026-11-05T20:25:38.021570039Z INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-avenel-api  | 2026-11-05T20:25:38.021669208Z INFO:     Started parent process [1]
-avenel-api  | 2026-11-05T20:25:43.066456859Z INFO:     Started server process [9]
-avenel-api  | 2026-11-05T20:25:43.066732167Z INFO:     Waiting for application startup.
-avenel-api  | 2026-11-05T20:25:43.066850079Z INFO:     Started server process [8]
-avenel-api  | 2026-11-05T20:25:43.067374422Z INFO:     Waiting for application startup.
-avenel-api  | 2026-11-05T20:25:43.068418593Z INFO:     Application startup complete.
-avenel-api  | 2026-11-05T20:25:43.068728316Z INFO:     Application startup complete.
-avenel-api  | 2026-11-05T20:25:52.607389661Z [OPS_ALERT] clamav_intake_paused: ClamAV virus signatures are older than 48 hours (5989.0h old)
-avenel-api  | 2026-11-05T20:25:52.607425968Z [METRIC] clamav_intake_paused_total=1 age_hours=5989.0 scanner_down=0
-avenel-api  | 2026-11-05T20:25:52.635273879Z INFO:     127.0.0.1:40832 - "GET /health/ready HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:25:54.538352868Z [OPS_ALERT] clamav_intake_paused: ClamAV virus signatures are older than 48 hours (5989.0h old)
-avenel-api  | 2026-11-05T20:25:54.538514238Z [METRIC] clamav_intake_paused_total=1 age_hours=5989.0 scanner_down=0
-avenel-api  | 2026-11-05T20:25:54.602066979Z INFO:     192.168.32.1:34128 - "GET /health/ready HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:03.450842618Z [OPS_ALERT] clamav_intake_paused: ClamAV virus signatures are older than 48 hours (5989.0h old)
-avenel-api  | 2026-11-05T20:26:03.450890527Z [METRIC] clamav_intake_paused_total=1 age_hours=5989.0 scanner_down=0
-avenel-api  | 2026-11-05T20:26:03.475705461Z INFO:     127.0.0.1:42652 - "GET /health/ready HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:11.456410798Z INFO:     192.168.32.1:51608 - "OPTIONS /v1/work-requests HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:11.464682316Z INFO:     192.168.32.1:51616 - "OPTIONS /v1/client-entities HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:11.472470425Z INFO:     192.168.32.1:51626 - "OPTIONS /v1/me HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:11.949189764Z INFO:     192.168.32.1:51638 - "GET /v1/client-entities HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:11.949930483Z INFO:     192.168.32.1:51608 - "GET /v1/work-requests HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:11.950428524Z INFO:     192.168.32.1:51616 - "GET /v1/me HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:12.618693699Z INFO:     192.168.32.1:51650 - "GET /v1/me HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:12.664495812Z INFO:     192.168.32.1:51650 - "GET /v1/me HTTP/1.1" 401 Unauthorized
-avenel-api  | 2026-11-05T20:26:12.747591642Z INFO:     192.168.32.1:51650 - "GET /v1/me HTTP/1.1" 401 Unauthorized
-avenel-api  | 2026-11-05T20:26:14.261532864Z [OPS_ALERT] clamav_intake_paused: ClamAV virus signatures are older than 48 hours (5989.0h old)
-avenel-api  | 2026-11-05T20:26:14.261587510Z [METRIC] clamav_intake_paused_total=1 age_hours=5989.0 scanner_down=0
-avenel-api  | 2026-11-05T20:26:14.292420689Z INFO:     127.0.0.1:60734 - "GET /health/ready HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:24.701778034Z [OPS_ALERT] clamav_intake_paused: ClamAV virus signatures are older than 48 hours (5989.0h old)
-avenel-api  | 2026-11-05T20:26:24.701838532Z [METRIC] clamav_intake_paused_total=1 age_hours=5989.0 scanner_down=0
-avenel-api  | 2026-11-05T20:26:24.713019848Z INFO:     127.0.0.1:55622 - "GET /health/ready HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:30.416701848Z INFO:     192.168.32.1:41680 - "OPTIONS /v1/work-requests HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:30.417443350Z INFO:     192.168.32.1:41682 - "OPTIONS /v1/client-entities HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:30.417758908Z INFO:     192.168.32.1:41686 - "OPTIONS /v1/me HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:30.460702522Z INFO:     192.168.32.1:41680 - "GET /v1/work-requests HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:30.461211073Z INFO:     192.168.32.1:41696 - "GET /v1/client-entities HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:30.483897190Z INFO:     192.168.32.1:41682 - "GET /v1/me HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:30.525806444Z INFO:     192.168.32.1:41696 - "GET /v1/client-entities HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:30.744513608Z INFO:     192.168.32.1:41696 - "OPTIONS /v1/client-entities HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:31.153901737Z INFO:     192.168.32.1:41682 - "POST /v1/client-entities HTTP/1.1" 201 Created
-avenel-api  | 2026-11-05T20:26:31.178763454Z INFO:     192.168.32.1:41682 - "GET /v1/client-entities HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:31.674098783Z INFO:     192.168.32.1:41682 - "OPTIONS /v1/client-entities/45e738e8-0ec4-4b83-b101-f1393dcff0a2 HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:31.705280367Z INFO:     192.168.32.1:41696 - "GET /v1/client-entities/45e738e8-0ec4-4b83-b101-f1393dcff0a2 HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:31.720971914Z INFO:     192.168.32.1:41696 - "OPTIONS /v1/client-entities/45e738e8-0ec4-4b83-b101-f1393dcff0a2/periods HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:31.721017179Z INFO:     192.168.32.1:41682 - "OPTIONS /v1/client-entities/45e738e8-0ec4-4b83-b101-f1393dcff0a2/chart-accounts HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:31.772538003Z INFO:     192.168.32.1:41680 - "GET /v1/client-entities/45e738e8-0ec4-4b83-b101-f1393dcff0a2/periods HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:31.773206595Z INFO:     192.168.32.1:41686 - "GET /v1/client-entities/45e738e8-0ec4-4b83-b101-f1393dcff0a2/chart-accounts HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:31.836963728Z INFO:     192.168.32.1:41686 - "OPTIONS /v1/client-entities/45e738e8-0ec4-4b83-b101-f1393dcff0a2/periods HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:31.877327336Z INFO:     192.168.32.1:41680 - "POST /v1/client-entities/45e738e8-0ec4-4b83-b101-f1393dcff0a2/periods HTTP/1.1" 201 Created
-avenel-api  | 2026-11-05T20:26:31.911772745Z INFO:     192.168.32.1:41680 - "GET /v1/client-entities/45e738e8-0ec4-4b83-b101-f1393dcff0a2/periods HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:32.082227967Z INFO:     192.168.32.1:41680 - "POST /v1/client-entities/45e738e8-0ec4-4b83-b101-f1393dcff0a2/periods HTTP/1.1" 409 Conflict
-avenel-api  | 2026-11-05T20:26:32.135193682Z INFO:     192.168.32.1:41680 - "OPTIONS /v1/client-entities/45e738e8-0ec4-4b83-b101-f1393dcff0a2/chart-accounts/seed-cgnc HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:32.620854888Z INFO:     192.168.32.1:41686 - "POST /v1/client-entities/45e738e8-0ec4-4b83-b101-f1393dcff0a2/chart-accounts/seed-cgnc HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:32.647378731Z INFO:     192.168.32.1:41686 - "GET /v1/client-entities/45e738e8-0ec4-4b83-b101-f1393dcff0a2/chart-accounts HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:33.064706317Z INFO:     192.168.32.1:41686 - "OPTIONS /v1/client-entities/45e738e8-0ec4-4b83-b101-f1393dcff0a2/chart-accounts/import-file HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:33.111441279Z INFO:     192.168.32.1:41680 - "POST /v1/client-entities/45e738e8-0ec4-4b83-b101-f1393dcff0a2/chart-accounts/import-file HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:33.151815064Z INFO:     192.168.32.1:41680 - "GET /v1/client-entities/45e738e8-0ec4-4b83-b101-f1393dcff0a2/chart-accounts HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:33.286453885Z INFO:     192.168.32.1:41680 - "OPTIONS /v1/compliance/dpa HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:33.312812336Z INFO:     192.168.32.1:41686 - "GET /v1/compliance/dpa HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:33.483645100Z INFO:     192.168.32.1:41680 - "OPTIONS /v1/compliance/cndp-dossier HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:33.508751876Z INFO:     192.168.32.1:41686 - "GET /v1/compliance/cndp-dossier HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:33.565325396Z INFO:     192.168.32.1:41700 - "GET /v1/client-entities HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:34.911676911Z INFO:     192.168.32.1:41704 - "OPTIONS /v1/work-requests HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:34.934723051Z INFO:     192.168.32.1:41732 - "OPTIONS /v1/me HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:34.935584465Z INFO:     192.168.32.1:41718 - "OPTIONS /v1/client-entities HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:34.999899218Z INFO:     192.168.32.1:41732 - "GET /v1/client-entities HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:35.023440307Z INFO:     192.168.32.1:41704 - "GET /v1/work-requests HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:35.039379165Z INFO:     192.168.32.1:41738 - "GET /v1/me HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:35.245378810Z INFO:     192.168.32.1:41704 - "GET /v1/client-entities HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:35.419018225Z [OPS_ALERT] clamav_intake_paused: ClamAV virus signatures are older than 48 hours (5989.0h old)
-avenel-api  | 2026-11-05T20:26:35.419079794Z [METRIC] clamav_intake_paused_total=1 age_hours=5989.0 scanner_down=0
-avenel-api  | 2026-11-05T20:26:35.432473674Z INFO:     127.0.0.1:50408 - "GET /health/ready HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:35.453287386Z INFO:     192.168.32.1:41700 - "GET /v1/client-entities HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:35.493441216Z INFO:     192.168.32.1:41700 - "GET /v1/client-entities/757430a7-2502-463a-bb5b-061e7c61117b HTTP/1.1" 404 Not Found
-avenel-api  | 2026-11-05T20:26:35.557029633Z INFO:     192.168.32.1:41704 - "OPTIONS /v1/client-entities/757430a7-2502-463a-bb5b-061e7c61117b HTTP/1.1" 200 OK
-avenel-api  | 2026-11-05T20:26:35.591304329Z INFO:     192.168.32.1:41732 - "GET /v1/client-entities/757430a7-2502-463a-bb5b-061e7c61117b HTTP/1.1" 404 Not Found
-avenel-api  | 2026-11-05T20:26:36.626033243Z INFO:     Received SIGTERM, exiting.
-avenel-api  | 2026-11-05T20:26:36.626210246Z INFO:     Terminated child process [8]
-avenel-api  | 2026-11-05T20:26:36.626371638Z INFO:     Terminated child process [9]
-avenel-api  | 2026-11-05T20:26:36.626461633Z INFO:     Waiting for child process [8]
-avenel-api  | 2026-11-05T20:26:36.647742393Z INFO:     Shutting down
-avenel-api  | 2026-11-05T20:26:36.684018797Z INFO:     Shutting down
-avenel-api  | 2026-11-05T20:26:36.748721971Z INFO:     Waiting for application shutdown.
-avenel-api  | 2026-11-05T20:26:36.748775121Z INFO:     Application shutdown complete.
-avenel-api  | 2026-11-05T20:26:36.748893517Z INFO:     Finished server process [8]
-avenel-api  | 2026-11-05T20:26:36.759254088Z INFO:     Waiting for child process [9]
-avenel-api  | 2026-11-05T20:26:36.784898674Z INFO:     Waiting for application shutdown.
-avenel-api  | 2026-11-05T20:26:36.784947563Z INFO:     Application shutdown complete.
-avenel-api  | 2026-11-05T20:26:36.785075037Z INFO:     Finished server process [9]
-avenel-api  | 2026-11-05T20:26:36.794722744Z INFO:     Stopping parent process [1]
-avenel-api  | 2026-11-05T20:27:09.577581297Z INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-avenel-api  | 2026-11-05T20:27:09.577882443Z INFO:     Started parent process [1]
+avenel-api  | 2026-11-06T10:04:00.861715033Z INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+avenel-api  | 2026-11-06T10:04:00.861770514Z INFO:     Started parent process [1]
+avenel-api  | 2026-11-06T10:04:04.337437444Z INFO:     Started server process [10]
+avenel-api  | 2026-11-06T10:04:04.337539795Z INFO:     Waiting for application startup.
+avenel-api  | 2026-11-06T10:04:04.337562860Z INFO:     Started server process [9]
+avenel-api  | 2026-11-06T10:04:04.337759901Z INFO:     Waiting for application startup.
+avenel-api  | 2026-11-06T10:04:04.339089687Z INFO:     Application startup complete.
+avenel-api  | 2026-11-06T10:04:04.339107479Z INFO:     Application startup complete.
+avenel-api  | 2026-11-06T10:04:05.418080556Z [OPS_ALERT] clamav_intake_paused: ClamAV virus signatures are older than 48 hours (6002.7h old)
+avenel-api  | 2026-11-06T10:04:05.418119026Z [METRIC] clamav_intake_paused_total=1 age_hours=6002.7 scanner_down=0
+avenel-api  | 2026-11-06T10:04:05.434305382Z INFO:     127.0.0.1:40340 - "GET /health/ready HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:06.642720258Z [OPS_ALERT] clamav_intake_paused: ClamAV virus signatures are older than 48 hours (6002.7h old)
+avenel-api  | 2026-11-06T10:04:06.642753538Z [METRIC] clamav_intake_paused_total=1 age_hours=6002.7 scanner_down=0
+avenel-api  | 2026-11-06T10:04:06.653080432Z INFO:     192.168.32.1:34216 - "GET /health/ready HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:15.877702063Z [OPS_ALERT] clamav_intake_paused: ClamAV virus signatures are older than 48 hours (6002.7h old)
+avenel-api  | 2026-11-06T10:04:15.877746195Z [METRIC] clamav_intake_paused_total=1 age_hours=6002.7 scanner_down=0
+avenel-api  | 2026-11-06T10:04:15.894023062Z INFO:     127.0.0.1:50410 - "GET /health/ready HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:22.467355613Z INFO:     192.168.32.1:43232 - "OPTIONS /v1/work-requests HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:22.468693339Z INFO:     192.168.32.1:43234 - "OPTIONS /v1/client-entities HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:22.469336420Z INFO:     192.168.32.1:43246 - "OPTIONS /v1/me HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:23.053209408Z INFO:     192.168.32.1:43232 - "GET /v1/work-requests HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:23.053845924Z INFO:     192.168.32.1:43246 - "GET /v1/client-entities HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:23.054565941Z INFO:     192.168.32.1:43250 - "GET /v1/me HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:23.631028937Z INFO:     192.168.32.1:43254 - "GET /v1/me HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:23.693580853Z INFO:     192.168.32.1:43254 - "GET /v1/me HTTP/1.1" 401 Unauthorized
+avenel-api  | 2026-11-06T10:04:23.773473971Z INFO:     192.168.32.1:43254 - "GET /v1/me HTTP/1.1" 401 Unauthorized
+avenel-api  | 2026-11-06T10:04:26.326736970Z [OPS_ALERT] clamav_intake_paused: ClamAV virus signatures are older than 48 hours (6002.7h old)
+avenel-api  | 2026-11-06T10:04:26.326808451Z [METRIC] clamav_intake_paused_total=1 age_hours=6002.7 scanner_down=0
+avenel-api  | 2026-11-06T10:04:26.346554187Z INFO:     127.0.0.1:41514 - "GET /health/ready HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:30.462975971Z INFO:     192.168.32.1:38664 - "OPTIONS /v1/work-requests HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:30.467672140Z INFO:     192.168.32.1:38668 - "OPTIONS /v1/client-entities HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:30.467742554Z INFO:     192.168.32.1:38684 - "OPTIONS /v1/me HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:30.517134055Z INFO:     192.168.32.1:38664 - "GET /v1/work-requests HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:30.802552783Z INFO:     192.168.32.1:38686 - "GET /v1/client-entities HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:30.803187872Z INFO:     192.168.32.1:38668 - "GET /v1/me HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:30.842992194Z INFO:     192.168.32.1:38664 - "GET /v1/client-entities HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:31.536288580Z INFO:     192.168.32.1:38668 - "OPTIONS /v1/client-entities HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:32.222238186Z INFO:     192.168.32.1:38664 - "POST /v1/client-entities HTTP/1.1" 201 Created
+avenel-api  | 2026-11-06T10:04:32.260016643Z INFO:     192.168.32.1:38664 - "GET /v1/client-entities HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:32.526271343Z INFO:     192.168.32.1:38664 - "OPTIONS /v1/client-entities/ed966aa8-f661-40dd-95ec-b6b0b23c4117 HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:32.558889236Z INFO:     192.168.32.1:38668 - "GET /v1/client-entities/ed966aa8-f661-40dd-95ec-b6b0b23c4117 HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:32.575166457Z INFO:     192.168.32.1:38668 - "OPTIONS /v1/client-entities/ed966aa8-f661-40dd-95ec-b6b0b23c4117/periods HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:32.575211699Z INFO:     192.168.32.1:38664 - "OPTIONS /v1/client-entities/ed966aa8-f661-40dd-95ec-b6b0b23c4117/chart-accounts HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:32.655219454Z INFO:     192.168.32.1:38686 - "GET /v1/client-entities/ed966aa8-f661-40dd-95ec-b6b0b23c4117/periods HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:32.656023816Z INFO:     192.168.32.1:38684 - "GET /v1/client-entities/ed966aa8-f661-40dd-95ec-b6b0b23c4117/chart-accounts HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:32.692353610Z INFO:     192.168.32.1:38684 - "OPTIONS /v1/client-entities/ed966aa8-f661-40dd-95ec-b6b0b23c4117/periods HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:32.737309910Z INFO:     192.168.32.1:38686 - "POST /v1/client-entities/ed966aa8-f661-40dd-95ec-b6b0b23c4117/periods HTTP/1.1" 201 Created
+avenel-api  | 2026-11-06T10:04:32.782339767Z INFO:     192.168.32.1:38686 - "GET /v1/client-entities/ed966aa8-f661-40dd-95ec-b6b0b23c4117/periods HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:32.941762399Z INFO:     192.168.32.1:38686 - "POST /v1/client-entities/ed966aa8-f661-40dd-95ec-b6b0b23c4117/periods HTTP/1.1" 409 Conflict
+avenel-api  | 2026-11-06T10:04:33.006418945Z INFO:     192.168.32.1:38686 - "OPTIONS /v1/client-entities/ed966aa8-f661-40dd-95ec-b6b0b23c4117/chart-accounts/seed-cgnc HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:33.616431623Z INFO:     192.168.32.1:38684 - "POST /v1/client-entities/ed966aa8-f661-40dd-95ec-b6b0b23c4117/chart-accounts/seed-cgnc HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:33.651142462Z INFO:     192.168.32.1:38684 - "GET /v1/client-entities/ed966aa8-f661-40dd-95ec-b6b0b23c4117/chart-accounts HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:33.952287008Z INFO:     192.168.32.1:38684 - "OPTIONS /v1/client-entities/ed966aa8-f661-40dd-95ec-b6b0b23c4117/chart-accounts/import-file HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:34.006354049Z INFO:     192.168.32.1:38686 - "POST /v1/client-entities/ed966aa8-f661-40dd-95ec-b6b0b23c4117/chart-accounts/import-file HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:34.079100223Z INFO:     192.168.32.1:38686 - "GET /v1/client-entities/ed966aa8-f661-40dd-95ec-b6b0b23c4117/chart-accounts HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:34.283466303Z INFO:     192.168.32.1:38686 - "OPTIONS /v1/compliance/dpa HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:34.339488848Z INFO:     192.168.32.1:38684 - "GET /v1/compliance/dpa HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:34.674776480Z INFO:     192.168.32.1:38684 - "OPTIONS /v1/compliance/cndp-dossier HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:34.725223619Z INFO:     192.168.32.1:38686 - "GET /v1/compliance/cndp-dossier HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:34.848809719Z INFO:     192.168.32.1:38694 - "GET /v1/client-entities HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:36.366329592Z INFO:     192.168.32.1:38702 - "OPTIONS /v1/work-requests HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:36.380038065Z INFO:     192.168.32.1:38706 - "OPTIONS /v1/client-entities HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:36.380802219Z INFO:     192.168.32.1:38710 - "OPTIONS /v1/me HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:36.417424772Z INFO:     192.168.32.1:38712 - "GET /v1/client-entities HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:36.437462904Z INFO:     192.168.32.1:38702 - "GET /v1/work-requests HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:36.442162162Z INFO:     192.168.32.1:38706 - "GET /v1/me HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:36.683277961Z INFO:     192.168.32.1:38706 - "GET /v1/client-entities HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:36.800381629Z INFO:     192.168.32.1:38694 - "GET /v1/client-entities HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:36.819903711Z [OPS_ALERT] clamav_intake_paused: ClamAV virus signatures are older than 48 hours (6002.7h old)
+avenel-api  | 2026-11-06T10:04:36.819941204Z [METRIC] clamav_intake_paused_total=1 age_hours=6002.7 scanner_down=0
+avenel-api  | 2026-11-06T10:04:36.831885653Z INFO:     127.0.0.1:60810 - "GET /health/ready HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:36.847750604Z INFO:     192.168.32.1:38694 - "GET /v1/client-entities/f26e92f9-9c7c-4737-b03d-77cb8d97f381 HTTP/1.1" 404 Not Found
+avenel-api  | 2026-11-06T10:04:36.909883237Z INFO:     192.168.32.1:38706 - "OPTIONS /v1/client-entities/f26e92f9-9c7c-4737-b03d-77cb8d97f381 HTTP/1.1" 200 OK
+avenel-api  | 2026-11-06T10:04:36.939895537Z INFO:     192.168.32.1:38702 - "GET /v1/client-entities/f26e92f9-9c7c-4737-b03d-77cb8d97f381 HTTP/1.1" 404 Not Found
+avenel-api  | 2026-11-06T10:04:40.951441390Z INFO:     Received SIGTERM, exiting.
+avenel-api  | 2026-11-06T10:04:40.952079029Z INFO:     Terminated child process [9]
+avenel-api  | 2026-11-06T10:04:40.952298128Z INFO:     Terminated child process [10]
+avenel-api  | 2026-11-06T10:04:40.952322103Z INFO:     Waiting for child process [9]
+avenel-api  | 2026-11-06T10:04:40.979672258Z INFO:     Shutting down
+avenel-api  | 2026-11-06T10:04:40.992133599Z INFO:     Shutting down
+avenel-api  | 2026-11-06T10:04:41.080678633Z INFO:     Waiting for application shutdown.
+avenel-api  | 2026-11-06T10:04:41.081384072Z INFO:     Application shutdown complete.
+avenel-api  | 2026-11-06T10:04:41.081426067Z INFO:     Finished server process [9]
+avenel-api  | 2026-11-06T10:04:41.093172268Z INFO:     Waiting for application shutdown.
+avenel-api  | 2026-11-06T10:04:41.093568643Z INFO:     Application shutdown complete.
+avenel-api  | 2026-11-06T10:04:41.093696795Z INFO:     Finished server process [10]
+avenel-api  | 2026-11-06T10:04:41.098522939Z INFO:     Waiting for child process [10]
+avenel-api  | 2026-11-06T10:04:41.104902431Z INFO:     Stopping parent process [1]

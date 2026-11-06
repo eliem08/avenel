@@ -8,5 +8,5 @@ test('@api-down queue shows the error state when the API is down', async ({ page
   await loginThroughKeycloak(page);
   await expect(page.getByTestId('state-error')).toContainText("Les dossiers n'ont pas pu être chargés.");
   await page.screenshot({ path: `${SHOTS}/04-queue-api-down.png`, fullPage: true });
-  expect(apiLines.some((l) => l.includes('/v1/work-requests -> FAILED'))).toBe(true);
+  await expect.poll(() => apiLines.some((l) => l.includes('/v1/work-requests -> FAILED'))).toBe(true);
 });

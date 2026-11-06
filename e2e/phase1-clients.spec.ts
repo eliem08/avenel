@@ -84,7 +84,8 @@ test('accountant: create company, open period, overlap refused, CGNC + file impo
     'GET http://localhost:8000/v1/compliance/dpa -> 200',
     'GET http://localhost:8000/v1/compliance/cndp-dossier -> 200',
   ]) {
-    expect(log.some((l) => l.includes(p)), `expected API call: ${p}`).toBe(true);
+    // Response events reach the test asynchronously; wait for the logged call instead of racing it.
+    await expect.poll(() => log.some((l) => l.includes(p)), { message: `expected API call: ${p}` }).toBe(true);
   }
 
   // Keep the out-of-scope company id for the client-user test, read with the accountant's own token
@@ -132,5 +133,5 @@ test('client user sees only the company in scope (browser and API)', async ({ pa
   // Compliance documents are refused to client users by the API; the UI does not request them
   await page.getByRole('link', { name: 'Paramètres' }).click();
   await expect(page.getByText('Ces documents sont réservés au cabinet.')).toBeVisible();
-  expect(log.some((l) => l.includes('GET http://localhost:8000/v1/client-entities -> 200'))).toBe(true);
+  await expect.poll(() => log.some((l) => l.includes('GET http://localhost:8000/v1/client-entities -> 200'))).toBe(true);
 });

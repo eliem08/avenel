@@ -99,11 +99,12 @@ export function FileScreen() {
         </div>
       )}
 
-      <p className="mt-3 text-sm">
+      <div className="mt-3 flex items-center gap-4 text-sm">
         <Link to={`/files/${id}/review`} className="text-sky-ink hover:underline" data-testid="link-review">
           Revoir les écritures proposées
         </Link>
-      </p>
+        {can(me, 'write') && <RequestApprovalButton workRequestId={id} onDone={(text, ok) => { setNotice({ text, ok }); void load(); }} />}
+      </div>
 
       <Uploader workRequestId={id} onDone={() => void load()} />
 
@@ -167,7 +168,10 @@ export function FileScreen() {
             {active.map((x) => (
               <li key={x.id} className="flex items-center gap-3 py-2" data-testid="issue-row" data-code={x.code}>
                 <span className={x.severity === 'blocking' ? 'font-medium text-pink-ink' : 'text-ink-2'}>{SEVERITY_FR[x.severity] ?? x.severity}</span>
-                <span>{ISSUE_CODE_FR[x.code] ?? x.code}</span>
+                <span className="flex-1">{ISSUE_CODE_FR[x.code] ?? x.code}</span>
+                {can(me, 'write') && x.status === 'open' && (
+                  <IssueActions issue={x} onDone={(text, ok) => { setNotice({ text, ok }); void load(); }} />
+                )}
               </li>
             ))}
           </ul>
@@ -299,6 +303,64 @@ function ProposeButton({ documentId, onDone }: { documentId: string; onDone: (te
   return (
     <Button variant="quiet" onClick={() => void propose()} disabled={busy} data-testid={`btn-propose-${documentId}`}>
       Proposer l'écriture
+    </Button>
+  );
+}
+
+function IssueActions({ issue, onDone }: { issue: Issue; onDone: (text: string, ok: boolean) => void }) {
+  const raw = useRawFetch();
+  const [mode, setMode] = useState<'idle' | 'ack' | 'client'>('idle');
+  const [text, setText] = useState('');
+  async function submit() {
+    const path = mode === 'ack' ? `/issues/${issue.id}:acknowledge` : `/issues/${issue.id}:send-to-client`;
+    const body = mode === 'ack' ? { resolution_note: text } : { prompt: text };
+    const r = await raw(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).catch(() => null);
+    if (!r) return onDone(NETWORK_ERROR, false);
+    const res = await r.json().catch(() => ({}));
+    if (!r.ok) return onDone(problemMessage(res, "L'anomalie n'a pas été mise à jour."), false);
+    setMode('idle');
+    setText('');
+    onDone(mode === 'ack' ? 'Anomalie acquittée.' : 'Demande envoyée au client.', true);
+  }
+  if (mode === 'idle')
+    return (
+      <span className="flex gap-1">
+        {issue.severity === 'review' && (
+          <Button variant="quiet" onClick={() => setMode('ack')} data-testid={`btn-ack-${issue.id}`}>Acquitter</Button>
+        )}
+        <Button variant="quiet" onClick={() => setMode('client')} data-testid={`btn-client-${issue.id}`}>Demander au client</Button>
+      </span>
+    );
+  return (
+    <span className="flex items-center gap-2">
+      <input
+        aria-label={mode === 'ack' ? "Motif de l'acquittement" : 'Message au client'}
+        className="h-8 w-72 rounded-input border border-line bg-paper px-2 text-sm"
+        placeholder={mode === 'ack' ? 'Motif (obligatoire)' : 'Message au client'}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        data-testid={`input-issue-${issue.id}`}
+      />
+      <Button variant="secondary" disabled={!text.trim()} onClick={() => void submit()} data-testid={`btn-issue-submit-${issue.id}`}>
+        {mode === 'ack' ? 'Acquitter' : 'Envoyer'}
+      </Button>
+      <Button variant="quiet" onClick={() => setMode('idle')}>Annuler</Button>
+    </span>
+  );
+}
+
+function RequestApprovalButton({ workRequestId, onDone }: { workRequestId: string; onDone: (text: string, ok: boolean) => void }) {
+  const raw = useRawFetch();
+  async function request() {
+    const r = await raw(`/work-requests/${workRequestId}/approvals`, { method: 'POST' }).catch(() => null);
+    if (!r) return onDone(NETWORK_ERROR, false);
+    const body = await r.json().catch(() => ({}));
+    if (!r.ok) return onDone(problemMessage(body, "La validation n'a pas pu être demandée."), false);
+    onDone('Validation demandée. Le dossier attend un membre inscrit à l\u2019Ordre.', true);
+  }
+  return (
+    <Button onClick={() => void request()} data-testid="btn-request-approval">
+      Demander la validation
     </Button>
   );
 }

@@ -129,3 +129,18 @@ def test_approval_refused_while_review_issues_are_open(mp):  # noqa: F811
     assert r.status_code == 409, r.text
     assert _acknowledge_review_issues(c, mp) >= 1
     assert c.post(f"/v1/work-requests/{mp['wr']}/approvals", headers=_h(mp["sub"], mp["t"])).status_code == 201
+
+
+def test_who_generated_the_entries_cannot_approve_even_if_someone_else_requested(mp):  # noqa: F811
+    """Part C.4 #8: the expert generates the entry, the accountant requests approval, the expert
+    tries to approve -> refused. Before the fix only the requester was compared."""
+    from tests.api.test_tax_mappings_api import _account_id, _put, _read_scanned
+
+    c = TestClient(app)
+    assert _put(c, mp, mp["expert"], "STANDARD_20", "purchase", _account_id(c, mp, "34552")).json()["approved"]
+    doc = _read_scanned(c, mp)
+    gen = c.post(f"/v1/documents/{doc}:generate-proposal", headers=_h(mp["expert"], mp["t"]))
+    assert gen.status_code == 200 and gen.json().get("status") != "blocked", gen.text
+    ap = _request_approval(c, mp)  # requested by the accountant
+    r = _decide(c, mp, mp["expert"], ap)
+    assert r.status_code in (403, 409), r.text

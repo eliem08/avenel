@@ -78,3 +78,8 @@ This file records questions, ambiguities, and chosen restrictive interpretations
 
 ## Tax mapping approval (Phase 3, 6 Nov 2026)
 - **Decision (human)**: only members with a professional registration approve a client tax mapping; others may propose (stored unapproved, never used). Changes are audited.
+
+## Who is the "preparer" for segregation of duties (Phase 5, 6 Nov 2026)
+- **Context**: Part C.4 #8 forbids "the person who prepared or last edited a proposal set" from approving it. The code only compared the approver with the person who *requested* approval, so an expert could generate and edit every entry, have a colleague request approval, and approve their own work.
+- **Restrictive choice (A.3)**: the user who triggers generation of an entry is recorded in `journal_proposals.last_edited_by`; approval is refused to the requester and to anyone who generated or last edited an active entry of the file (unless the client's single-person policy applies).
+- **Open**: BQ entries created when a person accepts a reconciliation match do not yet record that person. Should reconciling count as preparing?

@@ -58,6 +58,13 @@ def _compute_proposal_content_hash(lines: list[dict[str, Any]]) -> str:
     return hashlib.sha256(raw_str.encode("utf-8")).hexdigest()
 
 
+def _as_user_uuid(actor_id: str | None) -> uuid.UUID | None:
+    try:
+        return uuid.UUID(str(actor_id)) if actor_id else None
+    except ValueError:
+        return None
+
+
 def generate_and_save_proposal_for_document(
     conn: psycopg.Connection,
     tenant_id: uuid.UUID,
@@ -214,11 +221,11 @@ def generate_and_save_proposal_for_document(
             INSERT INTO journal_proposals (
                 id, tenant_id, client_entity_id, work_request_id, revision,
                 journal_code, entry_date, label, source_document_id,
-                status, rule_refs, proposed_by, content_hash
+                status, rule_refs, proposed_by, content_hash, last_edited_by
             ) VALUES (
                 %s, %s, %s, %s, 1,
                 %s, %s, %s, %s,
-                'proposed', %s, %s, %s
+                'proposed', %s, %s, %s, %s
             ) RETURNING id;
             """,
             (
@@ -233,6 +240,9 @@ def generate_and_save_proposal_for_document(
                 entry.rule_refs,
                 entry.proposed_by,
                 content_hash,
+                # Phase 5: the person who triggered generation is responsible for the content
+                # (segregation of duties, Part C.4 #8). NULL only for system-triggered runs.
+                _as_user_uuid(actor_id),
             ),
         )
 

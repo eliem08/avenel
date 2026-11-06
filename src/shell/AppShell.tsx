@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { CheckSquare, Inbox, LogOut, Settings, Users } from 'lucide-react';
+import { CheckSquare, Inbox, LogOut, MessageSquare, Settings, Users } from 'lucide-react';
 import { useAuth } from '@/auth/AuthProvider';
 import { useSession } from '@/session/SessionProvider';
 import { ToastViewport } from '@/components/ui/ToastViewport';
@@ -9,6 +9,13 @@ const NAV = [
   { to: '/clients', label: 'Clients', Icon: Users },
   { to: '/approvals', label: 'Validations', Icon: CheckSquare },
   { to: '/settings', label: 'Paramètres', Icon: Settings },
+];
+
+// Client users (portal): their files, their company, and what the firm is waiting for.
+const CLIENT_NAV = [
+  { to: '/queue', label: 'File de travail', Icon: Inbox },
+  { to: '/clients', label: 'Société', Icon: Users },
+  { to: '/portal', label: 'Demandes du cabinet', Icon: MessageSquare },
 ];
 
 /**
@@ -37,13 +44,14 @@ function FirmSwitcher() {
 
 export function AppShell() {
   const { logout, user } = useAuth();
+  const { me } = useSession();
   return (
     <div className="flex min-h-screen bg-paper text-ink">
       <nav aria-label="Navigation principale" className="flex w-rail shrink-0 flex-col border-r border-line bg-surface">
         <p className="px-4 py-5 font-heading text-xl font-semibold text-sky-ink">AVENEL</p>
         <FirmSwitcher />
         <ul className="flex-1">
-          {NAV.map(({ to, label, Icon }) => (
+          {(me?.role === 'client_user' ? CLIENT_NAV : NAV).map(({ to, label, Icon }) => (
             <li key={to}>
               <NavLink
                 to={to}

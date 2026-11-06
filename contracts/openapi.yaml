@@ -1915,6 +1915,11 @@ components:
           type: string
         email:
           type: string
+        professional_title:
+          type: ["string", "null"]
+          description: "expert_comptable or comptable_agree, null when the member has no professional registration"
+        professional_registration_no:
+          type: ["string", "null"]
 
     TaxMappingSlot:
       type: object

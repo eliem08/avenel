@@ -5,7 +5,6 @@ import { LoginScreen } from '@/screens/LoginScreen';
 import { CallbackScreen } from '@/screens/CallbackScreen';
 import { SilentRenewScreen } from '@/screens/SilentRenewScreen';
 import { QueueScreen } from '@/screens/QueueScreen';
-import { LaterScreen } from '@/screens/LaterScreen';
 import { ClientsScreen } from '@/screens/ClientsScreen';
 import { ClientScreen } from '@/screens/ClientScreen';
 import { SettingsScreen } from '@/screens/SettingsScreen';
@@ -14,6 +13,8 @@ import { FileScreen } from '@/screens/FileScreen';
 import { DocumentScreen } from '@/screens/DocumentScreen';
 import { ReviewScreen } from '@/screens/ReviewScreen';
 import { ReconciliationPage } from '@/screens/ReconciliationPage';
+import { ApprovalsPage, ApprovalDecisionPage } from '@/screens/ApprovalsPage';
+import { PortalPage } from '@/screens/PortalPage';
 
 export function App() {
   return (
@@ -39,7 +40,9 @@ export function App() {
             <Route path="/documents/:id" element={<DocumentScreen />} />
             <Route path="/clients" element={<ClientsScreen />} />
             <Route path="/clients/:id" element={<ClientScreen />} />
-            <Route path="/approvals" element={<LaterScreen title="Validations" />} />
+            <Route path="/approvals" element={<ApprovalsPage />} />
+            <Route path="/approvals/:id" element={<ApprovalDecisionPage />} />
+            <Route path="/portal" element={<PortalPage />} />
             <Route path="/settings" element={<SettingsScreen />} />
           </Route>
           <Route

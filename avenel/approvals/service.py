@@ -419,10 +419,23 @@ def decide_work_request_approval(
         decider_title = None
 
         if decision == "approved":
-            # Segregation of duties: preparer cannot approve unless single_person_policy is true
-            if not single_person and prepared_by and str(prepared_by) == str(decider_id):
+            # Segregation of duties (Part C.4 #8): nobody who requested the approval, generated or
+            # last edited an active entry of the file may approve it, unless the client's
+            # single-person policy allows it. Phase 5 fix: only the requester used to be checked.
+            cur.execute(
+                """
+                SELECT DISTINCT last_edited_by FROM journal_proposals
+                WHERE tenant_id = %s AND work_request_id = %s
+                  AND status NOT IN ('superseded', 'rejected') AND last_edited_by IS NOT NULL;
+                """,
+                (tenant_id, wr_id),
+            )
+            preparers = {str(r[0]) for r in cur.fetchall()}
+            if prepared_by:
+                preparers.add(str(prepared_by))
+            if not single_person and str(decider_id) in preparers:
                 raise SegregationOfDutiesError(
-                    "Le préparateur ne peut pas valider son propre dossier sans politique dérogatoire."
+                    "Vous avez préparé ou modifié des écritures de ce dossier : un autre membre inscrit à l'Ordre doit le valider."
                 )
 
             # Professional registration requirement

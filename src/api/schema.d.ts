@@ -1006,6 +1006,9 @@ export interface components {
             role: string;
             full_name?: string;
             email?: string;
+            /** @description expert_comptable or comptable_agree, null when the member has no professional registration */
+            professional_title?: string | null;
+            professional_registration_no?: string | null;
         };
         TaxMappingSlot: {
             tax_code: string;

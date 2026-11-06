@@ -1,0 +1,38 @@
+2026-11-06T12:39:00.394Z [phase2-accountant] GET http://localhost:8000/v1/work-requests -> 200 bearer_jwt=true
+2026-11-06T12:39:00.397Z [phase2-accountant] GET http://localhost:8000/v1/client-entities -> 200 bearer_jwt=true
+2026-11-06T12:39:00.399Z [phase2-accountant] GET http://localhost:8000/v1/me -> 200 bearer_jwt=true
+2026-11-06T12:39:00.459Z [phase2-accountant] GET http://localhost:8000/v1/work-requests/628a5b1e-7056-4884-a871-6039c02ce157 -> 200 bearer_jwt=true
+2026-11-06T12:39:00.484Z [phase2-accountant] GET http://localhost:8000/v1/client-entities/e114742a-6ddd-4c06-8707-f50d93249a23 -> 200 bearer_jwt=true
+2026-11-06T12:39:00.638Z [phase2-accountant] GET http://localhost:8000/v1/work-requests/628a5b1e-7056-4884-a871-6039c02ce157/documents -> 200 bearer_jwt=true
+2026-11-06T12:39:00.638Z [phase2-accountant] GET http://localhost:8000/v1/work-requests/628a5b1e-7056-4884-a871-6039c02ce157/issues -> 200 bearer_jwt=true
+2026-11-06T12:39:02.017Z [phase2-accountant] POST http://localhost:8000/v1/work-requests/628a5b1e-7056-4884-a871-6039c02ce157/uploads -> 201 bearer_jwt=true
+2026-11-06T12:39:03.745Z [phase2-accountant] PUT http://localhost:8000/v1/documents/be0e49b7-0714-45b0-8b0f-0294495e053d/content -> 200 bearer_jwt=true
+2026-11-06T12:39:11.276Z [phase2-accountant] POST http://localhost:8000/v1/documents/be0e49b7-0714-45b0-8b0f-0294495e053d:complete-upload -> 200 bearer_jwt=true
+2026-11-06T12:39:11.358Z [phase2-accountant] GET http://localhost:8000/v1/work-requests/628a5b1e-7056-4884-a871-6039c02ce157 -> 200 bearer_jwt=true
+2026-11-06T12:39:11.450Z [phase2-accountant] GET http://localhost:8000/v1/client-entities/e114742a-6ddd-4c06-8707-f50d93249a23 -> 200 bearer_jwt=true
+2026-11-06T12:39:11.581Z [phase2-accountant] GET http://localhost:8000/v1/work-requests/628a5b1e-7056-4884-a871-6039c02ce157/issues -> 200 bearer_jwt=true
+2026-11-06T12:39:11.595Z [phase2-accountant] GET http://localhost:8000/v1/work-requests/628a5b1e-7056-4884-a871-6039c02ce157/documents -> 200 bearer_jwt=true
+2026-11-06T12:39:11.975Z [phase2-accountant] GET http://localhost:8000/v1/documents/be0e49b7-0714-45b0-8b0f-0294495e053d -> 200 bearer_jwt=true
+2026-11-06T12:39:12.065Z [phase2-accountant] GET http://localhost:8000/v1/documents/be0e49b7-0714-45b0-8b0f-0294495e053d/extraction -> 200 bearer_jwt=true
+2026-11-06T12:39:12.178Z [phase2-accountant] GET http://localhost:8000/v1/documents/be0e49b7-0714-45b0-8b0f-0294495e053d/pages/1/image -> 200 bearer_jwt=true
+2026-11-06T12:39:12.369Z [phase2-accountant] GET http://localhost:8000/v1/documents/be0e49b7-0714-45b0-8b0f-0294495e053d/pages/2/image -> 404 bearer_jwt=true body={"type":"about:blank","title":"Ressource introuvable","status":404,
+2026-11-06T12:39:13.789Z [phase2-accountant] PATCH http://localhost:8000/v1/documents/be0e49b7-0714-45b0-8b0f-0294495e053d/extraction -> 200 bearer_jwt=true
+2026-11-06T12:39:13.852Z [phase2-accountant] GET http://localhost:8000/v1/documents/be0e49b7-0714-45b0-8b0f-0294495e053d -> 200 bearer_jwt=true
+2026-11-06T12:39:13.957Z [phase2-accountant] GET http://localhost:8000/v1/documents/be0e49b7-0714-45b0-8b0f-0294495e053d/extraction -> 200 bearer_jwt=true
+2026-11-06T12:39:14.009Z [phase2-accountant] GET http://localhost:8000/v1/documents/be0e49b7-0714-45b0-8b0f-0294495e053d/pages/1/image -> 200 bearer_jwt=true
+2026-11-06T12:39:14.148Z [phase2-accountant] GET http://localhost:8000/v1/documents/be0e49b7-0714-45b0-8b0f-0294495e053d/pages/2/image -> 404 bearer_jwt=true body={"type":"about:blank","title":"Ressource introuvable","status":404,
+2026-11-06T12:39:14.735Z [phase2-accountant] GET http://localhost:8000/v1/work-requests/628a5b1e-7056-4884-a871-6039c02ce157 -> 200 bearer_jwt=true
+2026-11-06T12:39:14.756Z [phase2-accountant] GET http://localhost:8000/v1/client-entities/e114742a-6ddd-4c06-8707-f50d93249a23 -> 200 bearer_jwt=true
+2026-11-06T12:39:14.837Z [phase2-accountant] GET http://localhost:8000/v1/work-requests/628a5b1e-7056-4884-a871-6039c02ce157/issues -> 200 bearer_jwt=true
+2026-11-06T12:39:14.848Z [phase2-accountant] GET http://localhost:8000/v1/work-requests/628a5b1e-7056-4884-a871-6039c02ce157/documents -> 200 bearer_jwt=true
+2026-11-06T12:39:14.972Z [phase2-accountant] POST http://localhost:8000/v1/work-requests/628a5b1e-7056-4884-a871-6039c02ce157/uploads -> 201 bearer_jwt=true
+2026-11-06T12:39:15.013Z [phase2-accountant] PUT http://localhost:8000/v1/documents/8a2ba4ca-fb54-4616-9273-931f481f2d18/content -> 200 bearer_jwt=true
+2026-11-06T12:39:15.070Z [phase2-accountant] POST http://localhost:8000/v1/documents/8a2ba4ca-fb54-4616-9273-931f481f2d18:complete-upload -> 422 bearer_jwt=true body={"type":"about:blank","title":"Entité non traitable","status":4
+2026-11-06T12:39:15.096Z [phase2-accountant] GET http://localhost:8000/v1/work-requests/628a5b1e-7056-4884-a871-6039c02ce157 -> 200 bearer_jwt=true
+2026-11-06T12:39:15.165Z [phase2-accountant] GET http://localhost:8000/v1/client-entities/e114742a-6ddd-4c06-8707-f50d93249a23 -> 200 bearer_jwt=true
+2026-11-06T12:39:15.258Z [phase2-accountant] GET http://localhost:8000/v1/work-requests/628a5b1e-7056-4884-a871-6039c02ce157/documents -> 200 bearer_jwt=true
+2026-11-06T12:39:15.259Z [phase2-accountant] GET http://localhost:8000/v1/work-requests/628a5b1e-7056-4884-a871-6039c02ce157/issues -> 200 bearer_jwt=true
+2026-11-06T12:39:16.933Z [phase2-client-user] GET http://localhost:8000/v1/work-requests -> 200 bearer_jwt=true
+2026-11-06T12:39:16.958Z [phase2-client-user] GET http://localhost:8000/v1/client-entities -> 200 bearer_jwt=true
+2026-11-06T12:39:16.960Z [phase2-client-user] GET http://localhost:8000/v1/me -> 200 bearer_jwt=true
+2026-11-06T12:39:17.473Z [phase2-client-user] GET http://localhost:8000/v1/documents/be0e49b7-0714-45b0-8b0f-0294495e053d -> 404 bearer_jwt=true body=

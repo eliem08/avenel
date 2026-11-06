@@ -13,6 +13,7 @@ Requested by the founder on 7 November 2026: "yes [lettrage first] and for ocr u
   - Recorded responses serve as test fixtures (Part A rule 7: no live provider in tests).
 - **Proof:** rerun the Phase 2 accuracy report on the same fixture set. Then compare the current engine with Unlimited-OCR field by field, including Arabic and French pages.
 - **Blocker (your decision):** vLLM needs an NVIDIA GPU. This laptop and the GitHub CI runners have none. Options: (1) a GPU host in Morocco for pilot and production; (2) run it only on a GPU dev machine and keep the CPU engine in CI; (3) a CPU build, if the model supports one (it would be slow). Until this is decided, CI keeps the current engine and uses recorded Unlimited-OCR fixtures.
+- **Decision (7 Nov 2026): CPU only for now.** The current CPU engine stays the default everywhere. The Unlimited-OCR adapter is built behind a setting that is off by default and tested only against recorded responses. It is switched on, and the accuracy comparison is run, once a GPU host exists.
 
 ## 6b. Lettrage (customer and supplier open items)
 

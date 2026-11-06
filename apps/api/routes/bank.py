@@ -70,7 +70,7 @@ def register_bank_account_endpoint(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Action non autorisée pour ce rôle.")
 
     try:
-        return create_bank_account(
+        res = create_bank_account(
             conn=conn,
             tenant_id=session.tenant_id,
             client_entity_id=payload.client_entity_id,
@@ -79,6 +79,10 @@ def register_bank_account_endpoint(
             journal_code=payload.journal_code,
             actor_id=str(session.user_id),
         )
+        # Commit before responding: the connection's own commit runs at dependency teardown,
+        # which can happen after the client has already re-read (Phase 4 finding).
+        conn.commit()
+        return res
     except ValueError as err:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(err)) from err
 
@@ -226,6 +230,10 @@ async def upload_bank_statement_endpoint(
             work_request_id=work_request_id,
             actor_id=str(session.user_id),
         )
+        # Commit before responding: the connection's own commit runs at dependency teardown,
+        # which can happen after the client has already re-read (Phase 4 finding).
+        conn.commit()
         return res
     except ValueError as err:
+        conn.rollback()
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(err)) from err

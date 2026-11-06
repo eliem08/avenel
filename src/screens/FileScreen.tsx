@@ -14,6 +14,8 @@ import {
   SEVERITY_FR,
   WORK_REQUEST_STATUS_FR,
 } from './labels';
+import { BankSection } from './BankSection';
+import { can, useSession } from '@/session/SessionProvider';
 
 interface Doc {
   id: string;
@@ -42,6 +44,7 @@ const ACCEPT = '.pdf,.png,.jpg,.jpeg,.tif,.tiff';
 export function FileScreen() {
   const { id = '' } = useParams();
   const api = useApi();
+  const { me } = useSession();
   const [info, setInfo] = useState<FileInfo | null | 'error' | 'missing'>(null);
   const [docs, setDocs] = useState<Doc[] | null | 'error'>(null);
   const [issues, setIssues] = useState<Issue[]>([]);
@@ -154,6 +157,8 @@ export function FileScreen() {
           </table>
         )}
       </section>
+
+      <BankSection workRequestId={id} clientId={info.client_entity_id} canWrite={can(me, 'write')} onChanged={() => void load()} />
 
       {active.length > 0 && (
         <section className="mt-8" aria-labelledby="issues-title">

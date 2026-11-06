@@ -1097,6 +1097,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BankStatementIngestResult"
+        "200":
+          description: Statement already received for this company (exact duplicate, Part K 9); not ingested again
+        "404":
+          $ref: "#/components/responses/ProblemDetails"
+        "503":
+          $ref: "#/components/responses/ProblemDetails"
         "400":
           $ref: "#/components/responses/ProblemDetails"
         "401":
@@ -1131,6 +1137,83 @@ paths:
                   $ref: "#/components/schemas/ReconciliationMatchDetail"
         "401":
           $ref: "#/components/responses/ProblemDetails"
+        "404":
+          $ref: "#/components/responses/ProblemDetails"
+
+  /reconciliation/bank-transactions:
+    get:
+      operationId: listWorkRequestBankTransactions
+      tags:
+        - Reconciliation
+      summary: Bank statements and lines attached to a monthly file
+      description: Statements (with balance check) and their lines for a work request. Scope-first 404 for other tenants and out-of-scope client users.
+      parameters:
+        - name: work_request_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Statements and lines
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [statements, items]
+                properties:
+                  statements:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, period_start, period_end, opening_balance, closing_balance, balance_check]
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        period_start:
+                          type: string
+                          format: date
+                        period_end:
+                          type: string
+                          format: date
+                        opening_balance:
+                          type: number
+                        closing_balance:
+                          type: number
+                        balance_check:
+                          type: string
+                          enum: [ok, break, unknown]
+                        filename:
+                          type: ["string", "null"]
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, line_index, booking_date, amount, currency, description]
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        bank_statement_id:
+                          type: string
+                          format: uuid
+                        line_index:
+                          type: integer
+                        booking_date:
+                          type: string
+                          format: date
+                        value_date:
+                          type: ["string", "null"]
+                        amount:
+                          type: number
+                        currency:
+                          type: string
+                        description:
+                          type: string
+                        external_reference:
+                          type: ["string", "null"]
         "404":
           $ref: "#/components/responses/ProblemDetails"
 

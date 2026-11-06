@@ -141,3 +141,17 @@ def test_generate_refuses_a_client_that_is_not_the_work_requests(mp, db_conn: ps
     g = c.post("/v1/reconciliation/generate", headers=_h(mp["sub"], mp["t"]),
                json={"client_entity_id": str(other_client), "work_request_id": str(mp["wr"])})
     assert g.status_code == 404, g.text
+
+
+def test_bank_transactions_of_a_file(mp):  # noqa: F811
+    c = TestClient(app)
+    acc = _account(c, mp)
+    assert _upload(c, mp, acc["id"], GOOD.encode()).status_code == 201
+    url = f"/v1/reconciliation/bank-transactions?work_request_id={mp['wr']}"
+    r = c.get(url, headers=_h(mp["sub"], mp["t"]))
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["statements"][0]["balance_check"] == "ok"
+    assert [i["amount"] for i in body["items"]] == [-12000.0]
+    assert c.get(url, headers=_h(mp["other"])).status_code == 404
+    assert c.get(url, headers=_h(None)).status_code == 401

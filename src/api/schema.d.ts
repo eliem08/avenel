@@ -622,6 +622,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/reconciliation/bank-transactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Bank statements and lines attached to a monthly file
+         * @description Statements (with balance check) and their lines for a work request. Scope-first 404 for other tenants and out-of-scope client users.
+         */
+        get: operations["listWorkRequestBankTransactions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/reconciliation/generate": {
         parameters: {
             query?: never;
@@ -2459,6 +2479,13 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Statement already received for this company (exact duplicate, Part K 9); not ingested again */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Statement ingest summary */
             201: {
                 headers: {
@@ -2471,7 +2498,9 @@ export interface operations {
             400: components["responses"]["ProblemDetails"];
             401: components["responses"]["ProblemDetails"];
             403: components["responses"]["ProblemDetails"];
+            404: components["responses"]["ProblemDetails"];
             422: components["responses"]["ProblemDetails"];
+            503: components["responses"]["ProblemDetails"];
         };
     };
     listReconciliationMatches: {
@@ -2495,6 +2524,57 @@ export interface operations {
                 };
             };
             401: components["responses"]["ProblemDetails"];
+            404: components["responses"]["ProblemDetails"];
+        };
+    };
+    listWorkRequestBankTransactions: {
+        parameters: {
+            query: {
+                work_request_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Statements and lines */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        statements: {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: date */
+                            period_start: string;
+                            /** Format: date */
+                            period_end: string;
+                            opening_balance: number;
+                            closing_balance: number;
+                            /** @enum {string} */
+                            balance_check: "ok" | "break" | "unknown";
+                            filename?: string | null;
+                        }[];
+                        items: {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            bank_statement_id?: string;
+                            line_index: number;
+                            /** Format: date */
+                            booking_date: string;
+                            value_date?: string | null;
+                            amount: number;
+                            currency: string;
+                            description: string;
+                            external_reference?: string | null;
+                        }[];
+                    };
+                };
+            };
             404: components["responses"]["ProblemDetails"];
         };
     };

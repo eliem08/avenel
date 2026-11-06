@@ -334,6 +334,31 @@ def create_export(
             conn, tenant_id, client_entity_id, work_request_id
         )
 
+        # 4b. Piece number = the invoice number read from the source document (Phase 5: real
+        # exports carried the document UUID in the piece column, because canonical proposals
+        # have no piece number and the formatters fell back to the id). Formatting only: the
+        # subject hash was computed before and is not affected.
+        doc_ids = [str(p["source_document_id"]) for p in proposals if p.get("source_document_id")]
+        invoice_numbers: dict[str, str] = {}
+        if doc_ids:
+            cur.execute(
+                """
+                SELECT DISTINCT ON (dv.document_id) dv.document_id, e.fields->'invoice_number'->>'value'
+                FROM extractions e
+                JOIN document_versions dv ON dv.id = e.document_version_id AND dv.tenant_id = e.tenant_id
+                WHERE e.tenant_id = %s AND dv.document_id = ANY(%s::uuid[])
+                ORDER BY dv.document_id, e.created_at DESC;
+                """,
+                (tenant_id, doc_ids),
+            )
+            invoice_numbers = {str(r[0]): r[1] for r in cur.fetchall() if r[1]}
+        proposals = [
+            {**p, "piece_number": invoice_numbers[str(p["source_document_id"])]}
+            if p.get("source_document_id") and str(p["source_document_id"]) in invoice_numbers and not p.get("piece_number")
+            else p
+            for p in proposals
+        ]
+
         # 5. Fetch rules applied across proposals
         cur.execute(
             """

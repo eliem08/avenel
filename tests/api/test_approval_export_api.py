@@ -144,3 +144,26 @@ def test_who_generated_the_entries_cannot_approve_even_if_someone_else_requested
     ap = _request_approval(c, mp)  # requested by the accountant
     r = _decide(c, mp, mp["expert"], ap)
     assert r.status_code in (403, 409), r.text
+
+
+def test_export_piece_number_is_the_invoice_number_not_an_id(mp):  # noqa: F811
+    import re
+
+    c = TestClient(app)
+    _proposal(c, mp)
+    ap = _request_approval(c, mp)
+    assert _decide(c, mp, mp["expert"], ap).status_code == 200
+    approval_id = ap["id"] if "id" in ap else ap["approval_id"]
+    for target in ("sage100_csv", "sage100_pnm", "odoo_csv"):
+        ex = c.post(f"/v1/work-requests/{mp['wr']}/exports", headers=_h(mp["expert"], mp["t"]),
+                    json={"approval_id": approval_id, "target": target}).json()
+        body = c.get(f"/v1/exports/{ex.get('id') or ex.get('export_id')}/file", headers=_h(mp["expert"], mp["t"])).content
+        text = body.decode("cp1252", errors="replace")
+        assert "FAC-2026-0412" in text, (target, text[:300])
+        if target == "odoo_csv":
+            # Odoo's `id` column is the record's external identifier: a stable unique id is right
+            # there. The invoice number must be in `ref` (third column).
+            first_row = text.splitlines()[1].split(",")
+            assert "FAC-2026-0412" in first_row[2], (target, first_row)
+        else:
+            assert not re.search(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}", text), (target, text[:300])

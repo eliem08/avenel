@@ -108,7 +108,8 @@ test('client user sees only the company in scope (browser and API)', async ({ pa
   await expect(page.getByTestId('queue-table')).toContainText(seed.client_user.scoped_to);
 
   // Clients: only the scoped company, and no create action
-  await page.getByRole('link', { name: 'Clients' }).click();
+  // Client users' rail says "Société" (Phase 5 portal navigation)
+  await page.getByRole('link', { name: 'Société' }).click();
   await expect(page.getByTestId('client-row')).toHaveCount(1);
   await expect(page.getByTestId('clients-table')).toContainText(seed.client_user.scoped_to);
   await expect(page.getByTestId('btn-new-client')).toHaveCount(0);
@@ -131,7 +132,11 @@ test('client user sees only the company in scope (browser and API)', async ({ pa
   }, `/clients/${otherId}`);
   await expect(page.getByText('Société introuvable.')).toBeVisible();
   // Compliance documents are refused to client users by the API; the UI does not request them
-  await page.getByRole('link', { name: 'Paramètres' }).click();
+  // Settings are not in the client user's rail; opened directly, they are still refused.
+  await page.evaluate(() => {
+    window.history.pushState({}, '', '/settings');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  });
   await expect(page.getByText('Ces documents sont réservés au cabinet.')).toBeVisible();
   await expect.poll(() => log.some((l) => l.includes('GET http://localhost:8000/v1/client-entities -> 200'))).toBe(true);
 });

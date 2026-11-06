@@ -1,0 +1,10 @@
+2026-11-06T14:45:31.576821611Z INFO:     192.168.32.1:46174 - "GET /v1/client-entities/acbefa25-4623-4493-ab19-fa09c59b7ecc/tax-mappings HTTP/1.1" 200 OK
+2026-11-06T14:45:32.557672691Z INFO:     192.168.32.1:46208 - "GET /v1/client-entities/acbefa25-4623-4493-ab19-fa09c59b7ecc/tax-mappings HTTP/1.1" 200 OK
+2026-11-06T14:45:32.717631361Z INFO:     192.168.32.1:46208 - "GET /v1/client-entities/acbefa25-4623-4493-ab19-fa09c59b7ecc/tax-mappings HTTP/1.1" 200 OK
+2026-11-06T14:46:19.834498729Z INFO:     192.168.32.1:58394 - "GET /v1/client-entities/c9513328-8334-453d-8d5f-8ef1ff91b7af/tax-mappings HTTP/1.1" 200 OK
+2026-11-06T14:46:20.065683686Z INFO:     192.168.32.1:58372 - "GET /v1/client-entities/c9513328-8334-453d-8d5f-8ef1ff91b7af/tax-mappings HTTP/1.1" 200 OK
+2026-11-06T14:46:20.509032604Z INFO:     192.168.32.1:58382 - "PUT /v1/client-entities/c9513328-8334-453d-8d5f-8ef1ff91b7af/tax-mappings HTTP/1.1" 200 OK
+2026-11-06T14:46:20.609308812Z INFO:     192.168.32.1:58382 - "GET /v1/client-entities/c9513328-8334-453d-8d5f-8ef1ff91b7af/tax-mappings HTTP/1.1" 200 OK
+2026-11-06T14:46:30.436949049Z INFO:     192.168.32.1:58408 - "GET /v1/work-requests/fb91997f-1fa4-48fa-991f-35a5eaaae039/proposals HTTP/1.1" 200 OK
+2026-11-06T14:46:31.108847939Z INFO:     192.168.32.1:47248 - "GET /v1/work-requests/fb91997f-1fa4-48fa-991f-35a5eaaae039/proposals HTTP/1.1" 200 OK
+2026-11-06T14:46:31.323583483Z INFO:     192.168.32.1:47248 - "GET /v1/work-requests/fb91997f-1fa4-48fa-991f-35a5eaaae039/proposals HTTP/1.1" 200 OK

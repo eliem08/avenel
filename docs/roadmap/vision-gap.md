@@ -12,7 +12,7 @@ Status key: **Built** = works in the browser on the real stack and is covered by
 | Extract data, flag duplicates / missing fields / inconsistencies | Built | Phase 2–3 (exact + probable duplicates, D.6 validation). Accuracy proven on synthetic data only. |
 | Proposed classifications and entries linked to sources | Built | Phase 3 (purchases from real scans; sales, credit notes, fixed assets via golden tests). |
 | Bank reconciliation | Built | Phase 4 (incl. withheld VAT at service level). Real bank PDFs not yet seen. |
-| **Customer and supplier account matching (lettrage), partial settlements, outstanding balances** | **Not started** | Reconciliation matches bank lines to entries; there is no lettrage of 342x/441x accounts, no open-item ledger, no partial-payment tracking. |
+| Customer and supplier account matching (lettrage), partial settlements, outstanding balances | Built (Phase 6b) | Exact matching only until an expert sets tolerances; see docs/reports/phase-6b.md. |
 | Exception list and client requests | Built | Issues queue, acknowledge, send to client, portal (Phase 5). |
 | Review package with evidence | Built | Approval, Sage/Odoo export, evidence pack (Phase 5). Round trip with real Sage/Odoo pending. |
 | **Draft financial statements: bilan, compte de produits et charges (CPC), tableau des immobilisations, other états de synthèse** | **Not started** | Requires a full trial balance and opening balances (AVENEL is a monthly preparation layer, not the books — B.1), plus CGNC statement models confirmed by an expert. |

@@ -18,3 +18,4 @@ files:
   - corporate_tax.yaml
   - penalties.yaml
   - social_charges.yaml
+  - lettrage.yaml

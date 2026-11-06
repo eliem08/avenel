@@ -24,6 +24,7 @@ from apps.api.routes import (
     documents,
     exports,
     issues,
+    lettrage,
     metrics,
     periods,
     proposals,
@@ -205,6 +206,7 @@ app.include_router(proposals.router)
 app.include_router(bank.router)
 app.include_router(bank.statements_router)
 app.include_router(reconciliation.router)
+app.include_router(lettrage.router)
 app.include_router(approvals.router)
 app.include_router(exports.router)
 app.include_router(issues.router)

@@ -66,7 +66,7 @@ Approval requires `approval.decide` **and** a stored professional registration (
 
 ## B.3 Pilot scope
 
-In scope: secure intake, OCR and field extraction, document classification, duplicate detection, invoice compliance checks (CGI art. 145), TVA treatment proposals, journal proposals, bank statement import (PDF and CSV/XLSX), reconciliation proposals including TVA withheld at source, issues queue, client document requests, accountant approval, export to Sage 100 and Odoo, evidence pack, usage metering.
+In scope: secure intake, OCR and field extraction, document classification, duplicate detection, invoice compliance checks (CGI art. 145), TVA treatment proposals, journal proposals, bank statement import (PDF and CSV/XLSX), reconciliation proposals including TVA withheld at source, lettrage of customer and supplier accounts (Phase 6b), issues queue, client document requests, accountant approval, export to Sage 100 and Odoo, evidence pack, usage metering.
 
 Out of scope: filing returns, paying anything, issuing e-invoices, payroll, final posting into the firm's software, any tax advice to end clients, countries other than Morocco, a public partner API, model training on customer data.
 
@@ -1054,6 +1054,16 @@ Candidates are generated deterministically (amount, date window, counterparty, r
 - Split and grouped payments are supported through `reconciliation_match_items`.
 - Unmatched bank lines at quality check → `BANK_LINE_UNMATCHED` review.
 
+## D.7b Lettrage (Phase 6b, founder decision 7 Nov 2026)
+
+Lettrage links debit and credit lines of the same 342x (customer) or 441x (supplier) account and the same counterparty, so that settled items carry a letter and open items keep their exact remaining balance.
+
+- Only lines of `approved` or `exported` proposals are lettered: their lines can no longer change.
+- Candidates are deterministic (migration 011, `avenel/lettrage/matcher.py`): exact amount (one to one), grouped (one payment, several invoices), split (one invoice, several payments or credit notes), partial (a shared reference token; the larger line keeps an open balance). No tolerance is applied: `lettrage.tolerance_mad` is `needs_expert`. A model may later explain a candidate; it never chooses one.
+- An accountant accepts, rejects, or creates a manual group. Acceptance assigns the next letter of the account (A, B, … Z, AA); letters are never reused.
+- The database refuses an accepted group that does not balance, allocates more than a line's open balance, or includes an unapproved line, a different account or a different counterparty.
+- Groups are never deleted. An accepted group is undone by `reversed` (délettrage) with a mandatory reason; allocations are append-only.
+
 ## D.8 AI agents
 
 Each agent is a function with a JSON Schema input and output, a versioned prompt in `/avenel/extraction/prompts/` or `/avenel/accounting/prompts/`, and a recorded `agent_runs` row.
@@ -1275,6 +1285,10 @@ Exit: export refused when the hash changed; golden export files byte-identical; 
 **Phase 6 — Flagged extras**
 SIMPL-TVA *relevé des déductions* XML generated against the official XSD stored in the pack (not hand-written), behind a feature flag. E-invoice UBL ingestion stays disabled until a decree is published.
 
+**Phase 6b — Lettrage**
+Open items for 342x and 441x per counterparty with aged balances, deterministic candidates (exact, grouped, split, partial), accept / reject / manual / reverse, letters per account, database-enforced balance and over-allocation checks.
+Exit: golden tests (instalments, one payment for three invoices, credit note, partial payment), invariant tests on the trigger, API tests as `avenel_app`, real-stack browser proof with the API request log.
+
 ---
 
 # Part H — Quality gates
@@ -1419,3 +1433,6 @@ The following 24 binding architectural decisions were established and recorded a
 
 28. **E2E runs only against a healthy docker-compose stack (Phase 5c-1 / Part H):**
     `make e2e` starts Postgres, migrations, seed, API, worker, Keycloak (test realm), ClamAV and the OCR container, then `scripts/guards/wait_for_stack.mjs` requires `GET /health/ready` (`"status":"ready"`), the Keycloak realm discovery document and the web container's `/healthz` (`healthy`) before any Playwright test runs; otherwise the job fails. Each check matches an exact body marker so a different server on the same port cannot pass.
+
+29. **Lettrage is exact, approved-only and never deleted (Phase 6b / D.7b / Migration 011):**
+    Lettrage groups only reference lines of approved or exported proposals, balance exactly (no tolerance until `lettrage.tolerance_mad` is set by a registered professional), never allocate beyond a line's open balance, and are reversed with a reason rather than deleted. These rules are enforced by the `lettrage_group_guard` trigger as well as the service.

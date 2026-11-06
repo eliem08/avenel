@@ -1,0 +1,15 @@
+- key: "lettrage.tolerance_mad"
+  value: null
+  effective_from: "2026-01-01"
+  effective_to: null
+  source: "Cabinet practice (TODO(EXPERT)): rounding and payment-difference tolerance for lettrage"
+  status: "needs_expert"
+  note: "No tolerance is applied until a registered professional sets it and the accounts for écarts de règlement (Phase 6b). Matching is exact."
+
+- key: "lettrage.fx_difference_accounts"
+  value: null
+  effective_from: "2026-01-01"
+  effective_to: null
+  source: "CGNC (TODO(EXPERT)): pertes et gains de change on settlement of foreign-currency items"
+  status: "needs_expert"
+  note: "Foreign-currency settlement differences are not lettered automatically until the accounts are confirmed (Phase 6b)."

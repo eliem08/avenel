@@ -27,6 +27,8 @@ tags:
     description: Monthly bookkeeping file operations
   - name: Documents
     description: Document intake, OCR, and extraction operations
+  - name: Lettrage
+    description: Customer and supplier open items and lettrage (Phase 6b)
   - name: Proposals
     description: Accounting proposal generation, revision, and approval operations
   - name: Issues
@@ -1843,8 +1845,278 @@ paths:
         "404":
           $ref: "#/components/responses/ProblemDetails"
 
+  /clients/{client_id}/open-items:
+    get:
+      operationId: listOpenItems
+      tags:
+        - Lettrage
+      summary: Open customer (342x) or supplier (441x) items of approved proposals
+      description: Open customer (342x) or supplier (441x) items of approved proposals
+      parameters:
+        - $ref: "#/components/parameters/LettrageClientId"
+        - name: account_class
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [customer, supplier]
+        - name: as_of
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: include_settled
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Open items and balances per counterparty
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenItemsResponse"
+        "401":
+          $ref: "#/components/responses/ProblemDetails"
+        "403":
+          $ref: "#/components/responses/ProblemDetails"
+        "404":
+          $ref: "#/components/responses/ProblemDetails"
+
+  /clients/{client_id}/lettrage-groups:
+    get:
+      operationId: listLettrageGroups
+      tags:
+        - Lettrage
+      summary: Lettrage groups of a client company
+      description: Lettrage groups of a client company
+      parameters:
+        - $ref: "#/components/parameters/LettrageClientId"
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/LettrageStatus"
+      responses:
+        "200":
+          description: Groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LettrageGroup"
+        "401":
+          $ref: "#/components/responses/ProblemDetails"
+        "403":
+          $ref: "#/components/responses/ProblemDetails"
+        "404":
+          $ref: "#/components/responses/ProblemDetails"
+    post:
+      operationId: createManualLettrageGroup
+      tags:
+        - Lettrage
+      summary: Propose a manual lettrage group (must balance exactly)
+      description: Propose a manual lettrage group (must balance exactly)
+      parameters:
+        - $ref: "#/components/parameters/LettrageClientId"
+        - $ref: "#/components/parameters/IdempotencyKeyHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [allocations]
+              properties:
+                allocations:
+                  type: array
+                  minItems: 2
+                  maxItems: 50
+                  items:
+                    type: object
+                    required: [journal_line_id, amount_mad]
+                    properties:
+                      journal_line_id:
+                        type: string
+                        format: uuid
+                      amount_mad:
+                        type: string
+                        pattern: "^[0-9]+([.][0-9]{1,2})?$"
+      responses:
+        "201":
+          description: Proposed group
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LettrageGroup"
+        "401":
+          $ref: "#/components/responses/ProblemDetails"
+        "403":
+          $ref: "#/components/responses/ProblemDetails"
+        "404":
+          $ref: "#/components/responses/ProblemDetails"
+        "409":
+          $ref: "#/components/responses/ProblemDetails"
+
+  /clients/{client_id}/lettrage-groups:generate:
+    post:
+      operationId: generateLettrageCandidates
+      tags:
+        - Lettrage
+      summary: Supersede pending rule candidates and propose new ones (deterministic, exact amounts)
+      description: Supersede pending rule candidates and propose new ones (deterministic, exact amounts)
+      parameters:
+        - $ref: "#/components/parameters/LettrageClientId"
+        - $ref: "#/components/parameters/IdempotencyKeyHeader"
+      responses:
+        "200":
+          description: Proposed groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LettrageGroup"
+        "401":
+          $ref: "#/components/responses/ProblemDetails"
+        "403":
+          $ref: "#/components/responses/ProblemDetails"
+        "404":
+          $ref: "#/components/responses/ProblemDetails"
+
+  /lettrage-groups/{group_id}:
+    get:
+      operationId: getLettrageGroup
+      tags:
+        - Lettrage
+      summary: One lettrage group with its allocations
+      description: One lettrage group with its allocations
+      parameters:
+        - $ref: "#/components/parameters/LettrageGroupId"
+      responses:
+        "200":
+          description: Group
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LettrageGroup"
+        "401":
+          $ref: "#/components/responses/ProblemDetails"
+        "403":
+          $ref: "#/components/responses/ProblemDetails"
+        "404":
+          $ref: "#/components/responses/ProblemDetails"
+
+  /lettrage-groups/{group_id}:accept:
+    post:
+      operationId: acceptLettrageGroup
+      tags:
+        - Lettrage
+      summary: Accept a proposed group and assign the next letter of the account
+      description: Accept a proposed group and assign the next letter of the account
+      parameters:
+        - $ref: "#/components/parameters/LettrageGroupId"
+        - $ref: "#/components/parameters/IdempotencyKeyHeader"
+      responses:
+        "200":
+          description: Accepted group
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LettrageGroup"
+        "401":
+          $ref: "#/components/responses/ProblemDetails"
+        "403":
+          $ref: "#/components/responses/ProblemDetails"
+        "404":
+          $ref: "#/components/responses/ProblemDetails"
+        "409":
+          $ref: "#/components/responses/ProblemDetails"
+
+  /lettrage-groups/{group_id}:reject:
+    post:
+      operationId: rejectLettrageGroup
+      tags:
+        - Lettrage
+      summary: Reject a proposed group
+      description: Reject a proposed group
+      parameters:
+        - $ref: "#/components/parameters/LettrageGroupId"
+        - $ref: "#/components/parameters/IdempotencyKeyHeader"
+      responses:
+        "200":
+          description: Rejected group
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LettrageGroup"
+        "401":
+          $ref: "#/components/responses/ProblemDetails"
+        "403":
+          $ref: "#/components/responses/ProblemDetails"
+        "404":
+          $ref: "#/components/responses/ProblemDetails"
+        "409":
+          $ref: "#/components/responses/ProblemDetails"
+
+  /lettrage-groups/{group_id}:reverse:
+    post:
+      operationId: reverseLettrageGroup
+      tags:
+        - Lettrage
+      summary: Reverse an accepted group (delettrage) with a mandatory reason; nothing is deleted
+      description: Reverse an accepted group (delettrage) with a mandatory reason; nothing is deleted
+      parameters:
+        - $ref: "#/components/parameters/LettrageGroupId"
+        - $ref: "#/components/parameters/IdempotencyKeyHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+                  minLength: 3
+                  maxLength: 500
+      responses:
+        "200":
+          description: Reversed group
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LettrageGroup"
+        "401":
+          $ref: "#/components/responses/ProblemDetails"
+        "403":
+          $ref: "#/components/responses/ProblemDetails"
+        "404":
+          $ref: "#/components/responses/ProblemDetails"
+        "409":
+          $ref: "#/components/responses/ProblemDetails"
+
 components:
   parameters:
+    LettrageClientId:
+      name: client_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    LettrageGroupId:
+      name: group_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
     IdempotencyKeyHeader:
       name: Idempotency-Key
       in: header
@@ -1863,6 +2135,152 @@ components:
             $ref: "#/components/schemas/Problem"
 
   schemas:
+    LettrageStatus:
+      type: string
+      enum: [proposed, accepted, rejected, superseded, reversed]
+    OpenItem:
+      type: object
+      required: [journal_line_id, account_code, counterparty_id, counterparty_name, entry_date, label, journal_code, side, amount_mad, lettered_mad, open_mad, letters, status, days_overdue]
+      properties:
+        journal_line_id:
+          type: string
+          format: uuid
+        account_code:
+          type: string
+        counterparty_id:
+          type: string
+          format: uuid
+        counterparty_name:
+          type: string
+        entry_date:
+          type: string
+          format: date
+        due_date:
+          type: [string, "null"]
+          format: date
+        days_overdue:
+          type: integer
+        label:
+          type: string
+        journal_code:
+          type: string
+        source_document_id:
+          type: [string, "null"]
+          format: uuid
+        side:
+          type: string
+          enum: [debit, credit]
+        amount_mad:
+          type: string
+        lettered_mad:
+          type: string
+        open_mad:
+          type: string
+        letters:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [open, partial, settled]
+    CounterpartyBalance:
+      type: object
+      required: [counterparty_id, counterparty_name, account_code, balance_mad, open_count]
+      properties:
+        counterparty_id:
+          type: string
+          format: uuid
+        counterparty_name:
+          type: string
+        account_code:
+          type: string
+        balance_mad:
+          type: string
+          description: Debit minus credit of open amounts
+        open_count:
+          type: integer
+    OpenItemsResponse:
+      type: object
+      required: [account_class, as_of, items, balances]
+      properties:
+        account_class:
+          type: string
+          enum: [customer, supplier]
+        as_of:
+          type: string
+          format: date
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OpenItem"
+        balances:
+          type: array
+          items:
+            $ref: "#/components/schemas/CounterpartyBalance"
+    LettrageAllocation:
+      type: object
+      required: [journal_line_id, side, amount_mad, label, entry_date, line_amount_mad]
+      properties:
+        journal_line_id:
+          type: string
+          format: uuid
+        side:
+          type: string
+          enum: [debit, credit]
+        amount_mad:
+          type: string
+        label:
+          type: string
+        entry_date:
+          type: string
+          format: date
+        line_amount_mad:
+          type: string
+    LettrageGroup:
+      type: object
+      required: [id, client_entity_id, counterparty_id, counterparty_name, account_code, status, kind, total_mad, reasons, proposed_by, allocations]
+      properties:
+        id:
+          type: string
+          format: uuid
+        client_entity_id:
+          type: string
+          format: uuid
+        counterparty_id:
+          type: string
+          format: uuid
+        counterparty_name:
+          type: string
+        account_code:
+          type: string
+        status:
+          $ref: "#/components/schemas/LettrageStatus"
+        kind:
+          type: string
+          enum: [exact, grouped, split, partial, manual]
+        letter_code:
+          type: [string, "null"]
+        total_mad:
+          type: string
+        reasons:
+          type: array
+          items:
+            type: string
+        proposed_by:
+          type: string
+          enum: [rules, human]
+        decided_at:
+          type: [string, "null"]
+          format: date-time
+        reversed_at:
+          type: [string, "null"]
+          format: date-time
+        reversal_reason:
+          type: [string, "null"]
+        allocations:
+          type: array
+          items:
+            $ref: "#/components/schemas/LettrageAllocation"
     Problem:
       type: object
       required:

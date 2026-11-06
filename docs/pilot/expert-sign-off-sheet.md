@@ -8,7 +8,7 @@
 **Date d'arbitrage :** ...... / ...... / 2026  
 **Référence :** Règle Obligatoire Part A.1 (« Ne jamais inventer une règle de droit ») & Invariant K.2.
 
-**Nombre de règles nécessitant confirmation par un professionnel :** 29 règles extraites du pack.
+**Nombre de règles nécessitant confirmation par un professionnel :** 31 règles extraites du pack.
 
 ---
 
@@ -35,18 +35,20 @@ Pour chaque point ci-dessous, la plateforme applique un comportement de précaut
 | **EXP-15** | `jurisdiction/ma/invoice_mentions.yaml` | `accounting.suspense.default_account` | `4711` | TODO(EXPERT): Compte d'attente par défaut pour lignes bancaires non rapprochées (4711/4712 vs 3911 à confirmer) | [ ] Approuvé<br>[ ] Corrigé | ________ |
 | **EXP-16** | `jurisdiction/ma/invoice_mentions.yaml` | `accounting.bank_fees.default_account` | `6147` | TODO(EXPERT): Compte de charges suggéré par défaut pour frais et commissions bancaires (6147) | [ ] Approuvé<br>[ ] Corrigé | ________ |
 | **EXP-17** | `jurisdiction/ma/invoice_mentions.yaml` | `accounting.bank_fees.default_vat_account` | `34552` | TODO(EXPERT): Compte de TVA déductible suggéré pour TVA sur commissions bancaires (34552) | [ ] Approuvé<br>[ ] Corrigé | ________ |
-| **EXP-18** | `jurisdiction/ma/oec_position.yaml` | `compliance.oec.ai_assisted_preparation` | *Non défini (null)* | OEC formal position on AI-assisted preparation tools requires confirmation (Part I #9) | [ ] Approuvé<br>[ ] Corrigé | ________ |
-| **EXP-19** | `jurisdiction/ma/oec_position.yaml` | `compliance.oec.professional_secrecy` | *Non défini (null)* | Subcontracting and cloud processing boundaries under professional secrecy require legal signoff (Part I #9) | [ ] Approuvé<br>[ ] Corrigé | ________ |
-| **EXP-20** | `jurisdiction/ma/simpl_tva.yaml` | `simpl_tva.xsd_version` | *Non défini (null)* | Official SIMPL-TVA XSD version for relevé des déductions requires confirmation (Part I #7) | [ ] Approuvé<br>[ ] Corrigé | ________ |
-| **EXP-21** | `jurisdiction/ma/simpl_tva.yaml` | `simpl_tva.payment_method_codes` | *Non défini (null)* | Official payment method codes for SIMPL-TVA export require expert verification (Part I #7) | [ ] Approuvé<br>[ ] Corrigé | ________ |
-| **EXP-22** | `jurisdiction/ma/vat_deduction.yaml` | `vat.deduction.cash_limit.basis` | `TTC` | Basis of cash payment limit (HT vs TTC) needs confirmation; conservative TTC applied (Part I #1) | [ ] Approuvé<br>[ ] Corrigé | ________ |
-| **EXP-23** | `jurisdiction/ma/vat_filing.yaml` | `vat.filing.deadline.wording` | *Non défini (null)* | TVA return deadline wording for monthly and quarterly filers in 2026 needs expert signoff (Part I #2) | [ ] Approuvé<br>[ ] Corrigé | ________ |
-| **EXP-24** | `jurisdiction/ma/vat_rates.yaml` | `vat.rate.mapping_items` | *Non défini (null)* | Item-to-rate mapping for 10% rate and transition rates needs expert signoff (Part I #4) | [ ] Approuvé<br>[ ] Corrigé | ________ |
-| **EXP-25** | `jurisdiction/ma/vat_withholding.yaml` | `vat.withholding.ras_2026.thresholds` | `{stage_2026_07_01: 500000000.0, stage_2027_01_01: 350000000.0, stage_2028_01_01: 200000000.0}` | LF 2026 staged payer turnover thresholds require primary circular confirmation (Part I #3) | [ ] Approuvé<br>[ ] Corrigé | ________ |
-| **EXP-26** | `jurisdiction/ma/vat_withholding.yaml` | `vat.withholding.ras_2026.service_lists` | *Non défini (null)* | Exact service lists for 75% and 100% RAS require expert confirmation (Part I #3) | [ ] Approuvé<br>[ ] Corrigé | ________ |
-| **EXP-27** | `jurisdiction/ma/vat_withholding.yaml` | `vat.withholding.ras.accounts` | `{receivable_supplier: 3456, payable_client: 4456}` | Specific ledger sub-accounts for VAT withheld at source need expert validation (Part I #3) | [ ] Approuvé<br>[ ] Corrigé | ________ |
-| **EXP-28** | `jurisdiction/ma/vat_withholding.yaml` | `withholding.is.services_5pct` | `{rate: 0.05, base: ht, difference_kind: withholding_other ... (+1)}` | TODO(EXPERT): Retenue à la source IS 5% sur rémunérations de prestations de services (LF 2026). Assiette HT. | [ ] Approuvé<br>[ ] Corrigé | ________ |
-| **EXP-29** | `jurisdiction/ma/vat_withholding.yaml` | `withholding.is.rents_5pct` | `{rate: 0.05, base: ht, difference_kind: withholding_other ... (+1)}` | TODO(EXPERT): Retenue à la source IS 5% sur loyers (LF 2026). Assiette HT. | [ ] Approuvé<br>[ ] Corrigé | ________ |
+| **EXP-18** | `jurisdiction/ma/lettrage.yaml` | `lettrage.tolerance_mad` | *Non défini (null)* | No tolerance is applied until a registered professional sets it and the accounts for écarts de règlement (Phase 6b). Matching is exact. | [ ] Approuvé<br>[ ] Corrigé | ________ |
+| **EXP-19** | `jurisdiction/ma/lettrage.yaml` | `lettrage.fx_difference_accounts` | *Non défini (null)* | Foreign-currency settlement differences are not lettered automatically until the accounts are confirmed (Phase 6b). | [ ] Approuvé<br>[ ] Corrigé | ________ |
+| **EXP-20** | `jurisdiction/ma/oec_position.yaml` | `compliance.oec.ai_assisted_preparation` | *Non défini (null)* | OEC formal position on AI-assisted preparation tools requires confirmation (Part I #9) | [ ] Approuvé<br>[ ] Corrigé | ________ |
+| **EXP-21** | `jurisdiction/ma/oec_position.yaml` | `compliance.oec.professional_secrecy` | *Non défini (null)* | Subcontracting and cloud processing boundaries under professional secrecy require legal signoff (Part I #9) | [ ] Approuvé<br>[ ] Corrigé | ________ |
+| **EXP-22** | `jurisdiction/ma/simpl_tva.yaml` | `simpl_tva.xsd_version` | *Non défini (null)* | Official SIMPL-TVA XSD version for relevé des déductions requires confirmation (Part I #7) | [ ] Approuvé<br>[ ] Corrigé | ________ |
+| **EXP-23** | `jurisdiction/ma/simpl_tva.yaml` | `simpl_tva.payment_method_codes` | *Non défini (null)* | Official payment method codes for SIMPL-TVA export require expert verification (Part I #7) | [ ] Approuvé<br>[ ] Corrigé | ________ |
+| **EXP-24** | `jurisdiction/ma/vat_deduction.yaml` | `vat.deduction.cash_limit.basis` | `TTC` | Basis of cash payment limit (HT vs TTC) needs confirmation; conservative TTC applied (Part I #1) | [ ] Approuvé<br>[ ] Corrigé | ________ |
+| **EXP-25** | `jurisdiction/ma/vat_filing.yaml` | `vat.filing.deadline.wording` | *Non défini (null)* | TVA return deadline wording for monthly and quarterly filers in 2026 needs expert signoff (Part I #2) | [ ] Approuvé<br>[ ] Corrigé | ________ |
+| **EXP-26** | `jurisdiction/ma/vat_rates.yaml` | `vat.rate.mapping_items` | *Non défini (null)* | Item-to-rate mapping for 10% rate and transition rates needs expert signoff (Part I #4) | [ ] Approuvé<br>[ ] Corrigé | ________ |
+| **EXP-27** | `jurisdiction/ma/vat_withholding.yaml` | `vat.withholding.ras_2026.thresholds` | `{stage_2026_07_01: 500000000.0, stage_2027_01_01: 350000000.0, stage_2028_01_01: 200000000.0}` | LF 2026 staged payer turnover thresholds require primary circular confirmation (Part I #3) | [ ] Approuvé<br>[ ] Corrigé | ________ |
+| **EXP-28** | `jurisdiction/ma/vat_withholding.yaml` | `vat.withholding.ras_2026.service_lists` | *Non défini (null)* | Exact service lists for 75% and 100% RAS require expert confirmation (Part I #3) | [ ] Approuvé<br>[ ] Corrigé | ________ |
+| **EXP-29** | `jurisdiction/ma/vat_withholding.yaml` | `vat.withholding.ras.accounts` | `{receivable_supplier: 3456, payable_client: 4456}` | Specific ledger sub-accounts for VAT withheld at source need expert validation (Part I #3) | [ ] Approuvé<br>[ ] Corrigé | ________ |
+| **EXP-30** | `jurisdiction/ma/vat_withholding.yaml` | `withholding.is.services_5pct` | `{rate: 0.05, base: ht, difference_kind: withholding_other ... (+1)}` | TODO(EXPERT): Retenue à la source IS 5% sur rémunérations de prestations de services (LF 2026). Assiette HT. | [ ] Approuvé<br>[ ] Corrigé | ________ |
+| **EXP-31** | `jurisdiction/ma/vat_withholding.yaml` | `withholding.is.rents_5pct` | `{rate: 0.05, base: ht, difference_kind: withholding_other ... (+1)}` | TODO(EXPERT): Retenue à la source IS 5% sur loyers (LF 2026). Assiette HT. | [ ] Approuvé<br>[ ] Corrigé | ________ |
 
 ---
 

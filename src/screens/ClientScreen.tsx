@@ -11,6 +11,7 @@ import { Dialog } from '@/components/ui/Dialog';
 import { Field, Input, Message } from '@/components/ui/Form';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/States';
 import { TaxMappingsSection } from './TaxMappingsSection';
+import { LettrageSection } from './LettrageSection';
 
 const PERIOD_STATUS_FR: Record<string, string> = {
   open: 'Ouverte',
@@ -89,6 +90,7 @@ export function ClientScreen() {
       <PeriodsSection clientId={id} canWrite={can(me, 'write')} />
       <ChartSection clientId={id} canWrite={can(me, 'write')} onChanged={() => setChartVersion((v) => v + 1)} />
       <TaxMappingsSection key={chartVersion} clientId={id} canWrite={can(me, 'write')} />
+      {me?.role !== 'client_user' && <LettrageSection clientId={id} canWrite={can(me, 'write') && me?.role !== 'operator'} />}
 
       <Dialog open={archiving} title="Archiver la société" onClose={() => setArchiving(false)}>
         <p className="text-sm">

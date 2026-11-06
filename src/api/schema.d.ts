@@ -982,10 +982,233 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/clients/{client_id}/open-items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Open customer (342x) or supplier (441x) items of approved proposals
+         * @description Open customer (342x) or supplier (441x) items of approved proposals
+         */
+        get: operations["listOpenItems"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/clients/{client_id}/lettrage-groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lettrage groups of a client company
+         * @description Lettrage groups of a client company
+         */
+        get: operations["listLettrageGroups"];
+        put?: never;
+        /**
+         * Propose a manual lettrage group (must balance exactly)
+         * @description Propose a manual lettrage group (must balance exactly)
+         */
+        post: operations["createManualLettrageGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/clients/{client_id}/lettrage-groups:generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Supersede pending rule candidates and propose new ones (deterministic, exact amounts)
+         * @description Supersede pending rule candidates and propose new ones (deterministic, exact amounts)
+         */
+        post: operations["generateLettrageCandidates"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lettrage-groups/{group_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One lettrage group with its allocations
+         * @description One lettrage group with its allocations
+         */
+        get: operations["getLettrageGroup"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lettrage-groups/{group_id}:accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept a proposed group and assign the next letter of the account
+         * @description Accept a proposed group and assign the next letter of the account
+         */
+        post: operations["acceptLettrageGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lettrage-groups/{group_id}:reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject a proposed group
+         * @description Reject a proposed group
+         */
+        post: operations["rejectLettrageGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lettrage-groups/{group_id}:reverse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reverse an accepted group (delettrage) with a mandatory reason; nothing is deleted
+         * @description Reverse an accepted group (delettrage) with a mandatory reason; nothing is deleted
+         */
+        post: operations["reverseLettrageGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @enum {string} */
+        LettrageStatus: "proposed" | "accepted" | "rejected" | "superseded" | "reversed";
+        OpenItem: {
+            /** Format: uuid */
+            journal_line_id: string;
+            account_code: string;
+            /** Format: uuid */
+            counterparty_id: string;
+            counterparty_name: string;
+            /** Format: date */
+            entry_date: string;
+            /** Format: date */
+            due_date?: string | null;
+            days_overdue: number;
+            label: string;
+            journal_code: string;
+            /** Format: uuid */
+            source_document_id?: string | null;
+            /** @enum {string} */
+            side: "debit" | "credit";
+            amount_mad: string;
+            lettered_mad: string;
+            open_mad: string;
+            letters: string[];
+            /** @enum {string} */
+            status: "open" | "partial" | "settled";
+        };
+        CounterpartyBalance: {
+            /** Format: uuid */
+            counterparty_id: string;
+            counterparty_name: string;
+            account_code: string;
+            /** @description Debit minus credit of open amounts */
+            balance_mad: string;
+            open_count: number;
+        };
+        OpenItemsResponse: {
+            /** @enum {string} */
+            account_class: "customer" | "supplier";
+            /** Format: date */
+            as_of: string;
+            items: components["schemas"]["OpenItem"][];
+            balances: components["schemas"]["CounterpartyBalance"][];
+        };
+        LettrageAllocation: {
+            /** Format: uuid */
+            journal_line_id: string;
+            /** @enum {string} */
+            side: "debit" | "credit";
+            amount_mad: string;
+            label: string;
+            /** Format: date */
+            entry_date: string;
+            line_amount_mad: string;
+        };
+        LettrageGroup: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            client_entity_id: string;
+            /** Format: uuid */
+            counterparty_id: string;
+            counterparty_name: string;
+            account_code: string;
+            status: components["schemas"]["LettrageStatus"];
+            /** @enum {string} */
+            kind: "exact" | "grouped" | "split" | "partial" | "manual";
+            letter_code?: string | null;
+            total_mad: string;
+            reasons: string[];
+            /** @enum {string} */
+            proposed_by: "rules" | "human";
+            /** Format: date-time */
+            decided_at?: string | null;
+            /** Format: date-time */
+            reversed_at?: string | null;
+            reversal_reason?: string | null;
+            allocations: components["schemas"]["LettrageAllocation"][];
+        };
         Problem: {
             type: string;
             title: string;
@@ -1492,6 +1715,8 @@ export interface components {
         };
     };
     parameters: {
+        LettrageClientId: string;
+        LettrageGroupId: string;
         IdempotencyKeyHeader: string;
     };
     requestBodies: never;
@@ -3097,6 +3322,242 @@ export interface operations {
             401: components["responses"]["ProblemDetails"];
             403: components["responses"]["ProblemDetails"];
             404: components["responses"]["ProblemDetails"];
+        };
+    };
+    listOpenItems: {
+        parameters: {
+            query: {
+                account_class: "customer" | "supplier";
+                as_of?: string;
+                include_settled?: boolean;
+            };
+            header?: never;
+            path: {
+                client_id: components["parameters"]["LettrageClientId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Open items and balances per counterparty */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenItemsResponse"];
+                };
+            };
+            401: components["responses"]["ProblemDetails"];
+            403: components["responses"]["ProblemDetails"];
+            404: components["responses"]["ProblemDetails"];
+        };
+    };
+    listLettrageGroups: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["LettrageStatus"];
+            };
+            header?: never;
+            path: {
+                client_id: components["parameters"]["LettrageClientId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Groups */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LettrageGroup"][];
+                };
+            };
+            401: components["responses"]["ProblemDetails"];
+            403: components["responses"]["ProblemDetails"];
+            404: components["responses"]["ProblemDetails"];
+        };
+    };
+    createManualLettrageGroup: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": components["parameters"]["IdempotencyKeyHeader"];
+            };
+            path: {
+                client_id: components["parameters"]["LettrageClientId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    allocations: {
+                        /** Format: uuid */
+                        journal_line_id: string;
+                        amount_mad: string;
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description Proposed group */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LettrageGroup"];
+                };
+            };
+            401: components["responses"]["ProblemDetails"];
+            403: components["responses"]["ProblemDetails"];
+            404: components["responses"]["ProblemDetails"];
+            409: components["responses"]["ProblemDetails"];
+        };
+    };
+    generateLettrageCandidates: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": components["parameters"]["IdempotencyKeyHeader"];
+            };
+            path: {
+                client_id: components["parameters"]["LettrageClientId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Proposed groups */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LettrageGroup"][];
+                };
+            };
+            401: components["responses"]["ProblemDetails"];
+            403: components["responses"]["ProblemDetails"];
+            404: components["responses"]["ProblemDetails"];
+        };
+    };
+    getLettrageGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: components["parameters"]["LettrageGroupId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Group */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LettrageGroup"];
+                };
+            };
+            401: components["responses"]["ProblemDetails"];
+            403: components["responses"]["ProblemDetails"];
+            404: components["responses"]["ProblemDetails"];
+        };
+    };
+    acceptLettrageGroup: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": components["parameters"]["IdempotencyKeyHeader"];
+            };
+            path: {
+                group_id: components["parameters"]["LettrageGroupId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted group */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LettrageGroup"];
+                };
+            };
+            401: components["responses"]["ProblemDetails"];
+            403: components["responses"]["ProblemDetails"];
+            404: components["responses"]["ProblemDetails"];
+            409: components["responses"]["ProblemDetails"];
+        };
+    };
+    rejectLettrageGroup: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": components["parameters"]["IdempotencyKeyHeader"];
+            };
+            path: {
+                group_id: components["parameters"]["LettrageGroupId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Rejected group */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LettrageGroup"];
+                };
+            };
+            401: components["responses"]["ProblemDetails"];
+            403: components["responses"]["ProblemDetails"];
+            404: components["responses"]["ProblemDetails"];
+            409: components["responses"]["ProblemDetails"];
+        };
+    };
+    reverseLettrageGroup: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": components["parameters"]["IdempotencyKeyHeader"];
+            };
+            path: {
+                group_id: components["parameters"]["LettrageGroupId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Reversed group */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LettrageGroup"];
+                };
+            };
+            401: components["responses"]["ProblemDetails"];
+            403: components["responses"]["ProblemDetails"];
+            404: components["responses"]["ProblemDetails"];
+            409: components["responses"]["ProblemDetails"];
         };
     };
 }

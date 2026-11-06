@@ -332,7 +332,7 @@ def test_malware_quarantined_with_immutable_evidence(db_conn: psycopg.Connection
     headers["Idempotency-Key"] = f"idemp-{uuid.uuid4()}"
     comp_res = client.post(f"/v1/documents/{doc_id}:complete-upload", headers=headers)
     assert comp_res.status_code == 422
-    assert "quarantined" in comp_res.text.lower()
+    assert "quarantaine" in comp_res.json()["detail"].lower()  # French product copy (E.8)
 
     # Verify document status in DB is 'quarantined'
     with db_conn.cursor() as cur:

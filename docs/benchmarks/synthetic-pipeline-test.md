@@ -1,6 +1,6 @@
 # Rapport de Test du Pipeline Synthétique — Ingestion & Extraction
 
-**Date d'exécution :** 2026-11-06 11:45:06Z
+**Date d'exécution :** 2026-11-06 12:27:48Z
 **Moteur OCR :** `RapidOCR / PaddleOCR ONNX PP-OCRv4 + Multilingual v3` (version `1.4.4`)
 **Modèles de reconnaissance :** ONNX Latin & Arabe multilingues (ancrés par checksums SHA-256)
 **Taille du corpus synthétique :** **5 documents**

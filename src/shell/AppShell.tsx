@@ -2,6 +2,7 @@ import { NavLink, Outlet } from 'react-router-dom';
 import { CheckSquare, Inbox, LogOut, Settings, Users } from 'lucide-react';
 import { useAuth } from '@/auth/AuthProvider';
 import { useSession } from '@/session/SessionProvider';
+import { ToastViewport } from '@/components/ui/ToastViewport';
 
 const NAV = [
   { to: '/queue', label: 'File de travail', Icon: Inbox },
@@ -76,6 +77,7 @@ export function AppShell() {
       <main className="flex-1 px-8 py-6">
         <Outlet />
       </main>
+      <ToastViewport />
     </div>
   );
 }

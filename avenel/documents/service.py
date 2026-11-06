@@ -165,7 +165,7 @@ def init_document_upload(
             INSERT INTO documents (
                 id, tenant_id, client_entity_id, work_request_id,
                 doc_type, status, original_filename, source_channel, uploaded_by
-            ) VALUES (%s, %s, %s, %s, 'purchase_invoice', 'received', %s, %s, %s);
+            ) VALUES (%s, %s, %s, %s, NULL, 'received', %s, %s, %s);  -- doc_type set by the classifier, never guessed
             """,
             (
                 doc_id,
@@ -300,7 +300,10 @@ def process_uploaded_document(
                     json.dumps([scan_result.details] if scan_result.details else []),
                 ),
             )
-        raise QuarantineError(f"Document quarantined: {scan_result.threat_name}")
+        raise QuarantineError(
+            f"Pièce mise en quarantaine : logiciel malveillant détecté ({scan_result.threat_name}). "
+            "Elle ne sera pas lue. Demandez une copie saine au client."
+        )
 
     # 5. Page rendering
     render_res = render_document(

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useApi } from '@/api/useApi';
 import type { ClientEntity, WorkRequest } from '@/api/client';
 import { Button } from '@/components/ui/Button';
@@ -92,7 +93,9 @@ export function QueueScreen() {
                     data-work-request-id={r.id}
                     className={`h-9 border-b border-l-[3px] border-b-line ${needsPerson ? 'border-l-pink' : 'border-l-transparent'}`}
                   >
-                    <td className="px-3 text-ink">{c?.legal_name ?? '—'}</td>
+                    <td className="px-3">
+                      <Link to={`/files/${r.id}`} className="text-sky-ink hover:underline">{c?.legal_name ?? '—'}</Link>
+                    </td>
                     <td className={`px-3 ${needsPerson ? 'text-pink-ink' : 'text-ink'}`}>
                       {STATUS_FR[r.status] ?? r.status}
                     </td>

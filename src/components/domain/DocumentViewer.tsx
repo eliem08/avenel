@@ -231,55 +231,18 @@ export function DocumentViewer({
               height: `${(activePage.height * zoomLevel) / 100}px`,
             }}
           >
-            {/* Page raster or SVG layout representation */}
+            {/* Page image from the API. No stand-in document is ever drawn (Phase 2: a fake
+                invoice with sample values used to be rendered here when no image was available). */}
             {activePage.imageUrl ? (
               <img
                 src={activePage.imageUrl}
                 alt={`Page ${currentPage}`}
+                data-testid="document-canvas"
                 className="w-full h-full object-contain pointer-events-none select-none"
               />
             ) : (
-              <div
-                data-testid="document-canvas"
-                className="w-full h-full p-8 text-xs font-mono text-ink bg-paper select-none flex flex-col justify-between"
-              >
-                <div>
-                  <div className="text-base font-bold font-sans text-ink mb-1">
-                    {String(fields.supplier_name?.value || 'Société Atlas SARL')}
-                  </div>
-                  <div className="text-xs text-ink-2 mb-4">
-                    ICE: {String(fields.supplier_ice?.value || '001234567890123')} | IF: {String(fields.supplier_if?.value || '12345678')}
-                  </div>
-                  <hr className="border-line my-3" />
-                  <div className="flex justify-between font-bold text-sm mb-4">
-                    <span>FACTURE N°: {String(fields.invoice_number?.value || 'FAC-2026-001')}</span>
-                    <span>Date: {String(fields.invoice_date?.value || '2026-03-15')}</span>
-                  </div>
-                  <div className="text-xs text-ink-2 mb-6">
-                    Client: {String(fields.client_name?.value || 'Société Marocaine de Commerce')}
-                  </div>
-                  <div className="border border-line rounded p-4 mb-6 bg-surface">
-                    <div className="flex justify-between font-medium">
-                      <span>Prestation de services professionnels et fournitures</span>
-                      <span>{String(fields.total_ht?.value || '1000.00')} MAD</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border-t border-line pt-4 flex flex-col items-end space-y-1 text-right">
-                  <div className="flex justify-between w-48 text-xs">
-                    <span className="text-ink-2">Total HT:</span>
-                    <span className="font-medium">{fields.total_ht?.value ? `${fields.total_ht.value} MAD` : '—'}</span>
-                  </div>
-                  <div className="flex justify-between w-48 text-xs">
-                    <span className="text-ink-2">Total TVA:</span>
-                    <span className="font-medium">{fields.total_vat?.value ? `${fields.total_vat.value} MAD` : '—'}</span>
-                  </div>
-                  <div className="flex justify-between w-48 text-sm font-bold border-t border-line pt-1 text-ink">
-                    <span>Total TTC:</span>
-                    <span>{fields.total_ttc?.value ? `${fields.total_ttc.value} MAD` : '—'}</span>
-                  </div>
-                </div>
+              <div data-testid="document-page-missing" className="flex h-full w-full items-center justify-center p-8 text-sm text-ink-2">
+                Image de la page indisponible.
               </div>
             )}
 

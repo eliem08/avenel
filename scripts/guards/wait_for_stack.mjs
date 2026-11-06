@@ -12,11 +12,24 @@ import net from 'node:net';
 // The clamav image ships an old signature database and clamd loads it before freshclam
 // finishes the first download. While the API reports intake paused, ask clamd to reload.
 function reloadClamd() {
+  // Resolves on every path (reply, close, error, timeout); the timer also keeps Node's event loop alive.
   return new Promise((resolve) => {
-    const sock = net.connect({ host: process.env.E2E_CLAMD_HOST ?? '127.0.0.1', port: 3310 }, () => sock.end('RELOAD' + String.fromCharCode(10)));
-    sock.on('error', () => resolve(false));
-    sock.on('close', () => resolve(true));
-    sock.setTimeout(5000, () => sock.destroy());
+    let done = false;
+    const finish = (ok) => {
+      if (!done) {
+        done = true;
+        clearTimeout(timer);
+        resolve(ok);
+      }
+    };
+    const timer = setTimeout(() => {
+      sock.destroy();
+      finish(false);
+    }, 8000);
+    const sock = net.connect({ host: process.env.E2E_CLAMD_HOST ?? '127.0.0.1', port: 3310 }, () => sock.write('RELOAD' + String.fromCharCode(10)));
+    sock.on('data', () => finish(true));
+    sock.on('close', () => finish(true));
+    sock.on('error', () => finish(false));
   });
 }
 

@@ -114,3 +114,15 @@ def app_conn(postgres_url: str) -> Generator[psycopg.Connection, None, None]:
     with psycopg.connect(app_url, autocommit=False) as conn:
         yield conn
         conn.rollback()
+
+
+
+@pytest.fixture(autouse=True)
+def _fresh_rate_limit_buckets():
+    """Each test starts with empty rate-limit buckets (the limiter stays fully active).
+
+    Without this, counts carried over between tests and the suite hit 429 on CI (Phase 5)."""
+    from apps.api.middleware import get_rate_limit_store
+
+    get_rate_limit_store().reset()
+    yield

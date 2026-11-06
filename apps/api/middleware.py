@@ -268,8 +268,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             # General endpoints not aggressively throttled
             return await call_next(request)
 
-        # Allow bypass for automated test suites unless testing rate limiting explicitly
-        if request.headers.get("X-Test-Bypass-Rate-Limit") == "true":
+        # Bypass header for the automated test suite only (Phase 5 fix: it was honoured for any
+        # caller, so anyone could switch rate limiting off in production).
+        if request.headers.get("X-Test-Bypass-Rate-Limit") == "true" and os.environ.get("AVENEL_AUTH_TEST_MODE") == "1":
             return await call_next(request)
 
         # Extract client identifier (X-Forwarded-For or client host)

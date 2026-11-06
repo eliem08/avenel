@@ -200,6 +200,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/client-entities/{id}/tax-mappings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Tax mapping slots of a client company
+         * @description Every VAT code and direction the entry builder can need (from the jurisdiction pack), with the current account and whether it is approved. Client users are refused.
+         */
+        get: operations["listClientTaxMappings"];
+        /**
+         * Set the account of a tax mapping
+         * @description Approved only when set by a member with a professional registration; otherwise stored unapproved and never used to build entries (Part K 15). Audited.
+         */
+        put: operations["setClientTaxMapping"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/compliance/dpa": {
         parameters: {
             query?: never;
@@ -960,6 +986,20 @@ export interface components {
             role: string;
             full_name?: string;
             email?: string;
+        };
+        TaxMappingSlot: {
+            tax_code: string;
+            direction: string;
+            rate?: number | null;
+            label_fr?: string;
+            rule_key?: string | null;
+            source?: string | null;
+            account_id?: string | null;
+            account_code?: string | null;
+            account_label?: string | null;
+            approved: boolean;
+            approved_by_name?: string | null;
+            approved_at?: string | null;
         };
         ClientEntity: {
             /** Format: uuid */
@@ -1782,6 +1822,76 @@ export interface operations {
             };
             404: components["responses"]["ProblemDetails"];
             415: components["responses"]["ProblemDetails"];
+            422: components["responses"]["ProblemDetails"];
+        };
+    };
+    listClientTaxMappings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Mapping slots */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        can_approve: boolean;
+                        items: components["schemas"]["TaxMappingSlot"][];
+                    };
+                };
+            };
+            403: components["responses"]["ProblemDetails"];
+            404: components["responses"]["ProblemDetails"];
+        };
+    };
+    setClientTaxMapping: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": components["parameters"]["IdempotencyKeyHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    tax_code: string;
+                    direction: string;
+                    /** Format: uuid */
+                    account_id: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Mapping stored */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        tax_code: string;
+                        direction: string;
+                        /** Format: uuid */
+                        account_id: string;
+                        account_code: string;
+                        approved: boolean;
+                    };
+                };
+            };
+            403: components["responses"]["ProblemDetails"];
+            404: components["responses"]["ProblemDetails"];
             422: components["responses"]["ProblemDetails"];
         };
     };

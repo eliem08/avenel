@@ -29,6 +29,7 @@ from apps.api.routes import (
     proposals,
     reconciliation,
     session,
+    tax_mappings,
     work_requests,
 )
 from avenel.bank.rib import get_rib_encryption_raw_key
@@ -198,6 +199,7 @@ app.include_router(periods.router)
 app.include_router(chart.router)
 app.include_router(compliance.router)
 app.include_router(work_requests.router)
+app.include_router(tax_mappings.router)
 app.include_router(documents.router)
 app.include_router(proposals.router)
 app.include_router(bank.router)

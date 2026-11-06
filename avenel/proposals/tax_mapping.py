@@ -10,8 +10,10 @@ Enforces:
 from __future__ import annotations
 
 import datetime
+import json
 import uuid
 from dataclasses import dataclass
+from typing import Any
 
 import psycopg
 
@@ -330,3 +332,119 @@ def seed_approved_client_tax_mappings(
                 (tenant_id, client_entity_id, tax_code, direction, acc_id, user_id),
             )
 
+
+
+# ---------------------------------------------------------------------------
+# Firm-managed tax mappings (Phase 3 completion). Part K 15: tax accounts resolve only
+# through approved client_tax_mappings. Human decision (6 Nov 2026): only members with a
+# professional registration (expert-comptable / comptable agréé) approve a mapping; other
+# write roles may propose one, which stays unapproved and is never used to build entries.
+# ---------------------------------------------------------------------------
+
+MAPPING_DIRECTIONS: tuple[str, ...] = ("purchase", "fixed_asset", "sale")
+WITHHOLDING_SLOT: tuple[str, str] = ("WITHHOLDING", "withholding")
+
+
+class TaxMappingError(ValueError):
+    """Invalid mapping request (unknown slot or account outside the client's chart)."""
+
+
+def list_mapping_slots(rate_date: datetime.date | None = None) -> list[dict[str, Any]]:
+    """Every (tax_code, direction) pair the entry builder can ask for, from the pack."""
+    slots: list[dict[str, Any]] = []
+    for r in get_available_vat_rates(rate_date):
+        for d in MAPPING_DIRECTIONS:
+            slots.append({
+                "tax_code": r.code, "direction": d, "rate": r.rate_value,
+                "label_fr": r.label_fr, "rule_key": r.rule_key, "source": r.source_citation,
+            })
+    slots.append({
+        "tax_code": WITHHOLDING_SLOT[0], "direction": WITHHOLDING_SLOT[1], "rate": None,
+        "label_fr": "Retenue à la source sur TVA", "rule_key": None, "source": None,
+    })
+    return slots
+
+
+def list_client_tax_mappings(
+    conn: psycopg.Connection, tenant_id: uuid.UUID, client_entity_id: uuid.UUID
+) -> list[dict[str, Any]]:
+    """Slots with the current mapping (approved or not) of a client company."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT m.tax_code, m.direction, m.account_id, ca.account_code, ca.label,
+                   m.approved_by, u.full_name, m.approved_at
+            FROM client_tax_mappings m
+            JOIN chart_accounts ca ON ca.id = m.account_id AND ca.tenant_id = m.tenant_id
+            LEFT JOIN users u ON u.id = m.approved_by
+            WHERE m.tenant_id = %s AND m.client_entity_id = %s;
+            """,
+            (tenant_id, client_entity_id),
+        )
+        current = {(r[0], r[1]): r for r in cur.fetchall()}
+    out = []
+    for slot in list_mapping_slots():
+        r = current.get((slot["tax_code"], slot["direction"]))
+        out.append({
+            **slot,
+            "account_id": str(r[2]) if r else None,
+            "account_code": r[3] if r else None,
+            "account_label": r[4] if r else None,
+            "approved": bool(r and r[5]),
+            "approved_by_name": r[6] if r else None,
+            "approved_at": r[7].isoformat() if r and r[7] else None,
+        })
+    return out
+
+
+def set_client_tax_mapping(
+    conn: psycopg.Connection,
+    tenant_id: uuid.UUID,
+    client_entity_id: uuid.UUID,
+    tax_code: str,
+    direction: str,
+    account_id: uuid.UUID,
+    actor_id: uuid.UUID,
+    actor_is_registered_professional: bool,
+) -> dict[str, Any]:
+    """Creates or changes a mapping. Approved only when set by a registered professional;
+    otherwise stored unapproved (and any previous approval is withdrawn, since the account changed
+    or a non-professional touched it). Every change is an audit event."""
+    if (tax_code, direction) not in {(s["tax_code"], s["direction"]) for s in list_mapping_slots()}:
+        raise TaxMappingError(f"Code de taxe ou sens inconnu : {tax_code} / {direction}.")
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT account_code FROM chart_accounts WHERE tenant_id = %s AND client_entity_id = %s AND id = %s;",
+            (tenant_id, client_entity_id, account_id),
+        )
+        acc = cur.fetchone()
+        if not acc:
+            raise TaxMappingError("Ce compte n'appartient pas au plan comptable de la société.")
+        approved_by = actor_id if actor_is_registered_professional else None
+        cur.execute(
+            """
+            INSERT INTO client_tax_mappings (tenant_id, client_entity_id, tax_code, direction, account_id, approved_by, approved_at)
+            VALUES (%s, %s, %s, %s, %s, %s, CASE WHEN %s::uuid IS NULL THEN NULL ELSE now() END)
+            ON CONFLICT (tenant_id, client_entity_id, tax_code, direction)
+            DO UPDATE SET account_id = EXCLUDED.account_id, approved_by = EXCLUDED.approved_by,
+                          approved_at = EXCLUDED.approved_at
+            RETURNING id;
+            """,
+            (tenant_id, client_entity_id, tax_code, direction, account_id, approved_by, approved_by),
+        )
+        mapping_id = cur.fetchone()[0]  # type: ignore[index]
+        cur.execute(
+            """
+            INSERT INTO audit_events (tenant_id, actor_type, actor_id, action, resource_type, resource_id, data)
+            VALUES (%s, 'user', %s, %s, 'client_tax_mapping', %s, %s::jsonb);
+            """,
+            (
+                tenant_id, str(actor_id),
+                "tax_mapping.approved" if approved_by else "tax_mapping.proposed",
+                str(mapping_id),
+                json.dumps({"client_entity_id": str(client_entity_id), "tax_code": tax_code,
+                            "direction": direction, "account_code": acc[0]}),
+            ),
+        )
+    return {"tax_code": tax_code, "direction": direction, "account_id": str(account_id),
+            "account_code": acc[0], "approved": approved_by is not None}

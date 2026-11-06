@@ -9,6 +9,7 @@ from apps.api.routes import (
     proposals,
     reconciliation,
     session,
+    tax_mappings,
     work_requests,
 )
 
@@ -23,5 +24,6 @@ __all__ = [
     "proposals",
     "reconciliation",
     "session",
+    "tax_mappings",
     "work_requests",
 ]

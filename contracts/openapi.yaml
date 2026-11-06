@@ -17,6 +17,8 @@ tags:
     description: Client entity operations
   - name: Periods
     description: Accounting period operations
+  - name: Tax mappings
+    description: Accounts receiving each VAT code per client company (Part K 15)
   - name: Chart
     description: Chart of accounts operations
   - name: Compliance
@@ -402,6 +404,89 @@ paths:
         "404":
           $ref: "#/components/responses/ProblemDetails"
         "415":
+          $ref: "#/components/responses/ProblemDetails"
+        "422":
+          $ref: "#/components/responses/ProblemDetails"
+
+  /client-entities/{id}/tax-mappings:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: listClientTaxMappings
+      tags:
+        - Tax mappings
+      summary: Tax mapping slots of a client company
+      description: Every VAT code and direction the entry builder can need (from the jurisdiction pack), with the current account and whether it is approved. Client users are refused.
+      responses:
+        "200":
+          description: Mapping slots
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, can_approve]
+                properties:
+                  can_approve:
+                    type: boolean
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/TaxMappingSlot"
+        "403":
+          $ref: "#/components/responses/ProblemDetails"
+        "404":
+          $ref: "#/components/responses/ProblemDetails"
+    put:
+      operationId: setClientTaxMapping
+      tags:
+        - Tax mappings
+      summary: Set the account of a tax mapping
+      description: Approved only when set by a member with a professional registration; otherwise stored unapproved and never used to build entries (Part K 15). Audited.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKeyHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tax_code, direction, account_id]
+              properties:
+                tax_code:
+                  type: string
+                direction:
+                  type: string
+                account_id:
+                  type: string
+                  format: uuid
+      responses:
+        "200":
+          description: Mapping stored
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [tax_code, direction, account_id, account_code, approved]
+                properties:
+                  tax_code:
+                    type: string
+                  direction:
+                    type: string
+                  account_id:
+                    type: string
+                    format: uuid
+                  account_code:
+                    type: string
+                  approved:
+                    type: boolean
+        "403":
+          $ref: "#/components/responses/ProblemDetails"
+        "404":
           $ref: "#/components/responses/ProblemDetails"
         "422":
           $ref: "#/components/responses/ProblemDetails"
@@ -1747,6 +1832,35 @@ components:
           type: string
         email:
           type: string
+
+    TaxMappingSlot:
+      type: object
+      required: [tax_code, direction, approved]
+      properties:
+        tax_code:
+          type: string
+        direction:
+          type: string
+        rate:
+          type: ["number", "null"]
+        label_fr:
+          type: string
+        rule_key:
+          type: ["string", "null"]
+        source:
+          type: ["string", "null"]
+        account_id:
+          type: ["string", "null"]
+        account_code:
+          type: ["string", "null"]
+        account_label:
+          type: ["string", "null"]
+        approved:
+          type: boolean
+        approved_by_name:
+          type: ["string", "null"]
+        approved_at:
+          type: ["string", "null"]
 
     ClientEntity:
       type: object

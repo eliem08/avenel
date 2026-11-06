@@ -202,8 +202,11 @@ async def update_proposal_endpoint(
     except ProposalUnbalancedError as err:
         conn.rollback()
         raise HTTPException(status_code=422, detail=str(err)) from err
-    except Exception as err:
+    except (ValueError, TypeError) as err:
         conn.rollback()
         raise HTTPException(status_code=422, detail=str(err)) from err
+    except Exception:
+        conn.rollback()
+        raise
 
 

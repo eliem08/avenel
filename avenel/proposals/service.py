@@ -412,9 +412,26 @@ def create_proposal_revision(
             f"Les écritures ne sont pas équilibrées : débit={total_debit:.2f}, crédit={total_credit:.2f}"
         )
 
-    # Validate evidence refs on updated lines
+    # Validate evidence refs on updated lines. Every line must keep at least one reference to
+    # a document region or a bank line (Part K 16, Phase 3 exit "every line has evidence");
+    # an empty list used to pass validation.
     for line in updated_lines:
-        evs = line.get("evidence_refs", [])
+        # Same rules as the journal_lines CHECK constraints (Part C.4 #4), reported as input
+        # errors instead of a database crash: exactly one side per line, in MAD and in the
+        # transaction currency, and on the same side.
+        d_mad, c_mad = float(line.get("debit_mad") or 0), float(line.get("credit_mad") or 0)
+        d_tx, c_tx = float(line.get("debit_tx") or 0), float(line.get("credit_tx") or 0)
+        if min(d_mad, c_mad, d_tx, c_tx) < 0 or (d_mad > 0) == (c_mad > 0) or (d_tx > 0) == (c_tx > 0) or (d_tx > 0) != (d_mad > 0):
+            raise ValueError(
+                f"La ligne {line.get('account_code', '')} doit avoir un montant au débit ou au crédit, pas les deux, "
+                "en MAD et en devise de la pièce."
+            )
+        evs = line.get("evidence_refs") or []
+        if not evs:
+            raise ValueError(
+                f"La ligne {line.get('account_code', '')} n'a aucune pièce justificative. "
+                "Chaque ligne doit renvoyer à une zone de pièce ou à une ligne de relevé."
+            )
         validate_line_evidence_refs(evs)
 
     new_proposal_id = uuid.uuid4()

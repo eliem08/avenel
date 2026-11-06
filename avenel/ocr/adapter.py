@@ -17,6 +17,15 @@ from PIL import Image, ImageDraw
 
 from avenel.ocr.models import get_model_path
 
+
+class OcrUnavailableError(RuntimeError):
+    """The local OCR engine cannot run (missing native libraries or models). Never read silently."""
+
+
+class PageExtractionError(RuntimeError):
+    """A real PDF or image could not be turned into page images. Never fall back to decoding bytes as text."""
+
+
 ENGINE_NAME = "RapidOCR / PaddleOCR ONNX PP-OCRv4 + Multilingual v3"
 ENGINE_VERSION = "1.4.4"
 
@@ -132,15 +141,17 @@ def _extract_page_images(data: bytes, mime_type: str) -> list[Image.Image]:
                 img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
                 images.append(img)
             doc.close()
-        except (ImportError, OSError, ValueError, RuntimeError):
-            pass
+        except (ImportError, OSError, ValueError, RuntimeError) as e:
+            # A real PDF that cannot be rendered must fail loudly (Phase 2: a missing native
+            # library made every PDF "read" as garbage text with no error).
+            raise PageExtractionError(f"PDF rendering failed: {type(e).__name__}: {e}") from e
 
     if not images and mime_type.startswith("image/"):
         try:
             img = Image.open(io.BytesIO(data))
             images.append(img.convert("RGB"))
-        except (OSError, ValueError):
-            pass
+        except (OSError, ValueError) as e:
+            raise PageExtractionError(f"Image decoding failed: {type(e).__name__}: {e}") from e
 
     if not images:
         text = data.decode("utf-8", errors="ignore")
@@ -180,7 +191,7 @@ class LocalOcrEngine:
                     from rapidocr_onnxruntime import RapidOCR
 
                     self._latin_ocr = RapidOCR(rec_model_path=lat_model, rec_keys_path=lat_dict)
-                except (RuntimeError, OSError, ValueError):
+                except (ImportError, RuntimeError, OSError, ValueError):
                     self._latin_ocr = self._get_default_ocr()
             else:
                 self._latin_ocr = self._get_default_ocr()
@@ -195,7 +206,7 @@ class LocalOcrEngine:
                     from rapidocr_onnxruntime import RapidOCR
 
                     self._arabic_ocr = RapidOCR(rec_model_path=ar_model, rec_keys_path=ar_dict)
-                except (RuntimeError, OSError, ValueError):
+                except (ImportError, RuntimeError, OSError, ValueError):
                     self._arabic_ocr = self._get_default_ocr()
             else:
                 self._arabic_ocr = self._get_default_ocr()
@@ -212,6 +223,10 @@ class LocalOcrEngine:
 
         latin_ocr = self._get_latin_ocr()
         arabic_ocr = self._get_arabic_ocr()
+        if not latin_ocr and not arabic_ocr:
+            raise OcrUnavailableError(
+                "Local OCR engine unavailable (RapidOCR/onnxruntime/OpenCV could not be loaded)."
+            )
 
         for page_idx, img in enumerate(page_images, start=1):
             width, height = img.size

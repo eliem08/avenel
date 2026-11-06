@@ -691,6 +691,8 @@ paths:
           $ref: "#/components/responses/ProblemDetails"
         "422":
           $ref: "#/components/responses/ProblemDetails"
+        "503":
+          $ref: "#/components/responses/ProblemDetails"
 
   /documents/{id}/pages/{n}:
     get:
@@ -719,6 +721,37 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DocumentPageResponse"
+        "404":
+          $ref: "#/components/responses/ProblemDetails"
+
+  /documents/{id}/pages/{n}/image:
+    get:
+      operationId: getDocumentPageImage
+      tags:
+        - Documents
+      summary: Rendered page image (PNG)
+      description: Returns the rendered page image of a document. Same scope rules as the document (404 for other tenants and out-of-scope client users).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: n
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: PNG image
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
         "404":
           $ref: "#/components/responses/ProblemDetails"
 

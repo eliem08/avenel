@@ -424,6 +424,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/documents/{id}/pages/{n}/image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Rendered page image (PNG)
+         * @description Returns the rendered page image of a document. Same scope rules as the document (404 for other tenants and out-of-scope client users).
+         */
+        get: operations["getDocumentPageImage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/documents/{id}/extraction": {
         parameters: {
             query?: never;
@@ -2046,6 +2066,7 @@ export interface operations {
             };
             404: components["responses"]["ProblemDetails"];
             422: components["responses"]["ProblemDetails"];
+            503: components["responses"]["ProblemDetails"];
         };
     };
     getDocumentPage: {
@@ -2067,6 +2088,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DocumentPageResponse"];
+                };
+            };
+            404: components["responses"]["ProblemDetails"];
+        };
+    };
+    getDocumentPageImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                n: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description PNG image */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": string;
                 };
             };
             404: components["responses"]["ProblemDetails"];

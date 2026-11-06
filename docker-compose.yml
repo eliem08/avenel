@@ -78,11 +78,12 @@ services:
     image: clamav/clamav:1.4.3@sha256:75fb5fd95fcbe1d7e6d240c369c1572b686ee2c95949d1042b5148de8eddebb4
     container_name: avenel-freshclam
     restart: unless-stopped
-    command: ["freshclam", "-d", "--foreground", "-c", "24"]
+    command: ["freshclam", "-d", "--foreground", "-c", "24", "--daemon-notify=/etc/clamav/notify-clamd.conf"]
     # The image healthcheck pings clamd, which does not run in this container.
     healthcheck:
       disable: true
     volumes:
+      - ./docker/clamav/notify-clamd.conf:/etc/clamav/notify-clamd.conf:ro
       - clamav_db:/var/lib/clamav
 
   ocr:
@@ -130,6 +131,8 @@ services:
     command: ["uvicorn", "apps.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2", "--access-log"]
     ports:
       - "8000:8000"
+    volumes:
+      - docstore:/var/lib/avenel/storage
     environment:
       DATABASE_URL: "postgresql://avenel_app:avenel_app_secret@postgres:5432/avenel"
       AVENEL_KMS_KEY: "avenel-dev-kms-key-for-docker-compose-only-32c"
@@ -139,6 +142,7 @@ services:
       KEYCLOAK_AUDIENCE: "avenel-api"
       KEYCLOAK_JWKS_URI: "http://keycloak:8080/realms/avenel/protocol/openid-connect/certs"
       STORAGE_BACKEND: "filesystem"
+      STORAGE_DIR: "/var/lib/avenel/storage"
     depends_on:
       seed: { condition: service_completed_successfully }
       keycloak: { condition: service_healthy }
@@ -154,6 +158,8 @@ services:
     container_name: avenel-worker
     restart: unless-stopped
     command: ["python", "-m", "avenel.jobs.worker"]
+    volumes:
+      - docstore:/var/lib/avenel/storage
     environment:
       DATABASE_URL: "postgresql://avenel_app:avenel_app_secret@postgres:5432/avenel"
       AVENEL_KMS_KEY: "avenel-dev-kms-key-for-docker-compose-only-32c"
@@ -163,6 +169,7 @@ services:
       KEYCLOAK_AUDIENCE: "avenel-api"
       KEYCLOAK_JWKS_URI: "http://keycloak:8080/realms/avenel/protocol/openid-connect/certs"
       STORAGE_BACKEND: "filesystem"
+      STORAGE_DIR: "/var/lib/avenel/storage"
     depends_on:
       api: { condition: service_healthy }
     healthcheck:
@@ -181,6 +188,7 @@ services:
       api: { condition: service_healthy }
 
 volumes:
+  docstore:
   pgdata:
   miniodata:
   clamav_db:

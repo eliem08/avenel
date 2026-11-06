@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from PIL import Image, ImageDraw
 
 from avenel.infrastructure.storage import get_storage
+from avenel.ocr.adapter import PageExtractionError
 
 
 @dataclass(frozen=True)
@@ -43,6 +44,7 @@ def _render_text_fallback_png(text: str, page_number: int, total_pages: int) -> 
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     return buf.getvalue()
+
 
 
 def render_document(
@@ -77,8 +79,9 @@ def render_document(
                 )
             doc.close()
             return RenderResult(page_count=page_count, pages=pages)
-        except (ImportError, OSError, ValueError, RuntimeError):
-            pass
+        except (ImportError, OSError, ValueError, RuntimeError) as e:
+            # Never fall back to decoding a real PDF's bytes as text (Phase 2 finding).
+            raise PageExtractionError(f"PDF rendering failed: {type(e).__name__}: {e}") from e
 
     if mime_type.startswith("image/"):
         try:
@@ -96,8 +99,8 @@ def render_document(
                 )
             )
             return RenderResult(page_count=1, pages=pages)
-        except (OSError, ValueError):
-            pass
+        except (OSError, ValueError) as e:
+            raise PageExtractionError(f"Image decoding failed: {type(e).__name__}: {e}") from e
 
     # Fallback: render text to PNG
     raw_text = data.decode("utf-8", errors="ignore")

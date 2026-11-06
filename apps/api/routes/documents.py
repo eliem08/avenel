@@ -8,7 +8,7 @@ import uuid
 from typing import Annotated, Any
 
 import psycopg
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel
 
 from apps.api.deps import get_current_session, get_db
@@ -20,6 +20,7 @@ from avenel.documents.service import (
     process_uploaded_document,
 )
 from avenel.infrastructure.storage import MAX_DOCUMENT_BYTE_SIZE, get_storage
+from avenel.ocr.adapter import OcrUnavailableError, PageExtractionError
 from avenel.tenancy.auth import UserSession
 
 router = APIRouter(prefix="/v1", tags=["Documents"])
@@ -163,6 +164,18 @@ async def complete_upload(
     except (InvalidDocumentPayloadError, ValueError) as err:
         conn.rollback()
         raise HTTPException(status_code=422, detail=str(err)) from err
+    except PageExtractionError as err:
+        conn.rollback()
+        raise HTTPException(
+            status_code=422,
+            detail="La pièce n'a pas pu être lue : le fichier est illisible ou endommagé. Téléversez une autre copie.",
+        ) from err
+    except OcrUnavailableError as err:
+        conn.rollback()
+        raise HTTPException(
+            status_code=503,
+            detail="La lecture des pièces est indisponible pour le moment. La pièce est conservée ; relancez la lecture plus tard.",
+        ) from err
 
 
 @router.get("/documents/{id}/pages/{n}")
@@ -184,6 +197,29 @@ async def get_document_page(
         "image_url": img_url,
         "media_type": "image/png",
     }
+
+
+@router.get("/documents/{id}/pages/{n}/image", operation_id="getDocumentPageImage")
+async def get_document_page_image(
+    id: uuid.UUID,
+    n: int,
+    session: Annotated[UserSession, Depends(get_current_session)],
+    conn: Annotated[psycopg.Connection, Depends(get_db)],
+) -> Response:
+    """Returns the rendered page image itself (PNG). Same scope-first rules as the document.
+
+    The JSON endpoint above links to a storage URL that only an S3 backend can serve; the
+    document viewer uses this endpoint so it works for every backend (Phase 2 decision).
+    """
+    _resolve_document_scope(conn, session, id)
+    if n < 1:
+        raise HTTPException(status_code=404, detail="Page introuvable.")
+    storage = get_storage()
+    key = f"pages/{session.tenant_id}/{id}/page_{n}.png"
+    if not storage.object_exists(key):
+        raise HTTPException(status_code=404, detail="Page introuvable.")
+    png = storage.get_object(key)
+    return Response(content=png, media_type="image/png", headers={"Cache-Control": "private, no-store"})
 
 
 @router.get("/documents/{id}/extraction")

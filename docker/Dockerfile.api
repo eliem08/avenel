@@ -28,10 +28,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Install runtime PostgreSQL client library
+# Runtime libraries: PostgreSQL client, and the X/GL libraries OpenCV (used by RapidOCR) loads
+# at import. Without the latter, OCR silently read nothing in the container (found in Phase 2).
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     ca-certificates \
+    libxcb1 \
+    libgl1 \
+    libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Run as dedicated unprivileged user
@@ -48,6 +52,8 @@ COPY --chown=appuser:appgroup jurisdiction /app/jurisdiction
 COPY --chown=appuser:appgroup db /app/db
 COPY --chown=appuser:appgroup contracts /app/contracts
 
+# Writable document storage for STORAGE_BACKEND=filesystem (dev/compose). Production uses S3.
+RUN mkdir -p /var/lib/avenel/storage && chown appuser:appgroup /var/lib/avenel/storage
 USER appuser
 
 EXPOSE 8000

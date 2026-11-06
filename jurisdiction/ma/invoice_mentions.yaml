@@ -11,7 +11,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "CGI art. 145-III"
-  status: "verified"
+  status: "source_cited"
   note: "Mentions obligatoires sur les factures d'achat (CGI art. 145-III) pour droit à déduction"
 
 - key: "invoice.mandatory_mentions.sale"
@@ -25,7 +25,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "CGI art. 145-III"
-  status: "verified"
+  status: "source_cited"
   note: "Mentions obligatoires sur les factures de vente établies pour les clients professionnels"
 
 - key: "invoice.arithmetic_tolerance"
@@ -33,7 +33,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "CGI art. 99 / Pratique comptable OEC"
-  status: "verified"
+  status: "source_cited"
   note: "Tolérance d'arrondi sur calculs arithmétiques par taux (0.01 MAD)"
 
 - key: "invoice.auto_entrepreneur.vat_forbidden"
@@ -49,7 +49,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "Pratique fiduciaire"
-  status: "verified"
+  status: "source_cited"
   note: "Fenêtre temporelle maximale en jours pour suspecter un doublon sur même montant TTC et même fournisseur"
 
 - key: "accounting.fx_rounding.default_account"
@@ -81,7 +81,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "Product / Part H quality gate"
-  status: "verified"
+  status: "source_cited"
   note: "Seuil de confiance minimale pour l'imputation automatique sans anomalie"
 
 - key: "bank.reconciliation.threshold"
@@ -89,7 +89,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "Product / ARCHITECTURE.md D.7"
-  status: "verified"
+  status: "source_cited"
   note: "Seuil de pré-sélection d'un rapprochement bancaire unitaire exact"
 
 - key: "bank.reconciliation.date_window_days"
@@ -97,7 +97,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "Product / ARCHITECTURE.md D.7"
-  status: "verified"
+  status: "source_cited"
   note: "Fenêtre temporelle maximale pour génération des candidats de rapprochement"
 
 - key: "bank.statement.balance_tolerance"
@@ -105,7 +105,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "CGNC / BAM"
-  status: "verified"
+  status: "source_cited"
   note: "Tolérance arithmétique pour contrôle du solde de relevé bancaire"
 
 - key: "accounting.suspense.default_account"

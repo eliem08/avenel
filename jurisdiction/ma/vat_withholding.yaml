@@ -35,7 +35,7 @@
   effective_from: "2024-01-01"
   effective_to: null
   source: "Loi de Finances 2024 / CGI art. 117"
-  status: "verified"
+  status: "source_cited"
   note: "Taux légaux de retenue à la source de TVA : 75% ou 100%. Assiette de retenue : montant de la TVA."
 
 - key: "withholding.is.services_5pct"

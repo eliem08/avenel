@@ -3,7 +3,7 @@
   effective_from: "2016-01-01"
   effective_to: null
   source: "CGI art. 145 / Décret n° 2-11-63"
-  status: "verified"
+  status: "source_cited"
   note: "Identifiant Commun de l'Entreprise : 15 chiffres"
 
 - key: "identifiers.ice.check_digit_algorithm"
@@ -19,7 +19,7 @@
   effective_from: "2000-01-01"
   effective_to: null
   source: "CGI art. 145"
-  status: "verified"
+  status: "source_cited"
   note: "Numéro d'Identifiant Fiscal : 1 à 10 chiffres"
 
 - key: "identifiers.rib.format"
@@ -27,7 +27,7 @@
   effective_from: "2000-01-01"
   effective_to: null
   source: "Bank Al-Maghrib - Directive relative au Relevé d'Identité Bancaire"
-  status: "verified"
+  status: "source_cited"
   note: "RIB marocain : 24 chiffres (clé mod-97)"
 
 - key: "identifiers.rib.modulus"
@@ -35,7 +35,7 @@
   effective_from: "2000-01-01"
   effective_to: null
   source: "Bank Al-Maghrib - Directive relative au Relevé d'Identité Bancaire"
-  status: "verified"
+  status: "source_cited"
   note: "Clé de contrôle mod-97: 97 - ((N * 100) % 97)"
 
 - key: "identifiers.rib.bank_codes"
@@ -88,5 +88,5 @@
   effective_from: "2000-01-01"
   effective_to: null
   source: "Code de Commerce art. 42"
-  status: "verified"
+  status: "source_cited"
   note: "Registre du Commerce : numéro séquentiel numérique"

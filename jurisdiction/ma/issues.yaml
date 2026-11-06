@@ -7,7 +7,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "Product"
-  status: "verified"
+  status: "source_cited"
 
 - key: "issues.DOC_MALWARE"
   value:
@@ -18,7 +18,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "Product / Loi 05-20"
-  status: "verified"
+  status: "source_cited"
 
 - key: "issues.DOC_UNSUPPORTED_TYPE"
   value:
@@ -29,7 +29,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "Product"
-  status: "verified"
+  status: "source_cited"
 
 - key: "issues.DUPLICATE_EXACT"
   value:
@@ -40,7 +40,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "Product / Loi 9-88"
-  status: "verified"
+  status: "source_cited"
 
 - key: "issues.DUPLICATE_PROBABLE"
   value:
@@ -51,7 +51,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "Product / Loi 9-88"
-  status: "verified"
+  status: "source_cited"
 
 - key: "issues.INVOICE_MISSING_MANDATORY_FIELD"
   value:
@@ -62,7 +62,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "CGI art. 145-III"
-  status: "verified"
+  status: "source_cited"
 
 - key: "issues.ICE_INVALID_FORMAT"
   value:
@@ -73,7 +73,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "CGI art. 145"
-  status: "verified"
+  status: "source_cited"
 
 - key: "issues.ICE_CHECK_DIGIT_MISMATCH"
   value:
@@ -84,7 +84,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "OMPIC / DGI"
-  status: "verified"
+  status: "source_cited"
 
 - key: "issues.TOTALS_INCONSISTENT"
   value:
@@ -95,7 +95,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "Product"
-  status: "verified"
+  status: "source_cited"
 
 - key: "issues.VAT_RATE_UNKNOWN"
   value:
@@ -106,7 +106,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "Product"
-  status: "verified"
+  status: "source_cited"
 
 - key: "issues.VAT_NOT_DEDUCTIBLE_CASH_LIMIT"
   value:
@@ -117,7 +117,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "CGI art. 106-II"
-  status: "verified"
+  status: "source_cited"
 
 - key: "issues.VAT_NOT_DEDUCTIBLE_BY_NATURE"
   value:
@@ -128,7 +128,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "CGI art. 106-I"
-  status: "verified"
+  status: "source_cited"
 
 - key: "issues.VAT_ON_AUTO_ENTREPRENEUR_INVOICE"
   value:
@@ -139,7 +139,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "Loi 114-13 / CGI art. 89"
-  status: "verified"
+  status: "source_cited"
 
 - key: "issues.ACCOUNT_UNMAPPED"
   value:
@@ -150,7 +150,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "CGNC / Plan comptable"
-  status: "verified"
+  status: "source_cited"
 
 - key: "issues.ACCOUNT_LOW_CONFIDENCE"
   value:
@@ -161,7 +161,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "Product"
-  status: "verified"
+  status: "source_cited"
 
 - key: "issues.FX_RATE_MISSING"
   value:
@@ -172,7 +172,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "CGNC / Bank Al-Maghrib"
-  status: "verified"
+  status: "source_cited"
 
 - key: "issues.PERIOD_MISMATCH"
   value:
@@ -183,7 +183,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "Loi 9-88 art. 7"
-  status: "verified"
+  status: "source_cited"
 
 - key: "issues.BANK_BALANCE_BREAK"
   value:
@@ -194,7 +194,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "Loi 9-88"
-  status: "verified"
+  status: "source_cited"
 
 - key: "issues.BANK_LINE_UNMATCHED"
   value:
@@ -205,7 +205,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "Product"
-  status: "verified"
+  status: "source_cited"
 
 - key: "issues.MATCH_AMOUNT_DIFFERENCE"
   value:
@@ -216,7 +216,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "Product"
-  status: "verified"
+  status: "source_cited"
 
 - key: "issues.RAS_EXPECTED_NOT_FOUND"
   value:
@@ -227,7 +227,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "CGI art. 117-IV"
-  status: "verified"
+  status: "source_cited"
 
 - key: "issues.MISSING_SUPPORTING_DOCUMENT"
   value:
@@ -238,7 +238,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "Loi 9-88 art. 1"
-  status: "verified"
+  status: "source_cited"
 
 - key: "issues.INTEGRATION_FAILURE"
   value:
@@ -249,7 +249,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "Product"
-  status: "verified"
+  status: "source_cited"
 
 - key: "issues.RULE_NEEDS_EXPERT"
   value:
@@ -260,4 +260,4 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "Product"
-  status: "verified"
+  status: "source_cited"

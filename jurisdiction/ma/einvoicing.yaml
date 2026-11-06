@@ -3,7 +3,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "DGI"
-  status: "verified"
+  status: "source_cited"
   note: "E-invoicing remains disabled until official implementing decree is published"
 
 - key: "einvoicing.decree_status"

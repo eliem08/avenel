@@ -15,7 +15,7 @@ from dataclasses import dataclass
 
 import psycopg
 
-from avenel.jurisdiction.loader import get_jurisdiction_pack
+from avenel.jurisdiction.loader import get_jurisdiction_pack, is_enabled_status
 
 
 @dataclass(frozen=True)
@@ -44,7 +44,7 @@ def get_available_vat_rates(rate_date: datetime.date | None = None) -> list[TaxR
     rates: list[TaxRateInfo] = []
 
     standard_rule = pack.get_rule("vat.rate.standard")
-    if standard_rule and standard_rule.get("status") == "verified":
+    if standard_rule and is_enabled_status(standard_rule.get("status")):
         rates.append(
             TaxRateInfo(
                 code="STANDARD_20",
@@ -56,7 +56,7 @@ def get_available_vat_rates(rate_date: datetime.date | None = None) -> list[TaxR
         )
 
     reduced_rule = pack.get_rule("vat.rate.reduced_10")
-    if reduced_rule and reduced_rule.get("status") == "verified":
+    if reduced_rule and is_enabled_status(reduced_rule.get("status")):
         rates.append(
             TaxRateInfo(
                 code="REDUCED_10",
@@ -68,7 +68,7 @@ def get_available_vat_rates(rate_date: datetime.date | None = None) -> list[TaxR
         )
 
     reduced_14_rule = pack.get_rule("vat.rate.reduced_14")
-    if reduced_14_rule and reduced_14_rule.get("status") == "verified":
+    if reduced_14_rule and is_enabled_status(reduced_14_rule.get("status")):
         eff_from = reduced_14_rule.get("effective_from")
         eff_to = reduced_14_rule.get("effective_to")
         is_effective = True

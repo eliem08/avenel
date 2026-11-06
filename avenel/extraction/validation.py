@@ -14,7 +14,7 @@ from typing import Any
 
 import psycopg
 
-from avenel.jurisdiction.loader import get_jurisdiction_pack
+from avenel.jurisdiction.loader import get_jurisdiction_pack, is_enabled_status
 
 
 @dataclass(frozen=True)
@@ -58,7 +58,7 @@ def get_known_vat_rates_for_date(invoice_date_str: str | None) -> list[float]:
     for rule_key, rule in pack.rules.items():
         if not rule_key.startswith("vat.rate.") or rule_key == "vat.rate.mapping_items":
             continue
-        if rule.get("status") != "verified" or rule.get("value") is None:
+        if not is_enabled_status(rule.get("status")) or rule.get("value") is None:
             continue
         try:
             val = float(rule["value"])

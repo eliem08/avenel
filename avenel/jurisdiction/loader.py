@@ -4,7 +4,8 @@ Loads Moroccan legal and tax rules from /jurisdiction/ma/ per Rule A.1.
 Enforces:
 - Schema validation against pack.schema.json
 - Non-empty source citations
-- Status tracking ('verified' vs 'needs_expert')
+- Status tracking: 'verified' (signed by a professional), 'source_cited' (primary source cited,
+  not yet confirmed by a professional; enabled, shown as "à confirmer"), 'needs_expert' (disabled)
 """
 
 from __future__ import annotations
@@ -18,6 +19,16 @@ import jsonschema  # type: ignore[import-untyped]
 import yaml  # type: ignore[import-untyped]
 
 PACK_DIR = Path(__file__).resolve().parent.parent.parent / "jurisdiction" / "ma"
+
+
+# Statuses that make a rule usable. 'source_cited' was introduced in Phase 3 (human decision,
+# 6 Nov 2026): 48 rules had been marked 'verified' without any expert signature. They stay
+# enabled but are not claimed as verified; only a signed review sets 'verified'.
+ENABLED_STATUSES = frozenset({"verified", "source_cited"})
+
+
+def is_enabled_status(status: object) -> bool:
+    return status in ENABLED_STATUSES
 
 
 class JurisdictionPackLoader:
@@ -74,11 +85,11 @@ class JurisdictionPackLoader:
         rule = self.get_rule(key)
         if not rule:
             return False
-        return rule.get("status") == "verified"
+        return is_enabled_status(rule.get("status"))
 
     def get_value(self, key: str, default: Any = None) -> Any:
         rule = self.get_rule(key)
-        if not rule or rule.get("status") != "verified":
+        if not rule or not is_enabled_status(rule.get("status")):
             return default
         return rule.get("value", default)
 

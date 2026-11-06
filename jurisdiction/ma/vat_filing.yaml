@@ -3,7 +3,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "CGI art. 108"
-  status: "verified"
+  status: "source_cited"
   note: "Régime mensuel obligatoire si CA annuel >= 1 000 000 MAD"
 
 - key: "vat.filing.deadline.wording"

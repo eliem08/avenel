@@ -50,12 +50,69 @@ Pour chaque point ci-dessous, la plateforme applique un comportement de précaut
 
 ---
 
-## 2. Déclaration Formelle de l'Expert-Comptable Signataire
+## 2. Règles appliquées avec une source citée, non encore confirmées (`source_cited`)
+
+Ces 48 règles sont appliquées par la plateforme et affichées « à confirmer par un expert ». Elles avaient été marquées `verified` sans signature ; aucune n'a été confirmée par un professionnel (décision du 6 novembre 2026).
+
+| Réf | Fichier Source | Clé Réglementaire | Valeur Actuelle | Source citée | Confirmation | Visa Expert |
+| :---: | :--- | :--- | :--- | :--- | :--- | :---: |
+| **SRC-01** | `jurisdiction/ma/cgnc_seed.yaml` | `cgnc.seed.accounts` | `[{'code': '0111', 'label': "Engagements donnés par l'entreprise"}, {'code': '0119', 'label': 'Contrepartie des engagements donnés'}, {'code': '0121', 'label': "Engagements reçus par l'entreprise"} ... (+72)]` | Source citée : CGNC — Code Général de Normalisation Comptable (CNC, 1989), referenced by Loi 9-88. Plan comptable standard marocain complet (Classes 0 à 8) | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-02** | `jurisdiction/ma/einvoicing.yaml` | `einvoicing.enabled` | `False` | Source citée : DGI. E-invoicing remains disabled until official implementing decree is published | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-03** | `jurisdiction/ma/identifiers.yaml` | `identifiers.ice.format` | `^[0-9]{15}$` | Source citée : CGI art. 145 / Décret n° 2-11-63. Identifiant Commun de l'Entreprise : 15 chiffres | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-04** | `jurisdiction/ma/identifiers.yaml` | `identifiers.if.format` | `^[0-9]{1,10}$` | Source citée : CGI art. 145. Numéro d'Identifiant Fiscal : 1 à 10 chiffres | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-05** | `jurisdiction/ma/identifiers.yaml` | `identifiers.rib.format` | `^[0-9]{24}$` | Source citée : Bank Al-Maghrib - Directive relative au Relevé d'Identité Bancaire. RIB marocain : 24 chiffres (clé mod-97) | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-06** | `jurisdiction/ma/identifiers.yaml` | `identifiers.rib.modulus` | `97` | Source citée : Bank Al-Maghrib - Directive relative au Relevé d'Identité Bancaire. Clé de contrôle mod-97: 97 - ((N * 100) % 97) | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-07** | `jurisdiction/ma/identifiers.yaml` | `identifiers.rc.format` | `^[0-9]{1,10}$` | Source citée : Code de Commerce art. 42. Registre du Commerce : numéro séquentiel numérique | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-08** | `jurisdiction/ma/invoice_mentions.yaml` | `invoice.mandatory_mentions.purchase` | `[invoice_number, invoice_date, supplier_name ... (+5)]` | Source citée : CGI art. 145-III. Mentions obligatoires sur les factures d'achat (CGI art. 145-III) pour droit à déduction | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-09** | `jurisdiction/ma/invoice_mentions.yaml` | `invoice.mandatory_mentions.sale` | `[invoice_number, invoice_date, client_name ... (+3)]` | Source citée : CGI art. 145-III. Mentions obligatoires sur les factures de vente établies pour les clients professionnels | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-10** | `jurisdiction/ma/invoice_mentions.yaml` | `invoice.arithmetic_tolerance` | `0.01` | Source citée : CGI art. 99 / Pratique comptable OEC. Tolérance d'arrondi sur calculs arithmétiques par taux (0.01 MAD) | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-11** | `jurisdiction/ma/invoice_mentions.yaml` | `invoice.duplicate_window_days` | `20` | Source citée : Pratique fiduciaire. Fenêtre temporelle maximale en jours pour suspecter un doublon sur même montant TTC et même fournisseur | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-12** | `jurisdiction/ma/invoice_mentions.yaml` | `accounting.suggestion.confidence_threshold` | `0.75` | Source citée : Product / Part H quality gate. Seuil de confiance minimale pour l'imputation automatique sans anomalie | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-13** | `jurisdiction/ma/invoice_mentions.yaml` | `bank.reconciliation.threshold` | `0.97` | Source citée : Product / ARCHITECTURE.md D.7. Seuil de pré-sélection d'un rapprochement bancaire unitaire exact | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-14** | `jurisdiction/ma/invoice_mentions.yaml` | `bank.reconciliation.date_window_days` | `60` | Source citée : Product / ARCHITECTURE.md D.7. Fenêtre temporelle maximale pour génération des candidats de rapprochement | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-15** | `jurisdiction/ma/invoice_mentions.yaml` | `bank.statement.balance_tolerance` | `0.005` | Source citée : CGNC / BAM. Tolérance arithmétique pour contrôle du solde de relevé bancaire | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-16** | `jurisdiction/ma/issues.yaml` | `issues.DOC_UNREADABLE` | `{code: DOC_UNREADABLE, default_severity: blocking, title_fr: Document illisible ... (+1)}` | Source citée : Product. | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-17** | `jurisdiction/ma/issues.yaml` | `issues.DOC_MALWARE` | `{code: DOC_MALWARE, default_severity: blocking, title_fr: Fichier malveillant détecté ... (+1)}` | Source citée : Product / Loi 05-20. | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-18** | `jurisdiction/ma/issues.yaml` | `issues.DOC_UNSUPPORTED_TYPE` | `{code: DOC_UNSUPPORTED_TYPE, default_severity: blocking, title_fr: Format de document non supporté ... (+1)}` | Source citée : Product. | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-19** | `jurisdiction/ma/issues.yaml` | `issues.DUPLICATE_EXACT` | `{code: DUPLICATE_EXACT, default_severity: blocking, title_fr: Doublon exact (même empreinte SHA-256) ... (+1)}` | Source citée : Product / Loi 9-88. | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-20** | `jurisdiction/ma/issues.yaml` | `issues.DUPLICATE_PROBABLE` | `{code: DUPLICATE_PROBABLE, default_severity: review, title_fr: Doublon probable (même fournisseur, numéro et montant) ... (+1)}` | Source citée : Product / Loi 9-88. | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-21** | `jurisdiction/ma/issues.yaml` | `issues.INVOICE_MISSING_MANDATORY_FIELD` | `{code: INVOICE_MISSING_MANDATORY_FIELD, default_severity: review, title_fr: Mention obligatoire manquante ... (+1)}` | Source citée : CGI art. 145-III. | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-22** | `jurisdiction/ma/issues.yaml` | `issues.ICE_INVALID_FORMAT` | `{code: ICE_INVALID_FORMAT, default_severity: review, title_fr: Format ICE invalide (doit comporter 15 chiffres) ... (+1)}` | Source citée : CGI art. 145. | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-23** | `jurisdiction/ma/issues.yaml` | `issues.ICE_CHECK_DIGIT_MISMATCH` | `{code: ICE_CHECK_DIGIT_MISMATCH, default_severity: review, title_fr: Clé de contrôle ICE non concordante ... (+1)}` | Source citée : OMPIC / DGI. | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-24** | `jurisdiction/ma/issues.yaml` | `issues.TOTALS_INCONSISTENT` | `{code: TOTALS_INCONSISTENT, default_severity: blocking, title_fr: Totaux incohérents ... (+1)}` | Source citée : Product. | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-25** | `jurisdiction/ma/issues.yaml` | `issues.VAT_RATE_UNKNOWN` | `{code: VAT_RATE_UNKNOWN, default_severity: blocking, title_fr: Taux de TVA inconnu ... (+1)}` | Source citée : Product. | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-26** | `jurisdiction/ma/issues.yaml` | `issues.VAT_NOT_DEDUCTIBLE_CASH_LIMIT` | `{code: VAT_NOT_DEDUCTIBLE_CASH_LIMIT, default_severity: review, title_fr: TVA non déductible — Dépassement du plafond espèces ... (+1)}` | Source citée : CGI art. 106-II. | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-27** | `jurisdiction/ma/issues.yaml` | `issues.VAT_NOT_DEDUCTIBLE_BY_NATURE` | `{code: VAT_NOT_DEDUCTIBLE_BY_NATURE, default_severity: review, title_fr: TVA non déductible par nature de dépense ... (+1)}` | Source citée : CGI art. 106-I. | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-28** | `jurisdiction/ma/issues.yaml` | `issues.VAT_ON_AUTO_ENTREPRENEUR_INVOICE` | `{code: VAT_ON_AUTO_ENTREPRENEUR_INVOICE, default_severity: review, title_fr: TVA facturée par un auto-entrepreneur (interdit) ... (+1)}` | Source citée : Loi 114-13 / CGI art. 89. | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-29** | `jurisdiction/ma/issues.yaml` | `issues.ACCOUNT_UNMAPPED` | `{code: ACCOUNT_UNMAPPED, default_severity: blocking, title_fr: Compte comptable non associé dans le plan ... (+1)}` | Source citée : CGNC / Plan comptable. | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-30** | `jurisdiction/ma/issues.yaml` | `issues.ACCOUNT_LOW_CONFIDENCE` | `{code: ACCOUNT_LOW_CONFIDENCE, default_severity: review, title_fr: Faible confiance d'imputation comptable ... (+1)}` | Source citée : Product. | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-31** | `jurisdiction/ma/issues.yaml` | `issues.FX_RATE_MISSING` | `{code: FX_RATE_MISSING, default_severity: blocking, title_fr: Taux de change devise manquant ... (+1)}` | Source citée : CGNC / Bank Al-Maghrib. | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-32** | `jurisdiction/ma/issues.yaml` | `issues.PERIOD_MISMATCH` | `{code: PERIOD_MISMATCH, default_severity: review, title_fr: Date de pièce hors de la période comptable ... (+1)}` | Source citée : Loi 9-88 art. 7. | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-33** | `jurisdiction/ma/issues.yaml` | `issues.BANK_BALANCE_BREAK` | `{code: BANK_BALANCE_BREAK, default_severity: blocking, title_fr: Rupture de solde bancaire ... (+1)}` | Source citée : Loi 9-88. | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-34** | `jurisdiction/ma/issues.yaml` | `issues.BANK_LINE_UNMATCHED` | `{code: BANK_LINE_UNMATCHED, default_severity: review, title_fr: Ligne bancaire non rapprochée ... (+1)}` | Source citée : Product. | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-35** | `jurisdiction/ma/issues.yaml` | `issues.MATCH_AMOUNT_DIFFERENCE` | `{code: MATCH_AMOUNT_DIFFERENCE, default_severity: review, title_fr: Écart de montant sur rapprochement bancaire ... (+1)}` | Source citée : Product. | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-36** | `jurisdiction/ma/issues.yaml` | `issues.RAS_EXPECTED_NOT_FOUND` | `{code: RAS_EXPECTED_NOT_FOUND, default_severity: review, title_fr: Retenue à la source attendue non constatée ... (+1)}` | Source citée : CGI art. 117-IV. | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-37** | `jurisdiction/ma/issues.yaml` | `issues.MISSING_SUPPORTING_DOCUMENT` | `{code: MISSING_SUPPORTING_DOCUMENT, default_severity: review, title_fr: Pièce justificative manquante ... (+1)}` | Source citée : Loi 9-88 art. 1. | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-38** | `jurisdiction/ma/issues.yaml` | `issues.INTEGRATION_FAILURE` | `{code: INTEGRATION_FAILURE, default_severity: blocking, title_fr: Échec de l'intégration ou du fournisseur ... (+1)}` | Source citée : Product. | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-39** | `jurisdiction/ma/issues.yaml` | `issues.RULE_NEEDS_EXPERT` | `{code: RULE_NEEDS_EXPERT, default_severity: review, title_fr: Règle nécessitant validation experte ... (+1)}` | Source citée : Product. | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-40** | `jurisdiction/ma/vat_deduction.yaml` | `vat.deduction.cash_limit.daily` | `5000.0` | Source citée : CGI art. 106-II. Plafond de paiement en espèces par jour et par fournisseur (5 000 MAD) | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-41** | `jurisdiction/ma/vat_deduction.yaml` | `vat.deduction.cash_limit.monthly` | `50000.0` | Source citée : CGI art. 106-II. Plafond de paiement en espèces par mois et par fournisseur (50 000 MAD) | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-42** | `jurisdiction/ma/vat_deduction.yaml` | `vat.deduction.exclusions_by_nature` | `[passenger_vehicles, gifts, receptions ... (+3)]` | Source citée : CGI art. 106-I. Exclusions du droit à déduction de la TVA par nature de dépense (CGI art. 106-I) | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-43** | `jurisdiction/ma/vat_deduction.yaml` | `vat.deduction.prorata` | `True` | Source citée : CGI art. 104. Application du prorata général de déduction de la TVA selon CGI art. 104 | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-44** | `jurisdiction/ma/vat_filing.yaml` | `vat.filing.threshold.monthly` | `1000000.0` | Source citée : CGI art. 108. Régime mensuel obligatoire si CA annuel >= 1 000 000 MAD | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-45** | `jurisdiction/ma/vat_rates.yaml` | `vat.rate.standard` | `0.2` | Source citée : CGI art. 99-A. Taux normal de 20% | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-46** | `jurisdiction/ma/vat_rates.yaml` | `vat.rate.reduced_10` | `0.1` | Source citée : CGI art. 99-B. Taux réduit de 10% | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-47** | `jurisdiction/ma/vat_rates.yaml` | `vat.rate.reduced_14` | `0.14` | Source citée : Loi de Finances 2024 / CGI transition. Taux réduit transitoire de 14% applicable jusqu'au 31/12/2025 | [ ] Confirmé<br>[ ] Corrigé | ________ |
+| **SRC-48** | `jurisdiction/ma/vat_withholding.yaml` | `vat.withholding.rates` | `{partial: 0.75, full: 1.0, base: tva}` | Source citée : Loi de Finances 2024 / CGI art. 117. Taux légaux de retenue à la source de TVA : 75% ou 100%. Assiette de retenue : montant de la TVA. | [ ] Confirmé<br>[ ] Corrigé | ________ |
+
+---
+
+## 3. Déclaration Formelle de l'Expert-Comptable Signataire
 
 Je soussigné(e), ...................................................................................., agissant en qualité d'expert-comptable inscrit au tableau de l'Ordre des Experts-Comptables du Maroc sous le numéro ................................... :
 
 1. Confirme avoir pris connaissance de l'ensemble des règles de comptabilisation et de détermination fiscale automatisées par la plateforme AVENEL.
-2. Déclare validés les arbitrages cochés ci-dessus pour le paramétrage du cabinet et de ses dossiers clients pilotes.
+2. Déclare validés les arbitrages et confirmations cochés ci-dessus pour le paramétrage du cabinet et de ses dossiers clients pilotes.
 3. Autorise le passage en statut vérifié (`status: verified`) des clés visées dès intégration dans les fichiers de juridiction correspondants.
 
 **Fait à :** .......................................................  

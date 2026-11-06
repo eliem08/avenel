@@ -3,7 +3,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "CGI art. 106-II"
-  status: "verified"
+  status: "source_cited"
   note: "Plafond de paiement en espèces par jour et par fournisseur (5 000 MAD)"
 
 - key: "vat.deduction.cash_limit.monthly"
@@ -11,7 +11,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "CGI art. 106-II"
-  status: "verified"
+  status: "source_cited"
   note: "Plafond de paiement en espèces par mois et par fournisseur (50 000 MAD)"
 
 - key: "vat.deduction.cash_limit.basis"
@@ -33,7 +33,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "CGI art. 106-I"
-  status: "verified"
+  status: "source_cited"
   note: "Exclusions du droit à déduction de la TVA par nature de dépense (CGI art. 106-I)"
 
 - key: "vat.deduction.prorata"
@@ -41,5 +41,5 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "CGI art. 104"
-  status: "verified"
+  status: "source_cited"
   note: "Application du prorata général de déduction de la TVA selon CGI art. 104"

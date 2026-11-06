@@ -45,7 +45,8 @@ def format_value(val: Any) -> str:
     return f"`{str(val)[:40]}`"
 
 
-def extract_needs_expert_entries() -> list[dict[str, Any]]:
+def extract_needs_expert_entries(status: str = "needs_expert") -> list[dict[str, Any]]:
+    """Entries with the given status ('needs_expert' or 'source_cited')."""
     entries: list[dict[str, Any]] = []
 
     for yaml_path in sorted(PACK_DIR.glob("*.yaml")):
@@ -63,10 +64,12 @@ def extract_needs_expert_entries() -> list[dict[str, Any]]:
             if not isinstance(item, dict):
                 continue
 
-            if item.get("status") == "needs_expert":
+            if item.get("status") == status:
                 key = item.get("key", "unnamed_key")
                 val = item.get("value")
                 note = item.get("note") or item.get("source") or "TODO(EXPERT): Validation requise"
+                if status == "source_cited":
+                    note = f"Source citée : {item.get('source') or '—'}. {item.get('note') or ''}"
                 entries.append({
                     "file": rel_path,
                     "key": key,
@@ -77,7 +80,8 @@ def extract_needs_expert_entries() -> list[dict[str, Any]]:
     return entries
 
 
-def generate_markdown(entries: list[dict[str, Any]]) -> str:
+def generate_markdown(entries: list[dict[str, Any]], cited: list[dict[str, Any]] | None = None) -> str:
+    cited = cited or []
     lines: list[str] = [
         "# AVENEL — Fiche de Visa et d'Arbitrage des Règles Réglementaires (`needs_expert`)",
         "",
@@ -116,12 +120,31 @@ def generate_markdown(entries: list[dict[str, Any]]) -> str:
         "",
         "---",
         "",
-        "## 2. Déclaration Formelle de l'Expert-Comptable Signataire",
+        "## 2. Règles appliquées avec une source citée, non encore confirmées (`source_cited`)",
+        "",
+        (f"Ces {len(cited)} règles sont appliquées par la plateforme et affichées « à confirmer par un expert ». "
+        "Elles avaient été marquées `verified` sans signature ; aucune n'a été confirmée par un professionnel (décision du 6 novembre 2026)."),
+        "",
+        "| Réf | Fichier Source | Clé Réglementaire | Valeur Actuelle | Source citée | Confirmation | Visa Expert |",
+        "| :---: | :--- | :--- | :--- | :--- | :--- | :---: |",
+    ])
+    for idx, e in enumerate(cited, 1):
+        val_clean = e["value"].replace("|", "\\|")
+        q_clean = e["question"].replace("|", "\\|").replace("\n", " ")
+        lines.append(
+            f"| **SRC-{idx:02d}** | `{e['file']}` | `{e['key']}` | {val_clean} | {q_clean} | [ ] Confirmé<br>[ ] Corrigé | ________ |"
+        )
+
+    lines.extend([
+        "",
+        "---",
+        "",
+        "## 3. Déclaration Formelle de l'Expert-Comptable Signataire",
         "",
         "Je soussigné(e), ...................................................................................., agissant en qualité d'expert-comptable inscrit au tableau de l'Ordre des Experts-Comptables du Maroc sous le numéro ................................... :",
         "",
         "1. Confirme avoir pris connaissance de l'ensemble des règles de comptabilisation et de détermination fiscale automatisées par la plateforme AVENEL.",
-        "2. Déclare validés les arbitrages cochés ci-dessus pour le paramétrage du cabinet et de ses dossiers clients pilotes.",
+        "2. Déclare validés les arbitrages et confirmations cochés ci-dessus pour le paramétrage du cabinet et de ses dossiers clients pilotes.",
         "3. Autorise le passage en statut vérifié (`status: verified`) des clés visées dès intégration dans les fichiers de juridiction correspondants.",
         "",
         "**Fait à :** .......................................................  ",
@@ -142,7 +165,7 @@ def main() -> int:
     args = parser.parse_args()
 
     entries = extract_needs_expert_entries()
-    generated_md = generate_markdown(entries)
+    generated_md = generate_markdown(entries, extract_needs_expert_entries("source_cited"))
 
     if args.check:
         if not OUTPUT_FILE.exists():

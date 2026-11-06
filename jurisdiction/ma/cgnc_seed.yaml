@@ -170,7 +170,7 @@
   effective_from: "1994-01-01"
   effective_to: null
   source: "CGNC — Code Général de Normalisation Comptable (CNC, 1989), referenced by Loi 9-88"
-  status: "verified"
+  status: "source_cited"
   note: "Plan comptable standard marocain complet (Classes 0 à 8)"
 
 - key: "cgnc.subaccounts.activity_specific"

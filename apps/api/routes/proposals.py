@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from apps.api.deps import get_current_session, get_db
+from avenel.proposals.entry_builder import ProposalGenerationBlockedError
 from avenel.proposals.service import (
     ProposalImmutableError,
     ProposalNotFoundError,
@@ -158,9 +159,14 @@ async def generate_proposal_endpoint(
         )
         conn.commit()
         return proposal
-    except Exception as err:
+    except (ValueError, ProposalGenerationBlockedError) as err:
         conn.rollback()
         raise HTTPException(status_code=422, detail=str(err)) from err
+    except Exception:
+        # Unexpected failures are server errors, not "unprocessable input" (Phase 3: a crash
+        # in the builder was reported as 422 with the Python error text as the message).
+        conn.rollback()
+        raise
 
 
 @router.put("/proposals/{id}")

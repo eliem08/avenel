@@ -180,6 +180,28 @@ def _get_or_create_counterparty(
         return uuid.UUID(str(res[0])), bool(res[1])
 
 
+def _line_items_description(line_items: Any) -> str | None:
+    """Text of the extracted line items for the account suggester.
+
+    The extractor emits a list of items; older inputs used {"value": ...}. Phase 3: the
+    builder called .get() on the list and crashed for every document read from a real PDF.
+    """
+    if isinstance(line_items, dict):
+        value = line_items.get("value")
+        return str(value) if value else None
+    if isinstance(line_items, list):
+        parts = []
+        for item in line_items:
+            if isinstance(item, dict):
+                text = item.get("description") or item.get("label") or item.get("designation")
+                if text:
+                    parts.append(str(text))
+            elif item:
+                parts.append(str(item))
+        return "; ".join(parts) or None
+    return None
+
+
 def build_journal_proposal(
     conn: psycopg.Connection,
     tenant_id: uuid.UUID,
@@ -208,7 +230,15 @@ def build_journal_proposal(
     currency = str(extracted_fields.get("currency", {}).get("value") or "MAD").upper().strip()
 
     # Multi-rate breakdown if present
-    vat_breakdown_field = extracted_fields.get("vat_breakdown") or extracted_fields.get("tax_lines") or []
+    # `tax_breakdown` is what the extractor emits (avenel/extraction/extractor.py); the other
+    # names are older shapes still used by hand-built test inputs. Phase 3: the builder used to
+    # ignore the extractor's field, so real per-rate VAT amounts were never read.
+    vat_breakdown_field = (
+        extracted_fields.get("tax_breakdown")
+        or extracted_fields.get("vat_breakdown")
+        or extracted_fields.get("tax_lines")
+        or []
+    )
     if isinstance(vat_breakdown_field, dict):
         vat_breakdown_val = vat_breakdown_field.get("value") or []
     elif isinstance(vat_breakdown_field, list):
@@ -290,7 +320,7 @@ def build_journal_proposal(
         doc_type=doc_type,
         counterparty_ice=supplier_ice if not is_sale else None,
         counterparty_name=supplier_name if not is_sale else None,
-        description=extracted_fields.get("line_items", {}).get("value"),
+        description=_line_items_description(extracted_fields.get("line_items")),
     )
     top_suggestion = suggestions[0] if suggestions else None
     if top_suggestion:
@@ -539,7 +569,7 @@ def build_journal_proposal(
                     for sub in vat_rates_breakdown:
                         rate_val = sub.get("rate")
                         sub_rate = float(rate_val) if rate_val is not None else (matched_tax.rate_value if matched_tax else 0.0)
-                        sub_vat = float(sub.get("vat_amount") or sub.get("amount_tva") or sub.get("amount") or sub.get("tva") or 0.0)
+                        sub_vat = float(sub.get("tax_amount") or sub.get("vat_amount") or sub.get("amount_tva") or sub.get("amount") or sub.get("tva") or 0.0)
                         if sub_vat <= 0.0 and "base_ht" in sub and sub_rate > 0:
                             sub_vat = round(float(sub["base_ht"]) * sub_rate, 2)
                         if sub_vat <= 0.0 and len(vat_rates_breakdown) == 1 and raw_vat > 0.0:

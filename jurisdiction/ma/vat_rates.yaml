@@ -3,7 +3,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "CGI art. 99-A"
-  status: "verified"
+  status: "source_cited"
   note: "Taux normal de 20%"
 
 - key: "vat.rate.reduced_10"
@@ -11,7 +11,7 @@
   effective_from: "2026-01-01"
   effective_to: null
   source: "CGI art. 99-B"
-  status: "verified"
+  status: "source_cited"
   note: "Taux réduit de 10%"
 
 - key: "vat.rate.reduced_14"
@@ -19,7 +19,7 @@
   effective_from: "2024-01-01"
   effective_to: "2025-12-31"
   source: "Loi de Finances 2024 / CGI transition"
-  status: "verified"
+  status: "source_cited"
   note: "Taux réduit transitoire de 14% applicable jusqu'au 31/12/2025"
 
 - key: "vat.rate.mapping_items"

@@ -2,11 +2,21 @@
 
 from __future__ import annotations
 
+import json
 import uuid
 from typing import Annotated, Any
 
 import psycopg
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Response,
+    UploadFile,
+    status,
+)
 from pydantic import BaseModel, Field
 
 from apps.api.deps import get_current_session, get_db
@@ -14,6 +24,11 @@ from avenel.bank.service import (
     create_bank_account,
     ingest_bank_statement,
     list_bank_accounts,
+)
+from avenel.documents.scanner import (
+    check_intake_health,
+    record_scan_evidence,
+    scan_bytes,
 )
 from avenel.infrastructure.storage import compute_sha256, get_storage
 from avenel.tenancy.auth import UserSession
@@ -89,6 +104,7 @@ async def upload_bank_statement_endpoint(
     file: Annotated[UploadFile, File()],
     session: Annotated[UserSession, Depends(get_current_session)],
     conn: Annotated[psycopg.Connection, Depends(get_db)],
+    response: Response,
     work_request_id: Annotated[uuid.UUID | None, Form()] = None,
 ) -> dict[str, Any]:
     """Uploads and ingests a bank statement with balance verification."""
@@ -101,15 +117,47 @@ async def upload_bank_statement_endpoint(
     if not file_bytes:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Fichier vide.")
 
+    # Phase 4 completion: a statement is an upload like any other (Part K 8, K 9).
+    # 1. The bank account must belong to this client company (scope-first 404).
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT 1 FROM bank_accounts WHERE tenant_id = %s AND client_entity_id = %s AND id = %s;",
+            (session.tenant_id, client_entity_id, bank_account_id),
+        )
+        if not cur.fetchone():
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Compte bancaire introuvable.")
+    # 2. Intake paused (antivirus down or signatures stale): refuse, nothing stored.
+    health = check_intake_health()
+    if health.intake_paused:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=health.banner_message)
+    # 3. Exact duplicate of a statement already received for this company.
+    file_sha256 = compute_sha256(file_bytes)
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT document_id FROM document_versions WHERE tenant_id = %s AND client_entity_id = %s AND sha256 = %s;",
+            (session.tenant_id, client_entity_id, file_sha256),
+        )
+        dup = cur.fetchone()
+    if dup:
+        response.status_code = status.HTTP_200_OK
+        return {
+            "document_id": str(dup[0]),
+            "resubmitted": True,
+            "detail": "Ce relevé a déjà été reçu pour cette société. Il n'est pas importé une seconde fois.",
+        }
+    # 4. Malware scan before anything is parsed or stored as an original.
+    scan = scan_bytes(file_bytes)
+
     # Create document version for audit/storage
     doc_id = uuid.uuid4()
     doc_version_id = uuid.uuid4()
     storage = get_storage()
-    file_sha256 = compute_sha256(file_bytes)
     object_key = f"documents/{session.tenant_id}/{client_entity_id}/{doc_id}/v1"
     mime_type = file.content_type or "text/csv"
 
-    storage.put_object(object_key, file_bytes, mime_type)
+    if scan.is_clean:
+        # retain_until unset: retention period is needs_expert in the pack (TODO(EXPERT)).
+        storage.put_original(object_key, file_bytes, mime_type, retain_until=None)
 
     with conn.cursor() as cur:
         cur.execute(
@@ -118,13 +166,14 @@ async def upload_bank_statement_endpoint(
                 id, tenant_id, client_entity_id, work_request_id,
                 doc_type, status, original_filename, source_channel, uploaded_by
             )
-            VALUES (%s, %s, %s, %s, 'bank_statement', 'received', %s, 'console', %s);
+            VALUES (%s, %s, %s, %s, 'bank_statement', %s, %s, 'console', %s);
             """,
             (
                 doc_id,
                 session.tenant_id,
                 client_entity_id,
                 work_request_id,
+                "received" if scan.is_clean else "quarantined",
                 file.filename or "releve_bancaire.csv",
                 session.user_id,
             ),
@@ -147,6 +196,22 @@ async def upload_bank_statement_endpoint(
                 mime_type,
                 len(file_bytes),
             ),
+        )
+
+    if not scan.is_clean:
+        with conn.cursor() as cur:
+            if work_request_id:
+                record_scan_evidence(conn, session.tenant_id, work_request_id, doc_id, scan)
+                cur.execute(
+                    """INSERT INTO issues (tenant_id, client_entity_id, work_request_id, subject_document_id,
+                                           code, severity, status, evidence_refs)
+                       VALUES (%s, %s, %s, %s, 'DOC_MALWARE', 'blocking', 'open', %s::jsonb);""",
+                    (session.tenant_id, client_entity_id, work_request_id, doc_id, json.dumps([scan.details or {}])),
+                )
+        conn.commit()
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Relevé mis en quarantaine : logiciel malveillant détecté ({scan.threat_name}). Il n'est pas importé.",
         )
 
     try:

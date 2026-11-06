@@ -72,7 +72,11 @@ def generate_matches_endpoint(
     conn: Annotated[psycopg.Connection, Depends(get_db)],
 ) -> list[dict[str, Any]]:
     """Triggers candidate generation for bank reconciliation."""
-    _check_client_scope(session, payload.client_entity_id)
+    # The company comes from the work request, never from the body alone (Phase 4: a body
+    # client_entity_id that did not match the work request was accepted).
+    wr_client = _resolve_work_request(conn, session, payload.work_request_id)
+    if wr_client != payload.client_entity_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Demande de travail introuvable.")
 
     if session.role in ("client_user", "operator"):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Action non autorisée pour ce rôle.")

@@ -1,0 +1,15 @@
+2026-11-06T18:16:00.802Z [phase5-expert-mapping] PUT http://localhost:8000/v1/client-entities/cd6b6580-b2b6-40f1-9ac4-3e208d2e064f/tax-mappings -> 200 bearer_jwt=true
+2026-11-06T18:16:02.222Z [phase5-accountant] GET http://localhost:8000/v1/bank-accounts?client_entity_id=cd6b6580-b2b6-40f1-9ac4-3e208d2e064f -> 200 bearer_jwt=true
+2026-11-06T18:16:02.237Z [phase5-accountant] GET http://localhost:8000/v1/reconciliation/bank-transactions?work_request_id=dc4df68c-6e03-4b57-8150-5bc041ad80d8 -> 200 bearer_jwt=true
+2026-11-06T18:16:02.277Z [phase5-accountant] POST http://localhost:8000/v1/work-requests/dc4df68c-6e03-4b57-8150-5bc041ad80d8/uploads -> 201 bearer_jwt=true
+2026-11-06T18:16:02.338Z [phase5-accountant] PUT http://localhost:8000/v1/documents/dd432b35-c597-4707-bab0-4bf7c62ba4b5/content -> 200 bearer_jwt=true
+2026-11-06T18:16:04.560Z [phase5-accountant] POST http://localhost:8000/v1/documents/dd432b35-c597-4707-bab0-4bf7c62ba4b5:complete-upload -> 200 bearer_jwt=true
+2026-11-06T18:16:05.128Z [phase5-accountant] POST http://localhost:8000/v1/documents/dd432b35-c597-4707-bab0-4bf7c62ba4b5:generate-proposal -> 200 bearer_jwt=true
+2026-11-06T18:16:05.728Z [phase5-accountant] POST http://localhost:8000/v1/issues/7bcea85b-b1e6-4127-a347-aba31cd5a7dc:acknowledge -> 200 bearer_jwt=true
+2026-11-06T18:16:05.760Z [phase5-accountant] POST http://localhost:8000/v1/work-requests/dc4df68c-6e03-4b57-8150-5bc041ad80d8/approvals -> 201 bearer_jwt=true
+2026-11-06T18:16:30.482Z [phase5-expert] GET http://localhost:8000/v1/approvals -> 200 bearer_jwt=true
+2026-11-06T18:16:30.607Z [phase5-expert] GET http://localhost:8000/v1/approvals -> 200 bearer_jwt=true
+2026-11-06T18:21:36.744Z [phase5-expert] GET http://localhost:8000/v1/approvals -> 200 bearer_jwt=true
+2026-11-06T18:21:37.029Z [phase5-expert] POST http://localhost:8000/v1/approvals/e1039b6c-ee41-4b75-a5ff-f36a96d6e3a3:decide -> 200 bearer_jwt=true
+2026-11-06T18:21:37.201Z [phase5-expert] POST http://localhost:8000/v1/work-requests/dc4df68c-6e03-4b57-8150-5bc041ad80d8/exports -> 201 bearer_jwt=true
+2026-11-06T18:21:37.295Z [phase5-expert] GET http://localhost:8000/v1/exports/65975e0d-9cda-4daa-b8d5-f0be5ea5033e/file -> 200 bearer_jwt=true

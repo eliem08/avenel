@@ -1,0 +1,1434 @@
+# Phase 5 completion report — approval and export
+
+**Date:** 6 November 2026 · **Repository:** `../avenel-split` (commits after `118bc2d`, not pushed)
+
+`make ci` exited **0** locally, including 12 browser tests on the docker-compose stack (4 new for Phase 5). The build work of Phase 5 meets its exit criteria; the **manual round trip on a pilot firm's Sage and Odoo** cannot be done from here and is open. Stopped for review.
+
+## Exit criteria
+
+| Criterion | Evidence | Result |
+|---|---|---|
+| Export refused when the hash changed | HTTP test: approved file, then a new document proposed → export 409 (`ApprovalStale`); decide with a wrong hash → 409; editing an approved entry → 409 (C.4 #5) | Pass |
+| Golden export files byte-identical | `tests/exports/test_golden_exports.py` (Sage 100 CSV, PNM, Odoo CSV; expected bytes written literally) | Pass (layouts unverified against the software) |
+| Round trip verified manually on one pilot firm's Sage and Odoo, recorded in `export_profiles.verified_round_trip_at` | Not possible here; the export screen shows "Format non vérifié" until it is recorded | **Open — needs a pilot firm** |
+| Quality check, issue workflow, client requests, approval with subject hash and segregation of duties, exporters, evidence pack | HTTP tests + e2e below | Pass (see limits) |
+
+## Shown in the browser on the real stack
+
+1. A registered expert approves the VAT account of a new company.
+2. The accountant uploads an invoice, it is read, an entry is proposed; the open review issue (`ACCOUNT_LOW_CONFIDENCE`) is acknowledged with a reason; approval is requested (refused before the acknowledgement — tested).
+3. The expert opens Validations; the session is **left to age past 5 minutes**; "Valider le dossier" sends the browser back to Keycloak with `prompt=login` and `max_age=300` (logged: `prompt=login true max_age=300 true`); after password + OTP the browser returns and the approval goes through (`:decide -> 200`).
+4. The Sage 100 CSV is generated and downloaded:
+
+```
+ACH;12092026;FAC-2026-0412;Facture achat N° FAC-2026-0412 - So;61110000;;Facture achat - Achats de marchandi;10000,00;0,00
+ACH;12092026;FAC-2026-0412;Facture achat N° FAC-2026-0412 - So;34552000;;TVA déductible (STANDARD_20);2000,00;0,00
+ACH;12092026;FAC-2026-0412;Facture achat N° FAC-2026-0412 - So;44110000;;Facture FAC-2026-0412 - SocieteAtla;0,00;12000,00
+```
+
+## Found and fixed
+
+1. **Segregation of duties only compared the approver with the person who requested approval.** Someone who generated or edited every entry could have a colleague click "Demander la validation" and approve their own work (C.4 #8). The generating user is now recorded on the entry, and approval is refused to the requester and to anyone who generated or last edited an active entry. Restrictive reading recorded in `docs/open-questions.md`; test fails on the old code.
+2. **Client portal leaked across companies.** A client user with no scoped company listed every waiting request of the firm (one with several saw only the first), and any user could answer any request by id. Now exact scope, answers only by a client user of that company.
+3. **Export piece number was the document's UUID** (`463ada3b-3d49-…`) in Sage CSV/PNM, because real proposals have no piece number and the formatters fell back to the id; golden tests passed because their hand-built input had one. Now the invoice number read from the document.
+4. `/me` now returns the professional title and registration number (needed to show the approve action; the API still decides).
+5. New screens: Validations (list), approval page (E.5 summary, step-up, then export with file and evidence-pack download), issue actions on the file (acknowledge with reason, send to client), "Demander la validation", client portal ("Demandes du cabinet").
+
+## Raw output of `make ci`
+
+Full log: `docs/reports/phase-5/make-ci.log` (1331 lines).
+
+<details><summary>make ci — full output</summary>
+
+```
+.venv/Scripts/python.exe -m ruff check avenel apps scripts
+All checks passed!
+.venv/Scripts/python.exe scripts/check_no_tax_literals.py
+[LINT PASSED] No forbidden numeric tax literals, hardcoded identifier regexes, or account seeds found in application code.
+.venv/Scripts/python.exe scripts/check_migration_hashes.py
+SUCCESS: All 16 frozen migrations (001�008) verified intact.
+.venv/Scripts/python.exe scripts/check_test_count.py
+[TEST COUNT CHECK] Collected: 270 | Required Baseline: 260
+[INFO] Updated test count baseline to 270.
+[TEST COUNT CHECK PASSED] Test count maintained or increased.
+.venv/Scripts/python.exe scripts/generate_expert_sign_off.py --check
+PASS: C:\Users\21263\Downloads\avenel-split\docs\pilot\expert-sign-off-sheet.md is up to date with 29 needs_expert rules.
+.venv/Scripts/python.exe -m mypy avenel apps/api scripts
+Success: no issues found in 89 source files
+npx @stoplight/spectral-cli lint contracts/openapi.yaml --ruleset .spectral.yaml
+No results with a severity of 'error' found!
+.venv/Scripts/python.exe scripts/rls_check.py
+Applying migration 001_core from 001_core.up.sql...
+Applied 001_core successfully.
+Applying migration 002_rls from 002_rls.up.sql...
+Applied 002_rls successfully.
+Applying migration 003_append_only from 003_append_only.up.sql...
+Applied 003_append_only successfully.
+Applying migration 004_fx_rates from 004_fx_rates.up.sql...
+Applied 004_fx_rates successfully.
+Applying migration 005_rounding_directions from 005_rounding_directions.up.sql...
+Applied 005_rounding_directions successfully.
+Applying migration 006_reconciliation_refinements from 006_reconciliation_refinements.up.sql...
+Applied 006_reconciliation_refinements successfully.
+Applying migration 007_active_bq_proposal_unique from 007_active_bq_proposal_unique.up.sql...
+Applied 007_active_bq_proposal_unique successfully.
+Applying migration 008_round_trips_and_approval_policy from 008_round_trips_and_approval_policy.up.sql...
+Applied 008_round_trips_and_approval_policy successfully.
+Applying migration 009_review_metrics_and_rate_limits from 009_review_metrics_and_rate_limits.up.sql...
+Applied 009_review_metrics_and_rate_limits successfully.
+Applying migration 010_issue_supersede_and_round_trip_grants from 010_issue_supersede_and_round_trip_grants.up.sql...
+Applied 010_issue_supersede_and_round_trip_grants successfully.
+Found 31 tables with tenant_id:
+  - accounting_periods: rls_enabled=True, rls_forced=True, policies=1
+  - agent_runs: rls_enabled=True, rls_forced=True, policies=1
+  - approvals: rls_enabled=True, rls_forced=True, policies=1
+  - audit_events: rls_enabled=True, rls_forced=True, policies=1
+  - bank_accounts: rls_enabled=True, rls_forced=True, policies=1
+  - bank_statements: rls_enabled=True, rls_forced=True, policies=1
+  - bank_transactions: rls_enabled=True, rls_forced=True, policies=1
+  - chart_accounts: rls_enabled=True, rls_forced=True, policies=1
+  - client_entities: rls_enabled=True, rls_forced=True, policies=1
+  - client_tax_mappings: rls_enabled=True, rls_forced=True, policies=1
+  - counterparties: rls_enabled=True, rls_forced=True, policies=1
+  - document_versions: rls_enabled=True, rls_forced=True, policies=1
+  - documents: rls_enabled=True, rls_forced=True, policies=1
+  - evidence_records: rls_enabled=True, rls_forced=True, policies=1
+  - export_profiles: rls_enabled=True, rls_forced=True, policies=1
+  - export_round_trips: rls_enabled=True, rls_forced=True, policies=1
+  - exports: rls_enabled=True, rls_forced=True, policies=1
+  - extractions: rls_enabled=True, rls_forced=True, policies=1
+  - fx_rates: rls_enabled=True, rls_forced=True, policies=1
+  - idempotency_keys: rls_enabled=True, rls_forced=True, policies=1
+  - issues: rls_enabled=True, rls_forced=True, policies=1
+  - journal_lines: rls_enabled=True, rls_forced=True, policies=1
+  - journal_proposals: rls_enabled=True, rls_forced=True, policies=1
+  - membership_client_scopes: rls_enabled=True, rls_forced=True, policies=1
+  - memberships: rls_enabled=True, rls_forced=True, policies=1
+  - provider_calls: rls_enabled=True, rls_forced=True, policies=1
+  - reconciliation_match_items: rls_enabled=True, rls_forced=True, policies=1
+  - reconciliation_matches: rls_enabled=True, rls_forced=True, policies=1
+  - review_effort_metrics: rls_enabled=True, rls_forced=True, policies=1
+  - usage_records: rls_enabled=True, rls_forced=True, policies=1
+  - work_requests: rls_enabled=True, rls_forced=True, policies=1
+
+[RLS-CHECK PASSED] All 31 tables with tenant_id have forced RLS and tenant policy.
+.venv/Scripts/python.exe scripts/verify_audit_chain.py --seed
+Applying migration 001_core from 001_core.up.sql...
+Applied 001_core successfully.
+Applying migration 002_rls from 002_rls.up.sql...
+Applied 002_rls successfully.
+Applying migration 003_append_only from 003_append_only.up.sql...
+Applied 003_append_only successfully.
+Applying migration 004_fx_rates from 004_fx_rates.up.sql...
+Applied 004_fx_rates successfully.
+Applying migration 005_rounding_directions from 005_rounding_directions.up.sql...
+Applied 005_rounding_directions successfully.
+Applying migration 006_reconciliation_refinements from 006_reconciliation_refinements.up.sql...
+Applied 006_reconciliation_refinements successfully.
+Applying migration 007_active_bq_proposal_unique from 007_active_bq_proposal_unique.up.sql...
+Applied 007_active_bq_proposal_unique successfully.
+Applying migration 008_round_trips_and_approval_policy from 008_round_trips_and_approval_policy.up.sql...
+Applied 008_round_trips_and_approval_policy successfully.
+Applying migration 009_review_metrics_and_rate_limits from 009_review_metrics_and_rate_limits.up.sql...
+Applied 009_review_metrics_and_rate_limits successfully.
+Applying migration 010_issue_supersede_and_round_trip_grants from 010_issue_supersede_and_round_trip_grants.up.sql...
+Applied 010_issue_supersede_and_round_trip_grants successfully.
+[AUDIT-VERIFY] Seeded 5 audit events for test tenant 33a65a42-c3cb-4b3c-bd79-68103b4ee231
+  - Tenant 33a65a42-c3cb-4b3c-bd79-68103b4ee231: verified 5 audit events in linear sequence.
+
+[AUDIT-VERIFY PASSED] All 5 audit events across 1 tenant(s) verified linear and intact.
+.venv/Scripts/python.exe -m pytest -v tests
+C:\Users\21263\Downloads\avenel-split\.venv\Lib\site-packages\pytest_asyncio\plugin.py:300: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the "fixture" caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to "function" scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts =============================
+platform win32 -- Python 3.12.2, pytest-9.2.0, pluggy-1.7.0 -- C:\Users\21263\Downloads\avenel-split\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+hypothesis profile 'default'
+rootdir: C:\Users\21263\Downloads\avenel-split
+configfile: pytest.ini
+plugins: anyio-4.16.0, hypothesis-6.170.14, platformdirs-4.14.3, asyncio-1.4.1.post1
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 269 items
+
+tests/api/test_approval_export_api.py::test_full_path_approval_then_export PASSED [  0%]
+tests/api/test_approval_export_api.py::test_export_refused_when_the_file_changed_after_approval PASSED [  0%]
+tests/api/test_approval_export_api.py::test_decide_with_a_wrong_hash_is_refused PASSED [  1%]
+tests/api/test_approval_export_api.py::test_unknown_approval_and_export_are_404 PASSED [  1%]
+tests/api/test_approval_export_api.py::test_approval_refused_while_review_issues_are_open PASSED [  1%]
+tests/api/test_approval_export_api.py::test_who_generated_the_entries_cannot_approve_even_if_someone_else_requested PASSED [  2%]
+tests/api/test_approval_export_api.py::test_export_piece_number_is_the_invoice_number_not_an_id PASSED [  2%]
+tests/api/test_audit_chain_verifies.py::test_audit_chain_verifies_after_phase1_operations PASSED [  2%]
+tests/api/test_auth_jwt.py::test_jwt_valid_signature_authenticates PASSED [  3%]
+tests/api/test_auth_jwt.py::test_jwt_expired_token_gets_401 PASSED       [  3%]
+tests/api/test_auth_jwt.py::test_jwt_wrong_audience_gets_401 PASSED      [  4%]
+tests/api/test_auth_jwt.py::test_jwt_wrong_issuer_gets_401 PASSED        [  4%]
+tests/api/test_auth_jwt.py::test_jwt_forged_signature_gets_401 PASSED    [  4%]
+tests/api/test_auth_jwt.py::test_jwt_immature_nbf_gets_401 PASSED        [  5%]
+tests/api/test_auth_jwt.py::test_mfa_enforced_for_professional_registration PASSED [  5%]
+tests/api/test_auth_jwt.py::test_operator_access_lifecycle_and_expiry PASSED [  5%]
+tests/api/test_bank_reconciliation_api.py::test_statement_upload_parses_and_checks_balance PASSED [  6%]
+tests/api/test_bank_reconciliation_api.py::test_balance_break_is_a_blocking_issue PASSED [  6%]
+tests/api/test_bank_reconciliation_api.py::test_statement_upload_is_scanned_for_malware PASSED [  7%]
+tests/api/test_bank_reconciliation_api.py::test_same_statement_twice_is_not_ingested_twice PASSED [  7%]
+tests/api/test_bank_reconciliation_api.py::test_scope_rules PASSED       [  7%]
+tests/api/test_bank_reconciliation_api.py::test_payment_line_is_matched_to_the_invoice_and_accepted_once PASSED [  8%]
+tests/api/test_bank_reconciliation_api.py::test_generate_refuses_a_client_that_is_not_the_work_requests PASSED [  8%]
+tests/api/test_bank_reconciliation_api.py::test_bank_transactions_of_a_file PASSED [  8%]
+tests/api/test_chart_import_file.py::test_import_file_four_quadrants PASSED [  9%]
+tests/api/test_chart_import_file.py::test_import_file_xlsx PASSED        [  9%]
+tests/api/test_chart_import_file.py::test_import_file_rejects_other_formats PASSED [ 10%]
+tests/api/test_chart_import_file.py::test_import_file_rejects_corrupt_xlsx PASSED [ 10%]
+tests/api/test_client_user_scoping.py::test_client_user_cannot_see_unscoped_company PASSED [ 10%]
+tests/api/test_compliance.py::test_compliance_dpa_and_cndp_generation PASSED [ 11%]
+tests/api/test_cross_tenant_isolation.py::test_cross_tenant_isolation_every_endpoint_returns_404 PASSED [ 11%]
+tests/api/test_document_content_upload.py::test_upload_then_process_over_http_only PASSED [ 11%]
+tests/api/test_document_content_upload.py::test_original_is_write_once PASSED [ 12%]
+tests/api/test_document_content_upload.py::test_bytes_must_match_declared_size_and_hash PASSED [ 12%]
+tests/api/test_document_content_upload.py::test_scope_first_404_and_401 PASSED [ 13%]
+tests/api/test_document_reading_real_pdf.py::test_real_pdf_is_read_with_bboxes[text-pdf] PASSED [ 13%]
+tests/api/test_document_reading_real_pdf.py::test_real_pdf_is_read_with_bboxes[scanned-pdf] PASSED [ 13%]
+tests/api/test_document_reading_real_pdf.py::test_page_image_scope_rules PASSED [ 14%]
+tests/api/test_document_reading_real_pdf.py::test_unrenderable_pdf_fails_loudly PASSED [ 14%]
+tests/api/test_document_reading_real_pdf.py::test_ocr_engine_unavailable_returns_503 PASSED [ 14%]
+tests/api/test_documents_intake.py::test_document_intake_full_pipeline_success PASSED [ 15%]
+tests/api/test_documents_intake.py::test_exact_duplicate_document_resubmitted_returns_200 PASSED [ 15%]
+tests/api/test_documents_intake.py::test_same_file_different_client_entities_creates_two_separate_documents PASSED [ 15%]
+tests/api/test_documents_intake.py::test_malware_quarantined_with_immutable_evidence PASSED [ 16%]
+tests/api/test_documents_intake.py::test_clamav_stale_or_scanner_down_intake_paused PASSED [ 16%]
+tests/api/test_documents_intake.py::test_field_correction_generates_immutable_evidence PASSED [ 17%]
+tests/api/test_documents_intake.py::test_scope_first_and_role_permissions PASSED [ 17%]
+tests/api/test_health_ready.py::test_health_ready_reports_database_ok PASSED [ 17%]
+tests/api/test_health_ready.py::test_health_ready_returns_503_when_database_unreachable PASSED [ 18%]
+tests/api/test_idempotency.py::test_missing_idempotency_key_returns_400 PASSED [ 18%]
+tests/api/test_idempotency.py::test_idempotent_replay_returns_cached_response PASSED [ 18%]
+tests/api/test_idempotency.py::test_same_key_different_body_returns_422 PASSED [ 19%]
+tests/api/test_idempotency.py::test_concurrent_in_flight_returns_409 PASSED [ 19%]
+tests/api/test_idempotency.py::test_non_mutating_get_does_not_require_idempotency_key PASSED [ 20%]
+tests/api/test_periods_and_chart.py::test_periods_overlap_protection_returns_409 PASSED [ 20%]
+tests/api/test_periods_and_chart.py::test_chart_accounts_seed_and_import PASSED [ 20%]
+tests/api/test_phase1_matrix.py::test_phase1_matrix_four_quadrants[get_session-GET-/v1/me-None-200] PASSED [ 21%]
+tests/api/test_phase1_matrix.py::test_phase1_matrix_four_quadrants[list_client_entities-GET-/v1/client-entities-None-200] PASSED [ 21%]
+tests/api/test_phase1_matrix.py::test_phase1_matrix_four_quadrants[create_client_entity-POST-/v1/client-entities-payload2-201] PASSED [ 21%]
+tests/api/test_phase1_matrix.py::test_phase1_matrix_four_quadrants[get_client_entity-GET-/v1/client-entities/{c1_id}-None-200] PASSED [ 22%]
+tests/api/test_phase1_matrix.py::test_phase1_matrix_four_quadrants[put_client_entity-PUT-/v1/client-entities/{c1_id}-payload4-200] PASSED [ 22%]
+tests/api/test_phase1_matrix.py::test_phase1_matrix_four_quadrants[patch_client_entity-PATCH-/v1/client-entities/{c1_id}-payload5-200] PASSED [ 23%]
+tests/api/test_phase1_matrix.py::test_phase1_matrix_four_quadrants[archive_client_entity-POST-/v1/client-entities/{c1_archive_id}/archive-payload6-200] PASSED [ 23%]
+tests/api/test_phase1_matrix.py::test_phase1_matrix_four_quadrants[list_accounting_periods-GET-/v1/client-entities/{c1_id}/periods-None-200] PASSED [ 23%]
+tests/api/test_phase1_matrix.py::test_phase1_matrix_four_quadrants[open_accounting_period-POST-/v1/client-entities/{c1_id}/periods-payload8-201] PASSED [ 24%]
+tests/api/test_phase1_matrix.py::test_phase1_matrix_four_quadrants[list_chart_accounts-GET-/v1/client-entities/{c1_id}/chart-accounts-None-200] PASSED [ 24%]
+tests/api/test_phase1_matrix.py::test_phase1_matrix_four_quadrants[seed_cgnc_chart-POST-/v1/client-entities/{c1_id}/chart-accounts/seed-cgnc-payload10-200] PASSED [ 24%]
+tests/api/test_phase1_matrix.py::test_phase1_matrix_four_quadrants[import_chart_accounts-POST-/v1/client-entities/{c1_id}/chart-accounts/import-payload11-200] PASSED [ 25%]
+tests/api/test_phase1_matrix.py::test_phase1_matrix_four_quadrants[get_dpa-GET-/v1/compliance/dpa-None-200] PASSED [ 25%]
+tests/api/test_phase1_matrix.py::test_phase1_matrix_four_quadrants[get_cndp-GET-/v1/compliance/cndp-dossier-None-200] PASSED [ 26%]
+tests/api/test_phase5_api.py::test_api_record_round_trip_permissions_and_mfa PASSED [ 26%]
+tests/api/test_phase5_api.py::test_api_decide_approval_mfa_5_minute_and_stale_hash PASSED [ 26%]
+tests/api/test_phase5_api.py::test_api_issue_acknowledge_endpoint PASSED [ 27%]
+tests/api/test_portal_scope.py::test_client_user_without_scope_sees_nothing PASSED [ 27%]
+tests/api/test_portal_scope.py::test_scoped_client_user_sees_and_answers_own_request PASSED [ 27%]
+tests/api/test_portal_scope.py::test_others_cannot_answer PASSED         [ 28%]
+tests/api/test_proposal_from_real_document.py::test_generate_on_real_read_document_does_not_crash PASSED [ 28%]
+tests/api/test_proposal_from_real_document.py::test_generate_unknown_document_is_404 PASSED [ 28%]
+tests/api/test_proposals_api.py::test_proposal_generate_retrieve_and_list PASSED [ 29%]
+tests/api/test_proposals_api.py::test_proposal_revision_flow_and_no_per_entry_approval PASSED [ 29%]
+tests/api/test_proposals_api.py::test_proposal_role_based_access PASSED  [ 30%]
+tests/api/test_review_effort_metrics.py::test_internal_metrics_rbac_owner_and_operator_allowed PASSED [ 30%]
+tests/api/test_review_effort_metrics.py::test_no_identifier_values_in_metrics_responses PASSED [ 30%]
+tests/api/test_role_action_matrix.py::test_role_action_matrix_create_client PASSED [ 31%]
+tests/api/test_role_action_matrix.py::test_role_action_matrix_update_client PASSED [ 31%]
+tests/api/test_role_action_matrix.py::test_role_action_matrix_archive_client PASSED [ 31%]
+tests/api/test_role_action_matrix.py::test_role_action_matrix_periods PASSED [ 32%]
+tests/api/test_role_action_matrix.py::test_role_action_matrix_chart PASSED [ 32%]
+tests/api/test_security_headers_and_rate_limits.py::test_security_headers_present_on_all_responses PASSED [ 33%]
+tests/api/test_security_headers_and_rate_limits.py::test_rate_limiting_enforced_on_auth_endpoint PASSED [ 33%]
+tests/api/test_shared_rate_limiter.py::test_shared_rate_limiter_two_workers PASSED [ 33%]
+tests/api/test_tax_mappings_api.py::test_slots_come_from_the_pack PASSED [ 34%]
+tests/api/test_tax_mappings_api.py::test_only_registered_professionals_approve PASSED [ 34%]
+tests/api/test_tax_mappings_api.py::test_rejects_unknown_slot_and_foreign_account PASSED [ 34%]
+tests/api/test_tax_mappings_api.py::test_scope_rules PASSED              [ 35%]
+tests/api/test_tax_mappings_api.py::test_unapproved_mapping_is_never_used PASSED [ 35%]
+tests/api/test_tax_mappings_api.py::test_real_document_becomes_a_balanced_proposal_with_evidence PASSED [ 36%]
+tests/api/test_tax_mappings_api.py::test_edit_keeps_evidence_and_creates_a_revision PASSED [ 36%]
+tests/api/test_tax_mappings_api.py::test_edit_without_evidence_is_refused PASSED [ 36%]
+tests/api/test_tax_mappings_api.py::test_edit_with_both_sides_is_a_422_not_a_crash PASSED [ 37%]
+tests/api/test_tenant_context.py::test_db_spec_function_definitions PASSED [ 37%]
+tests/api/test_tenant_context.py::test_no_tenant_context_sees_zero_rows PASSED [ 37%]
+tests/api/test_tenant_context.py::test_app_never_runs_query_without_tenant_context PASSED [ 38%]
+tests/api/test_tenant_context.py::test_api_unauthenticated_request_refused_before_query PASSED [ 38%]
+tests/api/test_xlsx_safety.py::test_xlsx_valid_parse PASSED              [ 39%]
+tests/api/test_xlsx_safety.py::test_xlsx_file_size_limit PASSED          [ 39%]
+tests/api/test_xlsx_safety.py::test_csv_file_size_limit PASSED           [ 39%]
+tests/api/test_xlsx_safety.py::test_xlsx_row_limit PASSED                [ 40%]
+tests/api/test_xlsx_safety.py::test_csv_row_limit PASSED                 [ 40%]
+tests/api/test_xlsx_safety.py::test_xlsx_zip_bomb_rejection PASSED       [ 40%]
+tests/api/test_xlsx_safety.py::test_xlsx_xxe_payload_rejection PASSED    [ 41%]
+tests/approvals/test_approvals.py::test_approval_request_refused_on_zero_proposals PASSED [ 41%]
+tests/approvals/test_approvals.py::test_approval_request_refused_on_blocking_issues PASSED [ 42%]
+tests/approvals/test_approvals.py::test_approval_request_refused_on_unbalanced_proposals PASSED [ 42%]
+tests/approvals/test_approvals.py::test_approval_full_flow_segregation_and_registration PASSED [ 42%]
+tests/approvals/test_approvals.py::test_unacknowledged_review_issues_blocks_approval PASSED [ 43%]
+tests/approvals/test_approvals.py::test_subject_hash_stable_on_approval_status_transition PASSED [ 43%]
+tests/approvals/test_approvals.py::test_altering_accepted_match_after_approval_refuses_export PASSED [ 43%]
+tests/approvals/test_approvals.py::test_single_person_policy_configured_on_client_entities PASSED [ 44%]
+tests/bank/test_bank_statement_parsing.py::test_csv_bank_statement_parsing_valid_balance PASSED [ 44%]
+tests/bank/test_bank_statement_parsing.py::test_csv_bank_statement_parsing_balance_break_detected PASSED [ 44%]
+tests/bank/test_bank_statement_parsing.py::test_xlsx_bank_statement_parsing PASSED [ 45%]
+tests/bank/test_bank_statement_parsing.py::test_ingest_statement_with_balance_break_raises_blocking_issue PASSED [ 45%]
+tests/bank/test_bank_statement_parsing.py::test_bank_statement_fixture_stubs_awaiting_real_samples PASSED [ 46%]
+tests/bank/test_rib.py::test_moroccan_rib_key_calculation_and_validation PASSED [ 46%]
+tests/bank/test_rib.py::test_moroccan_rib_invalid_length_or_characters PASSED [ 46%]
+tests/bank/test_rib.py::test_rib_cleaning_and_formatting PASSED          [ 47%]
+tests/bank/test_rib.py::test_rib_masking_and_sha256 PASSED               [ 47%]
+tests/bank/test_rib.py::test_rib_encryption_roundtrip PASSED             [ 47%]
+tests/bank/test_rib.py::test_known_bank_codes_loaded_from_jurisdiction_pack PASSED [ 48%]
+tests/bank/test_rib.py::test_app_refuses_to_start_without_rib_encryption_key PASSED [ 48%]
+tests/bank/test_rib.py::test_rib_encrypted_never_in_api_response_or_logs PASSED [ 49%]
+tests/evaluation/test_synthetic_pipeline.py::test_synthetic_corpus_count_and_report_header_reconciliation PASSED [ 49%]
+tests/evaluation/test_synthetic_pipeline.py::test_mixed_inv_002_raises_totals_inconsistent_validator PASSED [ 49%]
+tests/evaluation/test_synthetic_pipeline.py::test_synthetic_pipeline_per_field_exact_match PASSED [ 50%]
+tests/exports/test_golden_exports.py::test_golden_sage100_csv_byte_identical PASSED [ 50%]
+tests/exports/test_golden_exports.py::test_golden_sage100_pnm_byte_identical PASSED [ 50%]
+tests/exports/test_golden_exports.py::test_golden_odoo_csv_byte_identical PASSED [ 51%]
+tests/exports/test_golden_exports.py::test_evidence_pack_zip_bundle_and_artifacts PASSED [ 51%]
+tests/exports/test_golden_exports.py::test_bundle_evidence_pack_zip_with_source_documents PASSED [ 52%]
+tests/exports/test_golden_exports.py::test_export_does_not_modify_export_profile PASSED [ 52%]
+tests/exports/test_golden_exports.py::test_manual_record_round_trip PASSED [ 52%]
+tests/exports/test_golden_exports.py::test_reexport_idempotent_no_double_billing PASSED [ 53%]
+tests/exports/test_golden_exports.py::test_download_token_verification_and_expiry PASSED [ 53%]
+tests/exports/test_golden_exports.py::test_download_records_audit_event PASSED [ 53%]
+tests/guards/test_negative_guards.py::test_tax_literal_linter_fails_on_planted_rate PASSED [ 54%]
+tests/guards/test_negative_guards.py::test_linter_fails_on_planted_identifier_regex PASSED [ 54%]
+tests/guards/test_negative_guards.py::test_linter_fails_on_planted_account_seed PASSED [ 55%]
+tests/guards/test_negative_guards.py::test_spectral_fails_on_planted_nullable_true PASSED [ 55%]
+tests/guards/test_negative_guards.py::test_rls_check_fails_on_planted_unprotected_table PASSED [ 55%]
+tests/integration/test_keycloak_jwks.py::test_keycloak_real_token_issuance_caching_and_rotation PASSED [ 56%]
+tests/integration/test_migrations.py::test_migrations_forward_and_rollback_cycle PASSED [ 56%]
+tests/integration/test_migrations.py::test_migrate_down_refuses_in_production PASSED [ 56%]
+tests/invariants/test_c4_invariants.py::test_invariant_2_cross_client_composite_fk_rejection PASSED [ 57%]
+tests/invariants/test_c4_invariants.py::test_invariant_8_segregation_of_duties_and_registration PASSED [ 57%]
+tests/invariants/test_c4_invariants.py::test_invariant_9_overlapping_periods_and_chart_accounts_rejected PASSED [ 57%]
+tests/invariants/test_c4_invariants.py::test_unique_nulls_not_distinct_duplicates_rejected PASSED [ 58%]
+tests/invariants/test_c4_invariants.py::test_export_fk_requires_approval PASSED [ 58%]
+tests/invariants/test_c4_invariants.py::test_invariant_7_export_refused_on_hash_mismatch PASSED [ 59%]
+tests/issues/test_issues.py::test_issue_lifecycle_assign_resolve_and_rules PASSED [ 59%]
+tests/issues/test_issues.py::test_issue_portal_request_and_client_answer PASSED [ 59%]
+tests/issues/test_issues.py::test_acknowledge_review_issue_workflow PASSED [ 60%]
+tests/proposals/test_bq_proposal_lifecycle.py::test_bq_proposal_full_lifecycle_and_db_unique_index PASSED [ 60%]
+tests/proposals/test_duplicates.py::test_duplicate_window_reads_from_pack PASSED [ 60%]
+tests/proposals/test_duplicates.py::test_probable_duplicate_detected_by_exact_invoice_number PASSED [ 61%]
+tests/proposals/test_duplicates.py::test_probable_duplicate_detected_by_amount_and_date_window PASSED [ 61%]
+tests/proposals/test_duplicates.py::test_negative_monthly_rent_30_days_apart_not_flagged PASSED [ 62%]
+tests/proposals/test_duplicates.py::test_negative_two_different_suppliers_same_amount_never_flagged PASSED [ 62%]
+tests/proposals/test_duplicates.py::test_record_duplicate_issues_inserts_duplicate_probable PASSED [ 62%]
+tests/proposals/test_golden_bank_proposals.py::test_golden_bank_proposal_supplier_payment PASSED [ 63%]
+tests/proposals/test_golden_bank_proposals.py::test_golden_bank_proposal_customer_receipt_with_vat_withheld PASSED [ 63%]
+tests/proposals/test_golden_bank_proposals.py::test_golden_bank_proposal_bank_fees_and_commissions PASSED [ 63%]
+tests/proposals/test_golden_bank_proposals.py::test_bank_fees_missing_mapping_raises_account_unmapped PASSED [ 64%]
+tests/proposals/test_golden_bank_proposals.py::test_golden_bank_proposal_unmatched_line_with_suspense_account PASSED [ 64%]
+tests/proposals/test_golden_bank_proposals.py::test_golden_bank_proposal_customer_receipt_is_only_withholding PASSED [ 65%]
+tests/proposals/test_golden_bank_proposals.py::test_golden_bank_proposal_customer_receipt_combined_withholding PASSED [ 65%]
+tests/proposals/test_golden_proposals.py::test_golden_standard_purchase_invoice PASSED [ 65%]
+tests/proposals/test_golden_proposals.py::test_golden_multi_rate_purchase_invoice PASSED [ 66%]
+tests/proposals/test_golden_proposals.py::test_golden_sales_invoice PASSED [ 66%]
+tests/proposals/test_golden_proposals.py::test_golden_purchase_credit_note_reversing_purchase PASSED [ 66%]
+tests/proposals/test_golden_proposals.py::test_golden_sales_credit_note PASSED [ 67%]
+tests/proposals/test_golden_proposals.py::test_golden_fixed_asset_acquisition PASSED [ 67%]
+tests/proposals/test_golden_proposals.py::test_golden_non_deductible_vat_by_cash_limit PASSED [ 68%]
+tests/proposals/test_golden_proposals.py::test_golden_non_deductible_vat_by_nature PASSED [ 68%]
+tests/proposals/test_golden_proposals.py::test_golden_auto_entrepreneur_supplier_no_vat_lines PASSED [ 68%]
+tests/proposals/test_golden_proposals.py::test_golden_prorata_deduction_using_client_entities_vat_prorata PASSED [ 69%]
+tests/proposals/test_golden_proposals.py::test_golden_foreign_currency_eur_with_residual PASSED [ 69%]
+tests/proposals/test_golden_proposals.py::test_evidence_refs_with_only_rule_refs_rejected PASSED [ 69%]
+tests/proposals/test_golden_proposals.py::test_missing_approved_tax_mapping_raises_account_unmapped PASSED [ 70%]
+tests/proposals/test_golden_proposals.py::test_missing_fx_rate_raises_fx_rate_missing PASSED [ 70%]
+tests/proposals/test_golden_proposals.py::test_golden_foreign_currency_eur_with_negative_residual_credited_to_gain_account PASSED [ 71%]
+tests/proposals/test_golden_proposals.py::test_multi_rate_14_percent_accepted_in_2025 PASSED [ 71%]
+tests/proposals/test_golden_proposals.py::test_multi_rate_14_percent_rejected_in_2026 PASSED [ 71%]
+tests/proposals/test_golden_proposals.py::test_account_suggester_ma_only_without_local_model_falls_back_to_counterparty_history PASSED [ 72%]
+tests/proposals/test_golden_proposals.py::test_account_suggester_low_confidence_raises_account_low_confidence_issue PASSED [ 72%]
+tests/proposals/test_hypothesis_proposals.py::test_hypothesis_every_proposal_balances_and_has_evidence PASSED [ 72%]
+tests/proposals/test_hypothesis_proposals.py::test_hypothesis_every_bank_proposal_balances_and_has_evidence PASSED [ 73%]
+tests/reconciliation/test_reconciliation.py::test_reconciliation_exact_single_match PASSED [ 73%]
+tests/reconciliation/test_reconciliation.py::test_reconciliation_withheld_vat_match_and_difference_kind PASSED [ 73%]
+tests/reconciliation/test_reconciliation.py::test_reconciliation_withheld_vat_unmapped_account_raises_account_unmapped_issue PASSED [ 74%]
+tests/reconciliation/test_reconciliation.py::test_reconciliation_no_bank_line_in_two_accepted_matches PASSED [ 74%]
+tests/reconciliation/test_reconciliation.py::test_reconciliation_withholding_other_5_pct_is_detected PASSED [ 75%]
+tests/reconciliation/test_reconciliation.py::test_reconciliation_combined_withholding_is_and_vat_detected PASSED [ 75%]
+tests/rls/test_app_privileges.py::test_avenel_app_role_attributes PASSED [ 75%]
+tests/rls/test_app_privileges.py::test_avenel_app_is_not_table_owner PASSED [ 76%]
+tests/rls/test_app_privileges.py::test_permission_denied_on_append_only_tables_with_triggers_dropped PASSED [ 76%]
+tests/rls/test_app_role_privileges_match_code.py::test_every_write_in_app_code_is_granted_to_avenel_app PASSED [ 76%]
+tests/rls/test_app_role_privileges_match_code.py::test_avenel_app_can_select_every_table_it_writes PASSED [ 77%]
+tests/rls/test_rls.py::test_make_rls_check_passes PASSED                 [ 77%]
+tests/rls/test_rls.py::test_tenant_isolation_and_row_level_security PASSED [ 78%]
+tests/rls/test_session_resolution_as_app_role.py::test_resolve_user_session_works_as_avenel_app PASSED [ 78%]
+tests/rls/test_session_resolution_as_app_role.py::test_resolve_user_session_as_avenel_app_unknown_subject_is_none PASSED [ 78%]
+tests/security/test_auth_test_mode_gate.py::test_subject_header_rejected_outside_test_mode PASSED [ 79%]
+tests/security/test_auth_test_mode_gate.py::test_plain_bearer_rejected_outside_test_mode PASSED [ 79%]
+tests/security/test_auth_test_mode_gate.py::test_forged_mfa_headers_rejected_outside_test_mode PASSED [ 79%]
+tests/security/test_auth_test_mode_gate.py::test_subject_header_still_works_in_test_mode PASSED [ 80%]
+tests/security/test_auth_test_mode_gate.py::test_jwt_with_stale_auth_time_cannot_decide_even_with_forged_header PASSED [ 80%]
+tests/security/test_production_realm_secrets.py::test_production_realm_export_exists PASSED [ 81%]
+tests/security/test_production_realm_secrets.py::test_production_realm_contains_no_static_totp_secret_or_credentials PASSED [ 81%]
+tests/security/test_production_realm_secrets.py::test_production_realm_enforces_secure_otp_policy PASSED [ 81%]
+tests/security/test_production_realm_secrets.py::test_test_totp_secret_confined_to_ci_test_realm_and_fixtures PASSED [ 82%]
+tests/triggers/test_append_only.py::test_audit_events_is_append_only PASSED [ 82%]
+tests/triggers/test_append_only.py::test_evidence_records_is_append_only PASSED [ 82%]
+tests/triggers/test_append_only.py::test_frozen_proposal_lines_cannot_be_mutated PASSED [ 83%]
+tests/triggers/test_append_only.py::test_cannot_move_line_to_another_proposal PASSED [ 83%]
+tests/triggers/test_audit_chain.py::test_audit_event_hash_chaining PASSED [ 84%]
+tests/triggers/test_audit_chain.py::test_audit_verify_on_seeded_data_passes PASSED [ 84%]
+tests/triggers/test_audit_chain.py::test_audit_verify_detects_tampering_and_exits_non_zero PASSED [ 84%]
+tests/triggers/test_audit_concurrent.py::test_concurrent_audit_inserts_chain_stays_linear PASSED [ 85%]
+tests/triggers/test_balance_trigger.py::test_balanced_proposal_commits_successfully PASSED [ 85%]
+tests/triggers/test_balance_trigger.py::test_unbalanced_proposal_fails_on_commit PASSED [ 85%]
+tests/triggers/test_balance_trigger.py::test_proposal_with_single_line_fails_on_commit PASSED [ 86%]
+tests/triggers/test_balance_trigger.py::test_line_with_both_debit_and_credit_rejected PASSED [ 86%]
+tests/triggers/test_document_versions_malware_scan.py::test_malware_scan_column_removed_from_document_versions PASSED [ 86%]
+tests/triggers/test_document_versions_malware_scan.py::test_document_versions_current_view_reflects_evidence_records PASSED [ 87%]
+tests/unit/test_deterministic_validation.py::test_validation_all_clean_purchase_invoice PASSED [ 87%]
+tests/unit/test_deterministic_validation.py::test_validation_missing_mandatory_purchase_mention PASSED [ 88%]
+tests/unit/test_deterministic_validation.py::test_validation_arithmetic_inconsistency_blocks PASSED [ 88%]
+tests/unit/test_deterministic_validation.py::test_validation_unknown_vat_rate_blocks PASSED [ 88%]
+tests/unit/test_deterministic_validation.py::test_validation_auto_entrepreneur_charging_vat PASSED [ 89%]
+tests/unit/test_deterministic_validation.py::test_validation_cash_limit_exceeded PASSED [ 89%]
+tests/unit/test_deterministic_validation.py::test_validation_period_mismatch PASSED [ 89%]
+tests/unit/test_hashing.py::test_canonical_json_formatting PASSED        [ 90%]
+tests/unit/test_hashing.py::test_proposal_set_hash_determinism PASSED    [ 90%]
+tests/unit/test_jurisdiction_pack.py::test_jurisdiction_pack_schema_validation PASSED [ 91%]
+tests/unit/test_jurisdiction_pack.py::test_part_i_items_present_and_needs_expert PASSED [ 91%]
+tests/unit/test_jurisdiction_pack.py::test_every_rule_has_non_empty_source PASSED [ 91%]
+tests/unit/test_pack_verified_requires_signature.py::test_every_verified_rule_names_who_verified_it_and_when PASSED [ 92%]
+tests/unit/test_pack_verified_requires_signature.py::test_planted_unsigned_verified_rule_is_caught PASSED [ 92%]
+tests/unit/test_residency_router.py::test_residency_policy_region_allowlist PASSED [ 92%]
+tests/unit/test_residency_router.py::test_residency_router_refuses_disallowed_external_calls PASSED [ 93%]
+tests/unit/test_residency_router.py::test_zero_provider_calls_in_tests PASSED [ 93%]
+tests/unit/test_residency_router.py::test_pii_sanitization_for_external_calls PASSED [ 94%]
+tests/unit/test_s3_storage.py::test_s3_storage_initialization_defaults PASSED [ 94%]
+tests/unit/test_s3_storage.py::test_s3_put_object_with_sse PASSED        [ 94%]
+tests/unit/test_s3_storage.py::test_s3_put_original_with_object_lock_compliance PASSED [ 95%]
+tests/unit/test_s3_storage.py::test_s3_put_object_graceful_fallback_when_object_lock_unsupported PASSED [ 95%]
+tests/unit/test_s3_storage.py::test_s3_get_object_success_and_not_found PASSED [ 95%]
+tests/unit/test_s3_storage.py::test_s3_presigned_urls PASSED             [ 96%]
+tests/unit/test_s3_storage.py::test_s3_object_exists PASSED              [ 96%]
+tests/unit/test_s3_storage.py::test_storage_factory_selection PASSED     [ 97%]
+tests/unit/test_scanner.py::test_clean_document_scan_in_fixture_mode PASSED [ 97%]
+tests/unit/test_scanner.py::test_eicar_signature_detection PASSED        [ 97%]
+tests/unit/test_scanner.py::test_scanner_unavailable_fail_safe_quarantine PASSED [ 98%]
+tests/unit/test_scanner.py::test_clamav_signature_status_fresh_and_stale PASSED [ 98%]
+tests/unit/test_scanner.py::test_check_intake_health_paused_when_stale PASSED [ 98%]
+tests/unit/test_scanner.py::test_check_intake_health_paused_when_scanner_down PASSED [ 99%]
+tests/unit/test_scanner.py::test_check_intake_health_active_when_fresh PASSED [ 99%]
+tests/unit/test_scanner.py::test_clamd_reply_nul_terminator_is_stripped PASSED [100%]
+
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\Users\21263\Downloads\avenel-split\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+.venv\Lib\site-packages\fitz\__init__.py:17
+  C:\Users\21263\Downloads\avenel-split\.venv\Lib\site-packages\fitz\__init__.py:17: FutureWarning: The `fitz` API is deprecated and will be removed in future. Use `import pymupdf` instead.
+    warnings.warn(
+
+tests/api/test_bank_reconciliation_api.py::test_statement_upload_is_scanned_for_malware
+  C:\Users\21263\Downloads\avenel-split\.venv\Lib\site-packages\fastapi\routing.py:372: StarletteDeprecationWarning: 'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated. Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead.
+    return await dependant.call(**values)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================= 269 passed, 3 warnings in 251.51s (0:04:11) =================
+npx openapi-typescript contracts/openapi.yaml -o src/api/schema.d.ts
+✨ openapi-typescript 7.13.0
+🚀 contracts/openapi.yaml → src/api/schema.d.ts [170.1ms]
+git diff --exit-code -- src/api/schema.d.ts
+npx tsc -b --noEmit
+npm run build
+
+> avenel-web@1.0.0 build
+> tsc -b && vite build
+
+vite v5.4.21 building for production...
+transforming...
+✓ 1627 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.47 kB │ gzip:  0.29 kB
+dist/assets/index-BkSnbv75.css   22.65 kB │ gzip:  5.00 kB
+dist/assets/vendor-BWYUuZrD.js  163.87 kB │ gzip: 53.45 kB
+dist/assets/index-BbHSg869.js   218.27 kB │ gzip: 54.45 kB
+✓ built in 6.06s
+npx vitest run --reporter=default --reporter=json --outputFile=.vitest-results.json
+
+ RUN  v2.1.9 C:/Users/21263/Downloads/avenel-split
+
+ ✓ src/auth/oidc.test.ts (7 tests) 18ms
+ ✓ src/test/contrast-pairs.test.ts (1 test) 11ms
+ ✓ scripts/guards/guards.test.mjs (9 tests) 23ms
+stderr | src/screens/QueueScreen.test.tsx > QueueScreen states (stubbed fetch) > shows the error state when the API is unreachable
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/screens/QueueScreen.test.tsx > QueueScreen states (stubbed fetch) > shows the loading state first
+Warning: An update to AuthProvider inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at AuthProvider (C:\Users\21263\Downloads\avenel-split\src\auth\AuthProvider.tsx:10:25)
+    at Router (C:\Users\21263\Downloads\avenel-split\node_modules\react-router\dist\umd\react-router.development.js:1203:17)
+    at MemoryRouter (C:\Users\21263\Downloads\avenel-split\node_modules\react-router\dist\umd\react-router.development.js:1097:7)
+
+ ✓ src/screens/QueueScreen.test.tsx (4 tests) 251ms
+stderr | src/components/domain/ReconciliationScreen.test.tsx > ReconciliationScreen component > triggers onAcceptMatch when clicking Rapprocher button
+Warning: An update to ReconciliationScreen inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ReconciliationScreen (C:\Users\21263\Downloads\avenel-split\src\components\domain\ReconciliationScreen.tsx:15:3)
+
+stderr | src/components/domain/ReconciliationScreen.test.tsx > ReconciliationScreen component > triggers onRejectMatch when clicking Rejeter button
+Warning: An update to ReconciliationScreen inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ReconciliationScreen (C:\Users\21263\Downloads\avenel-split\src\components\domain\ReconciliationScreen.tsx:15:3)
+
+stderr | src/components/domain/ReconciliationScreen.test.tsx > ReconciliationScreen component > accepts match on Enter keypress
+Warning: An update to ReconciliationScreen inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ReconciliationScreen (C:\Users\21263\Downloads\avenel-split\src\components\domain\ReconciliationScreen.tsx:15:3)
+
+stderr | src/components/domain/ReconciliationScreen.test.tsx > ReconciliationScreen component > rejects match on Escape keypress
+Warning: An update to ReconciliationScreen inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ReconciliationScreen (C:\Users\21263\Downloads\avenel-split\src\components\domain\ReconciliationScreen.tsx:15:3)
+
+ ✓ src/components/domain/ReconciliationScreen.test.tsx (5 tests) 618ms
+ ✓ src/components/domain/ProposalReview.test.tsx (6 tests) 936ms
+ ✓ src/components/domain/Phase5Screens.test.tsx (11 tests) 1188ms
+   ✓ Phase 5 UI Components > ApprovalScreen > renders dossier metadata, balanced totals, and allows approval when eligible 476ms
+ ✓ scripts/guards/check_css_palette.test.mjs (4 tests) 7ms
+
+ Test Files  8 passed (8)
+      Tests  47 passed (47)
+   Start at  19:09:15
+   Duration  8.85s (transform 1.08s, setup 9.85s, collect 2.61s, tests 3.05s, environment 25.02s, prepare 3.60s)
+
+JSON report written to C:/Users/21263/Downloads/avenel-split/.vitest-results.json
+node scripts/guards/check_web_test_count.mjs
+check_web_test_count: 47/47 passed, baseline 47
+node scripts/guards/check_css_palette.mjs
+check_css_palette: 1 file(s), 0 violation(s)
+node scripts/guards/no_test_code_in_prod.mjs
+no_test_code_in_prod: 0 violation(s)
+node scripts/guards/no_e2e_interception.mjs
+no_e2e_interception: 0 violation(s)
+node scripts/guards/no_legacy_terms.mjs
+no_legacy_terms: 0 violation(s)
+docker compose up -d --build postgres keycloak clamav freshclam ocr migrate seed api worker web
+Compose can now delegate builds to bake for better performance.
+ To do so, set COMPOSE_BAKE=true.
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [migrate internal] load build definition from Dockerfile.api
+#1 transferring dockerfile: 2.14kB 0.0s done
+#1 DONE 0.0s
+
+#2 [migrate] resolve image config for docker-image://docker.io/docker/dockerfile:1
+#2 DONE 0.9s
+
+#3 [migrate] docker-image://docker.io/docker/dockerfile:1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
+#3 CACHED
+
+#4 [migrate internal] load metadata for docker.io/library/python:3.12-slim
+#4 DONE 0.0s
+
+#5 [migrate internal] load .dockerignore
+#5 transferring context: 2B done
+#5 DONE 0.0s
+
+#6 [migrate builder 1/5] FROM docker.io/library/python:3.12-slim
+#6 DONE 0.0s
+
+#7 [migrate internal] load build context
+#7 transferring context: 31.13kB 1.8s done
+#7 DONE 1.8s
+
+#8 [migrate runner  3/11] RUN apt-get update && apt-get install -y --no-install-recommends     libpq5     ca-certificates     libxcb1     libgl1     libglib2.0-0     && rm -rf /var/lib/apt/lists/*
+#8 CACHED
+
+#9 [migrate builder 2/5] WORKDIR /build
+#9 CACHED
+
+#10 [migrate builder 4/5] COPY requirements.txt .
+#10 CACHED
+
+#11 [migrate runner  2/11] WORKDIR /app
+#11 CACHED
+
+#12 [migrate runner  4/11] RUN groupadd -g 10001 appgroup &&     useradd -u 10001 -g appgroup -s /bin/false -m appuser
+#12 CACHED
+
+#13 [migrate builder 3/5] RUN apt-get update && apt-get install -y --no-install-recommends     build-essential     libpq-dev     && rm -rf /var/lib/apt/lists/*
+#13 CACHED
+
+#14 [migrate builder 5/5] RUN pip install --no-cache-dir --user -r requirements.txt
+#14 CACHED
+
+#15 [migrate runner  5/11] COPY --from=builder --chown=appuser:appgroup /root/.local /home/appuser/.local
+#15 CACHED
+
+#16 [migrate runner  6/11] COPY --chown=appuser:appgroup avenel /app/avenel
+#16 DONE 0.2s
+
+#17 [migrate runner  7/11] COPY --chown=appuser:appgroup apps /app/apps
+#17 DONE 0.1s
+
+#18 [migrate runner  8/11] COPY --chown=appuser:appgroup jurisdiction /app/jurisdiction
+#18 DONE 0.1s
+
+#19 [migrate runner  9/11] COPY --chown=appuser:appgroup db /app/db
+#19 DONE 0.1s
+
+#20 [migrate runner 10/11] COPY --chown=appuser:appgroup contracts /app/contracts
+#20 DONE 0.1s
+
+#21 [migrate runner 11/11] RUN mkdir -p /var/lib/avenel/storage && chown appuser:appgroup /var/lib/avenel/storage
+#21 DONE 0.4s
+
+#22 [migrate] exporting to image
+#22 exporting layers
+#22 exporting layers 0.2s done
+#22 writing image sha256:5ac57222106cfde9829583c0c6997a65ebaefd03a109b65523ab0ca6ae500e5b done
+#22 naming to docker.io/library/avenel-split-migrate done
+#22 DONE 0.2s
+
+#23 [migrate] resolving provenance for metadata file
+#23 DONE 0.0s
+
+#24 [seed internal] load build definition from Dockerfile.api
+#24 transferring dockerfile: 2.14kB done
+#24 DONE 0.0s
+
+#2 [seed] resolve image config for docker-image://docker.io/docker/dockerfile:1
+#2 DONE 1.2s
+
+#3 [seed] docker-image://docker.io/docker/dockerfile:1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
+#3 CACHED
+
+#4 [seed internal] load metadata for docker.io/library/python:3.12-slim
+#4 DONE 0.0s
+
+#25 [seed internal] load .dockerignore
+#25 transferring context: 2B done
+#25 DONE 0.0s
+
+#6 [seed builder 1/5] FROM docker.io/library/python:3.12-slim
+#6 DONE 0.0s
+
+#26 [seed internal] load build context
+#26 transferring context: 7.38kB 0.0s done
+#26 DONE 0.0s
+
+#27 [seed builder 4/5] COPY requirements.txt .
+#27 CACHED
+
+#9 [seed builder 2/5] WORKDIR /build
+#9 CACHED
+
+#28 [seed runner  7/11] COPY --chown=appuser:appgroup apps /app/apps
+#28 CACHED
+
+#29 [seed runner  8/11] COPY --chown=appuser:appgroup jurisdiction /app/jurisdiction
+#29 CACHED
+
+#11 [seed runner  2/11] WORKDIR /app
+#11 CACHED
+
+#12 [seed runner  4/11] RUN groupadd -g 10001 appgroup &&     useradd -u 10001 -g appgroup -s /bin/false -m appuser
+#12 CACHED
+
+#30 [seed runner  5/11] COPY --from=builder --chown=appuser:appgroup /root/.local /home/appuser/.local
+#30 CACHED
+
+#31 [seed builder 5/5] RUN pip install --no-cache-dir --user -r requirements.txt
+#31 CACHED
+
+#8 [seed runner  3/11] RUN apt-get update && apt-get install -y --no-install-recommends     libpq5     ca-certificates     libxcb1     libgl1     libglib2.0-0     && rm -rf /var/lib/apt/lists/*
+#8 CACHED
+
+#32 [seed runner  9/11] COPY --chown=appuser:appgroup db /app/db
+#32 CACHED
+
+#33 [seed runner  6/11] COPY --chown=appuser:appgroup avenel /app/avenel
+#33 CACHED
+
+#34 [seed runner 10/11] COPY --chown=appuser:appgroup contracts /app/contracts
+#34 CACHED
+
+#13 [seed builder 3/5] RUN apt-get update && apt-get install -y --no-install-recommends     build-essential     libpq-dev     && rm -rf /var/lib/apt/lists/*
+#13 CACHED
+
+#35 [seed runner 11/11] RUN mkdir -p /var/lib/avenel/storage && chown appuser:appgroup /var/lib/avenel/storage
+#35 CACHED
+
+#36 [seed] exporting to image
+#36 exporting layers done
+#36 writing image sha256:f47f40e0e75001117bd123ecd1c8624d3456bc113abfaf28c76ed8501d333aa8 done
+#36 naming to docker.io/library/avenel-split-seed done
+#36 DONE 0.0s
+
+#37 [seed] resolving provenance for metadata file
+#37 DONE 0.0s
+
+#38 [api internal] load build definition from Dockerfile.api
+#38 transferring dockerfile: 2.14kB done
+#38 DONE 0.0s
+
+#2 [api] resolve image config for docker-image://docker.io/docker/dockerfile:1
+#2 DONE 1.5s
+
+#3 [api] docker-image://docker.io/docker/dockerfile:1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
+#3 CACHED
+
+#4 [api internal] load metadata for docker.io/library/python:3.12-slim
+#4 DONE 0.0s
+
+#39 [api internal] load .dockerignore
+#39 transferring context: 2B done
+#39 DONE 0.0s
+
+#6 [api builder 1/5] FROM docker.io/library/python:3.12-slim
+#6 DONE 0.0s
+
+#40 [api internal] load build context
+#40 transferring context: 7.38kB 0.0s done
+#40 DONE 0.0s
+
+#41 [api runner  9/11] COPY --chown=appuser:appgroup db /app/db
+#41 CACHED
+
+#9 [api builder 2/5] WORKDIR /build
+#9 CACHED
+
+#42 [api runner  5/11] COPY --from=builder --chown=appuser:appgroup /root/.local /home/appuser/.local
+#42 CACHED
+
+#43 [api runner  6/11] COPY --chown=appuser:appgroup avenel /app/avenel
+#43 CACHED
+
+#44 [api runner  7/11] COPY --chown=appuser:appgroup apps /app/apps
+#44 CACHED
+
+#12 [api runner  4/11] RUN groupadd -g 10001 appgroup &&     useradd -u 10001 -g appgroup -s /bin/false -m appuser
+#12 CACHED
+
+#45 [api runner 10/11] COPY --chown=appuser:appgroup contracts /app/contracts
+#45 CACHED
+
+#8 [api runner  3/11] RUN apt-get update && apt-get install -y --no-install-recommends     libpq5     ca-certificates     libxcb1     libgl1     libglib2.0-0     && rm -rf /var/lib/apt/lists/*
+#8 CACHED
+
+#11 [api runner  2/11] WORKDIR /app
+#11 CACHED
+
+#13 [api builder 3/5] RUN apt-get update && apt-get install -y --no-install-recommends     build-essential     libpq-dev     && rm -rf /var/lib/apt/lists/*
+#13 CACHED
+
+#46 [api builder 5/5] RUN pip install --no-cache-dir --user -r requirements.txt
+#46 CACHED
+
+#47 [api builder 4/5] COPY requirements.txt .
+#47 CACHED
+
+#48 [api runner  8/11] COPY --chown=appuser:appgroup jurisdiction /app/jurisdiction
+#48 CACHED
+
+#49 [api runner 11/11] RUN mkdir -p /var/lib/avenel/storage && chown appuser:appgroup /var/lib/avenel/storage
+#49 CACHED
+
+#50 [api] exporting to image
+#50 exporting layers done
+#50 writing image sha256:15b23876544f98f9bffebf54c0b7447b757ce0218c3d1c477a53e6caa727b338 done
+#50 naming to docker.io/library/avenel-split-api
+#50 naming to docker.io/library/avenel-split-api done
+#50 DONE 0.0s
+
+#51 [api] resolving provenance for metadata file
+#51 DONE 0.0s
+2026/11/06 18:09:33 http2: server: error reading preface from client //./pipe/dockerDesktopLinuxEngine: file has already been closed
+
+#52 [worker internal] load build definition from Dockerfile.api
+#52 transferring dockerfile: 2.14kB done
+#52 DONE 0.0s
+
+#53 [web internal] load build definition from Dockerfile.web
+#53 transferring dockerfile: 690B done
+#53 DONE 0.0s
+
+#2 [web] resolve image config for docker-image://docker.io/docker/dockerfile:1
+#2 DONE 1.7s
+
+#3 [web] docker-image://docker.io/docker/dockerfile:1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
+#3 CACHED
+
+#54 [web internal] load metadata for docker.io/library/node:20-alpine
+#54 ...
+
+#4 [worker internal] load metadata for docker.io/library/python:3.12-slim
+#4 DONE 0.0s
+
+#55 [worker internal] load .dockerignore
+#55 transferring context: 2B done
+#55 DONE 0.0s
+
+#6 [worker builder 1/5] FROM docker.io/library/python:3.12-slim
+#6 DONE 0.0s
+
+#56 [worker internal] load build context
+#56 transferring context: 7.38kB 0.0s done
+#56 DONE 0.0s
+
+#57 [worker runner 10/11] COPY --chown=appuser:appgroup contracts /app/contracts
+#57 CACHED
+
+#58 [worker runner  6/11] COPY --chown=appuser:appgroup avenel /app/avenel
+#58 CACHED
+
+#59 [worker runner  5/11] COPY --from=builder --chown=appuser:appgroup /root/.local /home/appuser/.local
+#59 CACHED
+
+#60 [worker runner  9/11] COPY --chown=appuser:appgroup db /app/db
+#60 CACHED
+
+#13 [worker builder 3/5] RUN apt-get update && apt-get install -y --no-install-recommends     build-essential     libpq-dev     && rm -rf /var/lib/apt/lists/*
+#13 CACHED
+
+#61 [worker runner  7/11] COPY --chown=appuser:appgroup apps /app/apps
+#61 CACHED
+
+#62 [worker builder 4/5] COPY requirements.txt .
+#62 CACHED
+
+#9 [worker builder 2/5] WORKDIR /build
+#9 CACHED
+
+#11 [worker runner  2/11] WORKDIR /app
+#11 CACHED
+
+#8 [worker runner  3/11] RUN apt-get update && apt-get install -y --no-install-recommends     libpq5     ca-certificates     libxcb1     libgl1     libglib2.0-0     && rm -rf /var/lib/apt/lists/*
+#8 CACHED
+
+#63 [worker builder 5/5] RUN pip install --no-cache-dir --user -r requirements.txt
+#63 CACHED
+
+#64 [worker runner  8/11] COPY --chown=appuser:appgroup jurisdiction /app/jurisdiction
+#64 CACHED
+
+#12 [worker runner  4/11] RUN groupadd -g 10001 appgroup &&     useradd -u 10001 -g appgroup -s /bin/false -m appuser
+#12 CACHED
+
+#65 [worker runner 11/11] RUN mkdir -p /var/lib/avenel/storage && chown appuser:appgroup /var/lib/avenel/storage
+#65 CACHED
+
+#66 [worker] exporting to image
+#66 exporting layers done
+#66 writing image sha256:4b0b335206b017e4af9be4fa91f1e0d1f08b99fdf19db1b82b3830345b0e0857 done
+#66 naming to docker.io/library/avenel-split-worker done
+#66 DONE 0.0s
+
+#67 [worker] resolving provenance for metadata file
+#67 DONE 0.0s
+
+#68 [web internal] load metadata for docker.io/nginxinc/nginx-unprivileged:alpine
+#68 DONE 0.7s
+
+#54 [web internal] load metadata for docker.io/library/node:20-alpine
+#54 DONE 0.7s
+
+#69 [web internal] load .dockerignore
+#69 transferring context: 2B done
+#69 DONE 0.0s
+
+#70 [web builder 1/6] FROM docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
+#70 DONE 0.0s
+
+#71 [web runner 1/3] FROM docker.io/nginxinc/nginx-unprivileged:alpine@sha256:b5047b9b76845eac124358373c6852377c52e4b05834a47647e955dd91cb8f1e
+#71 DONE 0.0s
+
+#72 [web internal] load build context
+#72 transferring context: 70.57MB 5.0s
+#72 transferring context: 143.82MB 10.1s
+#72 transferring context: 215.07MB 15.1s
+#72 transferring context: 286.89MB 20.2s
+#72 transferring context: 358.99MB 25.3s
+#72 transferring context: 431.56MB 30.3s
+#72 transferring context: 496.45MB 35.4s
+#72 transferring context: 569.77MB 40.5s
+#72 transferring context: 637.38MB 45.5s
+#72 transferring context: 696.58MB 50.6s
+#72 transferring context: 752.99MB 55.7s
+#72 transferring context: 805.10MB 60.8s
+#72 transferring context: 863.70MB 65.8s
+#72 transferring context: 933.76MB 70.8s
+#72 transferring context: 996.00MB 75.8s
+#72 transferring context: 1.06GB 80.9s
+#72 transferring context: 1.14GB 86.0s
+#72 transferring context: 1.21GB 91.0s
+#72 transferring context: 1.28GB 96.0s
+#72 transferring context: 1.35GB 101.1s
+#72 transferring context: 1.41GB 106.1s
+#72 transferring context: 1.48GB 111.2s
+#72 transferring context: 1.56GB 116.2s
+#72 transferring context: 1.63GB 121.2s
+#72 transferring context: 1.70GB 126.4s
+#72 transferring context: 1.76GB 130.8s done
+#72 DONE 130.9s
+
+#73 [web builder 2/6] WORKDIR /build
+#73 CACHED
+
+#74 [web builder 3/6] COPY package*.json ./
+#74 CACHED
+
+#75 [web builder 4/6] RUN npm ci --no-audit
+#75 CACHED
+
+#76 [web builder 5/6] COPY . .
+#76 DONE 17.6s
+
+#77 [web builder 6/6] RUN npm run build
+#77 0.612 
+#77 0.612 > avenel-web@1.0.0 build
+#77 0.612 > tsc -b && vite build
+#77 0.612 
+#77 7.751 vite v5.4.21 building for production...
+#77 7.814 transforming...
+#77 12.33 ✓ 1627 modules transformed.
+#77 12.65 rendering chunks...
+#77 12.69 computing gzip size...
+#77 12.71 dist/index.html                   0.47 kB │ gzip:  0.29 kB
+#77 12.71 dist/assets/index-BkSnbv75.css   22.65 kB │ gzip:  5.00 kB
+#77 12.71 dist/assets/vendor-BWYUuZrD.js  163.87 kB │ gzip: 53.45 kB
+#77 12.71 dist/assets/index-BbHSg869.js   218.27 kB │ gzip: 54.45 kB
+#77 12.71 ✓ built in 4.93s
+#77 DONE 12.8s
+
+#78 [web runner 2/3] COPY --from=builder /build/dist /usr/share/nginx/html
+#78 CACHED
+
+#79 [web runner 3/3] COPY docker/nginx.conf /etc/nginx/nginx.conf
+#79 CACHED
+
+#80 [web] exporting to image
+#80 exporting layers done
+#80 writing image sha256:9e4f77a45f45ca734c365703b2feca21be3335e966c3d5786ccdb838902ac8e3 done
+#80 naming to docker.io/library/avenel-split-web done
+#80 DONE 0.0s
+
+#81 [web] resolving provenance for metadata file
+#81 DONE 0.0s
+ api  Built
+ migrate  Built
+ seed  Built
+ web  Built
+ worker  Built
+ Network avenel-split_default  Creating
+ Network avenel-split_default  Created
+ Volume "avenel-split_pgdata"  Creating
+ Volume "avenel-split_pgdata"  Created
+ Volume "avenel-split_docstore"  Creating
+ Volume "avenel-split_docstore"  Created
+ Volume "avenel-split_clamav_db"  Creating
+ Volume "avenel-split_clamav_db"  Created
+ Container avenel-freshclam  Creating
+ Container avenel-clamav  Creating
+ Container avenel-postgres  Creating
+ Container avenel-ocr-stub  Creating
+ Container avenel-keycloak  Creating
+ Container avenel-keycloak  Created
+ Container avenel-ocr-stub  Created
+ Container avenel-postgres  Created
+ Container avenel-migrate  Creating
+ Container avenel-migrate  Created
+ Container avenel-seed  Creating
+ Container avenel-seed  Created
+ Container avenel-freshclam  Created
+ Container avenel-clamav  Created
+ Container avenel-api  Creating
+ Container avenel-api  Created
+ Container avenel-worker  Creating
+ Container avenel-web  Creating
+ Container avenel-web  Created
+ Container avenel-worker  Created
+ Container avenel-freshclam  Starting
+ Container avenel-postgres  Starting
+ Container avenel-keycloak  Starting
+ Container avenel-ocr-stub  Starting
+ Container avenel-clamav  Starting
+ Container avenel-clamav  Started
+ Container avenel-postgres  Started
+ Container avenel-postgres  Waiting
+ Container avenel-freshclam  Started
+ Container avenel-keycloak  Started
+ Container avenel-ocr-stub  Started
+ Container avenel-postgres  Healthy
+ Container avenel-migrate  Starting
+ Container avenel-migrate  Started
+ Container avenel-migrate  Waiting
+ Container avenel-migrate  Exited
+ Container avenel-seed  Starting
+ Container avenel-seed  Started
+ Container avenel-keycloak  Waiting
+ Container avenel-clamav  Waiting
+ Container avenel-seed  Waiting
+ Container avenel-seed  Exited
+ Container avenel-clamav  Healthy
+ Container avenel-keycloak  Healthy
+ Container avenel-api  Starting
+ Container avenel-api  Started
+ Container avenel-api  Waiting
+ Container avenel-api  Waiting
+ Container avenel-api  Healthy
+ Container avenel-web  Starting
+ Container avenel-api  Healthy
+ Container avenel-worker  Starting
+ Container avenel-worker  Started
+ Container avenel-web  Started
+node scripts/guards/wait_for_stack.mjs
+wait_for_stack: intake paused (ClamAV signatures not fresh yet), asking clamd to reload
+wait_for_stack: api /health/ready green: http://localhost:8000/health/ready {"status":"ready","service":"avenel-api","database":"ok","kms":"ok","clamav":"ok","intake_paused":false}
+wait_for_stack: keycloak realm green: http://localhost:8080/realms/avenel/.well-known/openid-configuration {"issuer":"http://localhost:8080/realms/avenel","authorization_endpoint":"http://localhost:8080/realms/avenel/protocol/openid-connect/auth","token_endpoint":"ht
+wait_for_stack: web /healthz (nginx) green: http://localhost:5173/healthz healthy 
+npx playwright install chromium
+rm -rf docs/reports/phase-5c-1/e2e-browser-api-requests.log .e2e-state
+npx playwright test --grep-invert @api-down
+
+Running 11 tests using 1 worker
+
+2026-11-06T18:14:23.958Z [login-queue] GET http://localhost:8000/v1/work-requests -> 200 bearer_jwt=true
+2026-11-06T18:14:23.962Z [login-queue] GET http://localhost:8000/v1/client-entities -> 200 bearer_jwt=true
+2026-11-06T18:14:23.963Z [login-queue] GET http://localhost:8000/v1/me -> 200 bearer_jwt=true
+[login-queue] direct GET http://localhost:8000/v1/me -> 200 tenant_id=5c1e2e00-0000-4000-8000-0000000000a1 role=accountant
+  ok  1 [chromium] › e2e\login-queue.spec.ts:6:1 › accountant logs in with TOTP, sees seeded queue from the API, logs out (5.1s)
+2026-11-06T18:14:30.534Z [phase1-accountant] GET http://localhost:8000/v1/me -> 200 bearer_jwt=true
+2026-11-06T18:14:30.548Z [phase1-accountant] GET http://localhost:8000/v1/work-requests -> 200 bearer_jwt=true
+2026-11-06T18:14:30.550Z [phase1-accountant] GET http://localhost:8000/v1/client-entities -> 200 bearer_jwt=true
+2026-11-06T18:14:30.602Z [phase1-accountant] GET http://localhost:8000/v1/client-entities -> 200 bearer_jwt=true
+2026-11-06T18:14:31.440Z [phase1-accountant] POST http://localhost:8000/v1/client-entities -> 201 bearer_jwt=true
+2026-11-06T18:14:31.480Z [phase1-accountant] GET http://localhost:8000/v1/client-entities -> 200 bearer_jwt=true
+2026-11-06T18:14:31.834Z [phase1-accountant] GET http://localhost:8000/v1/client-entities/8b7a562a-3368-455c-989a-7e435590ab45 -> 200 bearer_jwt=true
+2026-11-06T18:14:31.942Z [phase1-accountant] GET http://localhost:8000/v1/client-entities/8b7a562a-3368-455c-989a-7e435590ab45/chart-accounts -> 200 bearer_jwt=true
+2026-11-06T18:14:31.947Z [phase1-accountant] GET http://localhost:8000/v1/client-entities/8b7a562a-3368-455c-989a-7e435590ab45/tax-mappings -> 200 bearer_jwt=true
+2026-11-06T18:14:31.948Z [phase1-accountant] GET http://localhost:8000/v1/client-entities/8b7a562a-3368-455c-989a-7e435590ab45/periods -> 200 bearer_jwt=true
+2026-11-06T18:14:32.024Z [phase1-accountant] POST http://localhost:8000/v1/client-entities/8b7a562a-3368-455c-989a-7e435590ab45/periods -> 201 bearer_jwt=true
+2026-11-06T18:14:32.025Z [phase1-accountant] GET http://localhost:8000/v1/client-entities/8b7a562a-3368-455c-989a-7e435590ab45/chart-accounts -> 200 bearer_jwt=true
+2026-11-06T18:14:32.114Z [phase1-accountant] GET http://localhost:8000/v1/client-entities/8b7a562a-3368-455c-989a-7e435590ab45/periods -> 200 bearer_jwt=true
+2026-11-06T18:14:32.302Z [phase1-accountant] POST http://localhost:8000/v1/client-entities/8b7a562a-3368-455c-989a-7e435590ab45/periods -> 409 bearer_jwt=true body={"type":"about:blank","title":"Conflit d'état","status":409,"detail":"La période 2026-10 existe déjà pour cette entreprise.","instance":"/v1/client-entities/8b7a562a-3368-455c-989a-7e435590ab45/periods"}
+2026-11-06T18:14:32.930Z [phase1-accountant] POST http://localhost:8000/v1/client-entities/8b7a562a-3368-455c-989a-7e435590ab45/chart-accounts/seed-cgnc -> 200 bearer_jwt=true
+2026-11-06T18:14:32.966Z [phase1-accountant] GET http://localhost:8000/v1/client-entities/8b7a562a-3368-455c-989a-7e435590ab45/tax-mappings -> 200 bearer_jwt=true
+2026-11-06T18:14:32.967Z [phase1-accountant] GET http://localhost:8000/v1/client-entities/8b7a562a-3368-455c-989a-7e435590ab45/chart-accounts -> 200 bearer_jwt=true
+2026-11-06T18:14:32.997Z [phase1-accountant] GET http://localhost:8000/v1/client-entities/8b7a562a-3368-455c-989a-7e435590ab45/chart-accounts -> 200 bearer_jwt=true
+2026-11-06T18:14:33.366Z [phase1-accountant] POST http://localhost:8000/v1/client-entities/8b7a562a-3368-455c-989a-7e435590ab45/chart-accounts/import-file -> 200 bearer_jwt=true
+2026-11-06T18:14:33.445Z [phase1-accountant] GET http://localhost:8000/v1/client-entities/8b7a562a-3368-455c-989a-7e435590ab45/tax-mappings -> 200 bearer_jwt=true
+2026-11-06T18:14:33.447Z [phase1-accountant] GET http://localhost:8000/v1/client-entities/8b7a562a-3368-455c-989a-7e435590ab45/chart-accounts -> 200 bearer_jwt=true
+2026-11-06T18:14:33.476Z [phase1-accountant] GET http://localhost:8000/v1/client-entities/8b7a562a-3368-455c-989a-7e435590ab45/chart-accounts -> 200 bearer_jwt=true
+2026-11-06T18:14:33.658Z [phase1-accountant] GET http://localhost:8000/v1/compliance/dpa -> 200 bearer_jwt=true
+2026-11-06T18:14:33.869Z [phase1-accountant] GET http://localhost:8000/v1/compliance/cndp-dossier -> 200 bearer_jwt=true
+  ok  2 [chromium] › e2e\phase1-clients.spec.ts:21:1 › accountant: create company, open period, overlap refused, CGNC + file import, DPA/CNDP (8.8s)
+2026-11-06T18:14:35.383Z [phase1-client-user] GET http://localhost:8000/v1/client-entities -> 200 bearer_jwt=true
+2026-11-06T18:14:35.386Z [phase1-client-user] GET http://localhost:8000/v1/work-requests -> 200 bearer_jwt=true
+2026-11-06T18:14:35.390Z [phase1-client-user] GET http://localhost:8000/v1/me -> 200 bearer_jwt=true
+2026-11-06T18:14:35.621Z [phase1-client-user] GET http://localhost:8000/v1/client-entities -> 200 bearer_jwt=true
+[phase1-client-user] direct GET http://localhost:8000/v1/client-entities/9c574ab4-48ba-473c-bdf4-b07c4a8fd1b6 -> 404
+2026-11-06T18:14:35.828Z [phase1-client-user] GET http://localhost:8000/v1/client-entities/9c574ab4-48ba-473c-bdf4-b07c4a8fd1b6 -> 404 bearer_jwt=true body={"type":"about:blank","title":"Ressource introuvable","status":404,"detail":"Entreprise cliente introuvable.","instance":"/v1/client-entities/9c574ab4-48ba-473c-bdf4-b07c4a8fd1b6"}
+  ok  3 [chromium] › e2e\phase1-clients.spec.ts:101:1 › client user sees only the company in scope (browser and API) (1.8s)
+2026-11-06T18:15:00.528Z [phase2-accountant] GET http://localhost:8000/v1/work-requests -> 200 bearer_jwt=true
+2026-11-06T18:15:00.530Z [phase2-accountant] GET http://localhost:8000/v1/client-entities -> 200 bearer_jwt=true
+2026-11-06T18:15:00.539Z [phase2-accountant] GET http://localhost:8000/v1/me -> 200 bearer_jwt=true
+2026-11-06T18:15:00.742Z [phase2-accountant] GET http://localhost:8000/v1/work-requests/52d2c986-ab81-4b8e-bccb-3fb6b551d78c -> 200 bearer_jwt=true
+2026-11-06T18:15:00.795Z [phase2-accountant] GET http://localhost:8000/v1/client-entities/9c574ab4-48ba-473c-bdf4-b07c4a8fd1b6 -> 200 bearer_jwt=true
+2026-11-06T18:15:01.083Z [phase2-accountant] GET http://localhost:8000/v1/work-requests/52d2c986-ab81-4b8e-bccb-3fb6b551d78c/documents -> 200 bearer_jwt=true
+2026-11-06T18:15:01.084Z [phase2-accountant] GET http://localhost:8000/v1/work-requests/52d2c986-ab81-4b8e-bccb-3fb6b551d78c/issues -> 200 bearer_jwt=true
+2026-11-06T18:15:01.108Z [phase2-accountant] GET http://localhost:8000/v1/bank-accounts?client_entity_id=9c574ab4-48ba-473c-bdf4-b07c4a8fd1b6 -> 200 bearer_jwt=true
+2026-11-06T18:15:01.123Z [phase2-accountant] GET http://localhost:8000/v1/reconciliation/bank-transactions?work_request_id=52d2c986-ab81-4b8e-bccb-3fb6b551d78c -> 200 bearer_jwt=true
+2026-11-06T18:15:03.758Z [phase2-accountant] POST http://localhost:8000/v1/work-requests/52d2c986-ab81-4b8e-bccb-3fb6b551d78c/uploads -> 201 bearer_jwt=true
+2026-11-06T18:15:07.075Z [phase2-accountant] PUT http://localhost:8000/v1/documents/69d851fe-0bf2-4862-8579-5ea192160989/content -> 200 bearer_jwt=true
+2026-11-06T18:15:12.704Z [phase2-accountant] POST http://localhost:8000/v1/documents/69d851fe-0bf2-4862-8579-5ea192160989:complete-upload -> 200 bearer_jwt=true
+2026-11-06T18:15:12.751Z [phase2-accountant] GET http://localhost:8000/v1/work-requests/52d2c986-ab81-4b8e-bccb-3fb6b551d78c -> 200 bearer_jwt=true
+2026-11-06T18:15:12.828Z [phase2-accountant] GET http://localhost:8000/v1/client-entities/9c574ab4-48ba-473c-bdf4-b07c4a8fd1b6 -> 200 bearer_jwt=true
+2026-11-06T18:15:12.925Z [phase2-accountant] GET http://localhost:8000/v1/work-requests/52d2c986-ab81-4b8e-bccb-3fb6b551d78c/issues -> 200 bearer_jwt=true
+2026-11-06T18:15:12.943Z [phase2-accountant] GET http://localhost:8000/v1/work-requests/52d2c986-ab81-4b8e-bccb-3fb6b551d78c/documents -> 200 bearer_jwt=true
+2026-11-06T18:15:13.243Z [phase2-accountant] GET http://localhost:8000/v1/documents/69d851fe-0bf2-4862-8579-5ea192160989 -> 200 bearer_jwt=true
+2026-11-06T18:15:13.318Z [phase2-accountant] GET http://localhost:8000/v1/documents/69d851fe-0bf2-4862-8579-5ea192160989/extraction -> 200 bearer_jwt=true
+2026-11-06T18:15:13.416Z [phase2-accountant] GET http://localhost:8000/v1/documents/69d851fe-0bf2-4862-8579-5ea192160989/pages/1/image -> 200 bearer_jwt=true
+2026-11-06T18:15:13.568Z [phase2-accountant] GET http://localhost:8000/v1/documents/69d851fe-0bf2-4862-8579-5ea192160989/pages/2/image -> 404 bearer_jwt=true body={"type":"about:blank","title":"Ressource introuvable","status":404,"detail":"Page introuvable.","instance":"/v1/documents/69d851fe-0bf2-4862-8579-5ea192160989/pages/2/image"}
+[phase2-accountant] total_ttc bbox api=[0.0992,0.359,0.3226,0.3738] drawn=[0.099,0.359,0.323,0.374]
+2026-11-06T18:15:15.076Z [phase2-accountant] PATCH http://localhost:8000/v1/documents/69d851fe-0bf2-4862-8579-5ea192160989/extraction -> 200 bearer_jwt=true
+2026-11-06T18:15:15.150Z [phase2-accountant] GET http://localhost:8000/v1/documents/69d851fe-0bf2-4862-8579-5ea192160989 -> 200 bearer_jwt=true
+2026-11-06T18:15:15.248Z [phase2-accountant] GET http://localhost:8000/v1/documents/69d851fe-0bf2-4862-8579-5ea192160989/extraction -> 200 bearer_jwt=true
+2026-11-06T18:15:15.301Z [phase2-accountant] GET http://localhost:8000/v1/documents/69d851fe-0bf2-4862-8579-5ea192160989/pages/1/image -> 200 bearer_jwt=true
+2026-11-06T18:15:15.444Z [phase2-accountant] GET http://localhost:8000/v1/documents/69d851fe-0bf2-4862-8579-5ea192160989/pages/2/image -> 404 bearer_jwt=true body={"type":"about:blank","title":"Ressource introuvable","status":404,"detail":"Page introuvable.","instance":"/v1/documents/69d851fe-0bf2-4862-8579-5ea192160989/pages/2/image"}
+2026-11-06T18:15:15.995Z [phase2-accountant] GET http://localhost:8000/v1/work-requests/52d2c986-ab81-4b8e-bccb-3fb6b551d78c -> 200 bearer_jwt=true
+2026-11-06T18:15:16.028Z [phase2-accountant] GET http://localhost:8000/v1/client-entities/9c574ab4-48ba-473c-bdf4-b07c4a8fd1b6 -> 200 bearer_jwt=true
+2026-11-06T18:15:16.129Z [phase2-accountant] GET http://localhost:8000/v1/work-requests/52d2c986-ab81-4b8e-bccb-3fb6b551d78c/issues -> 200 bearer_jwt=true
+2026-11-06T18:15:16.137Z [phase2-accountant] GET http://localhost:8000/v1/work-requests/52d2c986-ab81-4b8e-bccb-3fb6b551d78c/documents -> 200 bearer_jwt=true
+2026-11-06T18:15:16.138Z [phase2-accountant] GET http://localhost:8000/v1/bank-accounts?client_entity_id=9c574ab4-48ba-473c-bdf4-b07c4a8fd1b6 -> 200 bearer_jwt=true
+2026-11-06T18:15:16.147Z [phase2-accountant] GET http://localhost:8000/v1/reconciliation/bank-transactions?work_request_id=52d2c986-ab81-4b8e-bccb-3fb6b551d78c -> 200 bearer_jwt=true
+2026-11-06T18:15:16.216Z [phase2-accountant] POST http://localhost:8000/v1/work-requests/52d2c986-ab81-4b8e-bccb-3fb6b551d78c/uploads -> 201 bearer_jwt=true
+2026-11-06T18:15:16.318Z [phase2-accountant] PUT http://localhost:8000/v1/documents/a87200cc-d6fa-4c34-9075-12879018fb27/content -> 200 bearer_jwt=true
+2026-11-06T18:15:16.435Z [phase2-accountant] POST http://localhost:8000/v1/documents/a87200cc-d6fa-4c34-9075-12879018fb27:complete-upload -> 422 bearer_jwt=true body={"type":"about:blank","title":"Entité non traitable","status":422,"detail":"Pièce mise en quarantaine : logiciel malveillant détecté (Eicar-Test-Signature). Elle ne sera pas lue. Demandez une copie saine au client.","instance":"/v1/documents/a87200cc-d6fa-4c34-9075-12879018fb27:complete-upload"}
+2026-11-06T18:15:16.472Z [phase2-accountant] GET http://localhost:8000/v1/work-requests/52d2c986-ab81-4b8e-bccb-3fb6b551d78c -> 200 bearer_jwt=true
+2026-11-06T18:15:16.545Z [phase2-accountant] GET http://localhost:8000/v1/client-entities/9c574ab4-48ba-473c-bdf4-b07c4a8fd1b6 -> 200 bearer_jwt=true
+2026-11-06T18:15:16.656Z [phase2-accountant] GET http://localhost:8000/v1/work-requests/52d2c986-ab81-4b8e-bccb-3fb6b551d78c/documents -> 200 bearer_jwt=true
+2026-11-06T18:15:16.658Z [phase2-accountant] GET http://localhost:8000/v1/work-requests/52d2c986-ab81-4b8e-bccb-3fb6b551d78c/issues -> 200 bearer_jwt=true
+  ok  4 [chromium] › e2e\phase2-intake.spec.ts:26:1 › accountant uploads a scanned invoice, it is read, reviewed and corrected (41.1s)
+2026-11-06T18:15:18.307Z [phase2-client-user] GET http://localhost:8000/v1/work-requests -> 200 bearer_jwt=true
+2026-11-06T18:15:18.329Z [phase2-client-user] GET http://localhost:8000/v1/me -> 200 bearer_jwt=true
+2026-11-06T18:15:18.331Z [phase2-client-user] GET http://localhost:8000/v1/client-entities -> 200 bearer_jwt=true
+[phase2-client-user] direct GET http://localhost:8000/v1/documents/69d851fe-0bf2-4862-8579-5ea192160989 -> 404
+[phase2-client-user] direct GET http://localhost:8000/v1/documents/69d851fe-0bf2-4862-8579-5ea192160989/extraction -> 404
+[phase2-client-user] direct GET http://localhost:8000/v1/documents/69d851fe-0bf2-4862-8579-5ea192160989/pages/1/image -> 404
+2026-11-06T18:15:18.972Z [phase2-client-user] GET http://localhost:8000/v1/documents/69d851fe-0bf2-4862-8579-5ea192160989 -> 404 bearer_jwt=true body=
+  ok  5 [chromium] › e2e\phase2-intake.spec.ts:105:1 › client user cannot open a document of another company (2.0s)
+2026-11-06T18:15:20.397Z [phase3-expert] GET http://localhost:8000/v1/client-entities -> 200 bearer_jwt=true
+2026-11-06T18:15:20.399Z [phase3-expert] GET http://localhost:8000/v1/work-requests -> 200 bearer_jwt=true
+2026-11-06T18:15:20.409Z [phase3-expert] GET http://localhost:8000/v1/me -> 200 bearer_jwt=true
+[phase3-expert] token amr=["pwd","otp"]
+2026-11-06T18:15:20.544Z [phase3-expert] GET http://localhost:8000/v1/client-entities -> 200 bearer_jwt=true
+2026-11-06T18:15:20.623Z [phase3-expert] GET http://localhost:8000/v1/client-entities/0ddd3b8b-7cc8-4a33-9de0-4f048ac622ea -> 200 bearer_jwt=true
+2026-11-06T18:15:20.684Z [phase3-expert] GET http://localhost:8000/v1/client-entities/0ddd3b8b-7cc8-4a33-9de0-4f048ac622ea/periods -> 200 bearer_jwt=true
+2026-11-06T18:15:20.692Z [phase3-expert] GET http://localhost:8000/v1/client-entities/0ddd3b8b-7cc8-4a33-9de0-4f048ac622ea/tax-mappings -> 200 bearer_jwt=true
+2026-11-06T18:15:20.694Z [phase3-expert] GET http://localhost:8000/v1/client-entities/0ddd3b8b-7cc8-4a33-9de0-4f048ac622ea/chart-accounts -> 200 bearer_jwt=true
+2026-11-06T18:15:20.769Z [phase3-expert] GET http://localhost:8000/v1/client-entities/0ddd3b8b-7cc8-4a33-9de0-4f048ac622ea/chart-accounts -> 200 bearer_jwt=true
+2026-11-06T18:15:20.834Z [phase3-expert] POST http://localhost:8000/v1/client-entities/0ddd3b8b-7cc8-4a33-9de0-4f048ac622ea/chart-accounts/seed-cgnc -> 200 bearer_jwt=true
+2026-11-06T18:15:20.914Z [phase3-expert] GET http://localhost:8000/v1/client-entities/0ddd3b8b-7cc8-4a33-9de0-4f048ac622ea/chart-accounts -> 200 bearer_jwt=true
+2026-11-06T18:15:20.917Z [phase3-expert] GET http://localhost:8000/v1/client-entities/0ddd3b8b-7cc8-4a33-9de0-4f048ac622ea/tax-mappings -> 200 bearer_jwt=true
+2026-11-06T18:15:20.952Z [phase3-expert] GET http://localhost:8000/v1/client-entities/0ddd3b8b-7cc8-4a33-9de0-4f048ac622ea/chart-accounts -> 200 bearer_jwt=true
+2026-11-06T18:15:21.198Z [phase3-expert] PUT http://localhost:8000/v1/client-entities/0ddd3b8b-7cc8-4a33-9de0-4f048ac622ea/tax-mappings -> 200 bearer_jwt=true
+2026-11-06T18:15:21.286Z [phase3-expert] GET http://localhost:8000/v1/client-entities/0ddd3b8b-7cc8-4a33-9de0-4f048ac622ea/chart-accounts -> 200 bearer_jwt=true
+2026-11-06T18:15:21.287Z [phase3-expert] GET http://localhost:8000/v1/client-entities/0ddd3b8b-7cc8-4a33-9de0-4f048ac622ea/tax-mappings -> 200 bearer_jwt=true
+2026-11-06T18:15:21.714Z [phase3-expert] GET http://localhost:8000/v1/work-requests -> 200 bearer_jwt=true
+2026-11-06T18:15:21.718Z [phase3-expert] GET http://localhost:8000/v1/client-entities -> 200 bearer_jwt=true
+2026-11-06T18:15:21.800Z [phase3-expert] GET http://localhost:8000/v1/work-requests/9d44686c-93e1-4736-b9f8-4c5d42e2174c -> 200 bearer_jwt=true
+2026-11-06T18:15:21.830Z [phase3-expert] GET http://localhost:8000/v1/client-entities/0ddd3b8b-7cc8-4a33-9de0-4f048ac622ea -> 200 bearer_jwt=true
+2026-11-06T18:15:21.978Z [phase3-expert] GET http://localhost:8000/v1/work-requests/9d44686c-93e1-4736-b9f8-4c5d42e2174c/documents -> 200 bearer_jwt=true
+2026-11-06T18:15:21.979Z [phase3-expert] GET http://localhost:8000/v1/work-requests/9d44686c-93e1-4736-b9f8-4c5d42e2174c/issues -> 200 bearer_jwt=true
+2026-11-06T18:15:21.986Z [phase3-expert] GET http://localhost:8000/v1/bank-accounts?client_entity_id=0ddd3b8b-7cc8-4a33-9de0-4f048ac622ea -> 200 bearer_jwt=true
+2026-11-06T18:15:21.991Z [phase3-expert] GET http://localhost:8000/v1/reconciliation/bank-transactions?work_request_id=9d44686c-93e1-4736-b9f8-4c5d42e2174c -> 200 bearer_jwt=true
+2026-11-06T18:15:23.720Z [phase3-expert] POST http://localhost:8000/v1/work-requests/9d44686c-93e1-4736-b9f8-4c5d42e2174c/uploads -> 201 bearer_jwt=true
+2026-11-06T18:15:25.462Z [phase3-expert] PUT http://localhost:8000/v1/documents/8e6a97b2-4e9f-4a0f-9957-1ec2d2eb6423/content -> 200 bearer_jwt=true
+2026-11-06T18:15:28.578Z [phase3-expert] POST http://localhost:8000/v1/documents/8e6a97b2-4e9f-4a0f-9957-1ec2d2eb6423:complete-upload -> 200 bearer_jwt=true
+2026-11-06T18:15:28.634Z [phase3-expert] GET http://localhost:8000/v1/work-requests/9d44686c-93e1-4736-b9f8-4c5d42e2174c -> 200 bearer_jwt=true
+2026-11-06T18:15:28.725Z [phase3-expert] GET http://localhost:8000/v1/client-entities/0ddd3b8b-7cc8-4a33-9de0-4f048ac622ea -> 200 bearer_jwt=true
+2026-11-06T18:15:28.896Z [phase3-expert] GET http://localhost:8000/v1/work-requests/9d44686c-93e1-4736-b9f8-4c5d42e2174c/issues -> 200 bearer_jwt=true
+2026-11-06T18:15:28.899Z [phase3-expert] GET http://localhost:8000/v1/work-requests/9d44686c-93e1-4736-b9f8-4c5d42e2174c/documents -> 200 bearer_jwt=true
+2026-11-06T18:15:29.177Z [phase3-expert] POST http://localhost:8000/v1/documents/8e6a97b2-4e9f-4a0f-9957-1ec2d2eb6423:generate-proposal -> 200 bearer_jwt=true
+2026-11-06T18:15:29.222Z [phase3-expert] GET http://localhost:8000/v1/work-requests/9d44686c-93e1-4736-b9f8-4c5d42e2174c -> 200 bearer_jwt=true
+2026-11-06T18:15:29.320Z [phase3-expert] GET http://localhost:8000/v1/client-entities/0ddd3b8b-7cc8-4a33-9de0-4f048ac622ea -> 200 bearer_jwt=true
+2026-11-06T18:15:29.412Z [phase3-expert] GET http://localhost:8000/v1/work-requests/9d44686c-93e1-4736-b9f8-4c5d42e2174c/proposals -> 200 bearer_jwt=true
+2026-11-06T18:15:29.453Z [phase3-expert] GET http://localhost:8000/v1/work-requests/9d44686c-93e1-4736-b9f8-4c5d42e2174c/issues -> 200 bearer_jwt=true
+2026-11-06T18:15:29.486Z [phase3-expert] GET http://localhost:8000/v1/work-requests/9d44686c-93e1-4736-b9f8-4c5d42e2174c/documents -> 200 bearer_jwt=true
+2026-11-06T18:15:29.521Z [phase3-expert] GET http://localhost:8000/v1/documents/8e6a97b2-4e9f-4a0f-9957-1ec2d2eb6423/pages/1/image -> 200 bearer_jwt=true
+[phase3-expert] line 1 evidence api=[0.0992,0.3111,0.3121,0.3259] drawn=[0.099,0.311,0.312,0.326]
+[phase3-expert] proposal lines=3 debit=12000 credit=12000
+  ok  6 [chromium] › e2e\phase3-proposals.spec.ts:13:1 › expert approves VAT account, proposes an entry from a read invoice, reviews it (11.3s)
+2026-11-06T18:15:31.836Z [phase4-expert] GET http://localhost:8000/v1/client-entities -> 200 bearer_jwt=true
+2026-11-06T18:15:31.837Z [phase4-expert] GET http://localhost:8000/v1/work-requests -> 200 bearer_jwt=true
+2026-11-06T18:15:31.845Z [phase4-expert] GET http://localhost:8000/v1/me -> 200 bearer_jwt=true
+2026-11-06T18:15:32.069Z [phase4-expert] GET http://localhost:8000/v1/work-requests/9d44686c-93e1-4736-b9f8-4c5d42e2174c -> 200 bearer_jwt=true
+2026-11-06T18:15:32.106Z [phase4-expert] GET http://localhost:8000/v1/client-entities/0ddd3b8b-7cc8-4a33-9de0-4f048ac622ea -> 200 bearer_jwt=true
+2026-11-06T18:15:32.188Z [phase4-expert] GET http://localhost:8000/v1/reconciliation/bank-transactions?work_request_id=9d44686c-93e1-4736-b9f8-4c5d42e2174c -> 200 bearer_jwt=true
+2026-11-06T18:15:32.228Z [phase4-expert] GET http://localhost:8000/v1/work-requests/9d44686c-93e1-4736-b9f8-4c5d42e2174c/documents -> 200 bearer_jwt=true
+2026-11-06T18:15:32.230Z [phase4-expert] GET http://localhost:8000/v1/work-requests/9d44686c-93e1-4736-b9f8-4c5d42e2174c/issues -> 200 bearer_jwt=true
+2026-11-06T18:15:32.231Z [phase4-expert] GET http://localhost:8000/v1/bank-accounts?client_entity_id=0ddd3b8b-7cc8-4a33-9de0-4f048ac622ea -> 200 bearer_jwt=true
+2026-11-06T18:15:32.309Z [phase4-expert] POST http://localhost:8000/v1/bank-accounts -> 201 bearer_jwt=true
+2026-11-06T18:15:32.362Z [phase4-expert] GET http://localhost:8000/v1/bank-accounts?client_entity_id=0ddd3b8b-7cc8-4a33-9de0-4f048ac622ea -> 200 bearer_jwt=true
+2026-11-06T18:15:32.379Z [phase4-expert] GET http://localhost:8000/v1/reconciliation/bank-transactions?work_request_id=9d44686c-93e1-4736-b9f8-4c5d42e2174c -> 200 bearer_jwt=true
+2026-11-06T18:15:32.617Z [phase4-expert] POST http://localhost:8000/v1/bank-statements/upload -> 201 bearer_jwt=true
+2026-11-06T18:15:32.669Z [phase4-expert] GET http://localhost:8000/v1/work-requests/9d44686c-93e1-4736-b9f8-4c5d42e2174c -> 200 bearer_jwt=true
+2026-11-06T18:15:32.672Z [phase4-expert] GET http://localhost:8000/v1/bank-accounts?client_entity_id=0ddd3b8b-7cc8-4a33-9de0-4f048ac622ea -> 200 bearer_jwt=true
+2026-11-06T18:15:32.676Z [phase4-expert] GET http://localhost:8000/v1/reconciliation/bank-transactions?work_request_id=9d44686c-93e1-4736-b9f8-4c5d42e2174c -> 200 bearer_jwt=true
+2026-11-06T18:15:32.708Z [phase4-expert] GET http://localhost:8000/v1/client-entities/0ddd3b8b-7cc8-4a33-9de0-4f048ac622ea -> 200 bearer_jwt=true
+2026-11-06T18:15:32.836Z [phase4-expert] GET http://localhost:8000/v1/work-requests/9d44686c-93e1-4736-b9f8-4c5d42e2174c/issues -> 200 bearer_jwt=true
+2026-11-06T18:15:33.122Z [phase4-expert] POST http://localhost:8000/v1/bank-statements/upload -> 201 bearer_jwt=true
+2026-11-06T18:15:33.125Z [phase4-expert] GET http://localhost:8000/v1/work-requests/9d44686c-93e1-4736-b9f8-4c5d42e2174c/documents -> 200 bearer_jwt=true
+2026-11-06T18:15:33.227Z [phase4-expert] GET http://localhost:8000/v1/bank-accounts?client_entity_id=0ddd3b8b-7cc8-4a33-9de0-4f048ac622ea -> 200 bearer_jwt=true
+2026-11-06T18:15:33.230Z [phase4-expert] GET http://localhost:8000/v1/work-requests/9d44686c-93e1-4736-b9f8-4c5d42e2174c -> 200 bearer_jwt=true
+2026-11-06T18:15:33.256Z [phase4-expert] GET http://localhost:8000/v1/reconciliation/bank-transactions?work_request_id=9d44686c-93e1-4736-b9f8-4c5d42e2174c -> 200 bearer_jwt=true
+2026-11-06T18:15:33.280Z [phase4-expert] GET http://localhost:8000/v1/client-entities/0ddd3b8b-7cc8-4a33-9de0-4f048ac622ea -> 200 bearer_jwt=true
+2026-11-06T18:15:33.384Z [phase4-expert] GET http://localhost:8000/v1/work-requests/9d44686c-93e1-4736-b9f8-4c5d42e2174c/issues -> 200 bearer_jwt=true
+2026-11-06T18:15:33.482Z [phase4-expert] GET http://localhost:8000/v1/work-requests/9d44686c-93e1-4736-b9f8-4c5d42e2174c/documents -> 200 bearer_jwt=true
+2026-11-06T18:15:33.987Z [phase4-expert] POST http://localhost:8000/v1/bank-statements/upload -> 200 bearer_jwt=true
+2026-11-06T18:15:34.067Z [phase4-expert] GET http://localhost:8000/v1/work-requests/9d44686c-93e1-4736-b9f8-4c5d42e2174c -> 200 bearer_jwt=true
+2026-11-06T18:15:34.080Z [phase4-expert] GET http://localhost:8000/v1/bank-accounts?client_entity_id=0ddd3b8b-7cc8-4a33-9de0-4f048ac622ea -> 200 bearer_jwt=true
+2026-11-06T18:15:34.099Z [phase4-expert] GET http://localhost:8000/v1/reconciliation/bank-transactions?work_request_id=9d44686c-93e1-4736-b9f8-4c5d42e2174c -> 200 bearer_jwt=true
+2026-11-06T18:15:34.141Z [phase4-expert] GET http://localhost:8000/v1/client-entities/0ddd3b8b-7cc8-4a33-9de0-4f048ac622ea -> 200 bearer_jwt=true
+2026-11-06T18:15:34.212Z [phase4-expert] GET http://localhost:8000/v1/work-requests/9d44686c-93e1-4736-b9f8-4c5d42e2174c -> 200 bearer_jwt=true
+2026-11-06T18:15:34.245Z [phase4-expert] GET http://localhost:8000/v1/reconciliation/bank-transactions?work_request_id=9d44686c-93e1-4736-b9f8-4c5d42e2174c -> 200 bearer_jwt=true
+2026-11-06T18:15:34.247Z [phase4-expert] GET http://localhost:8000/v1/work-requests/9d44686c-93e1-4736-b9f8-4c5d42e2174c/issues -> 200 bearer_jwt=true
+2026-11-06T18:15:34.253Z [phase4-expert] GET http://localhost:8000/v1/reconciliation/matches?work_request_id=9d44686c-93e1-4736-b9f8-4c5d42e2174c -> 200 bearer_jwt=true
+2026-11-06T18:15:34.279Z [phase4-expert] GET http://localhost:8000/v1/work-requests/9d44686c-93e1-4736-b9f8-4c5d42e2174c/proposals -> 200 bearer_jwt=true
+2026-11-06T18:15:34.320Z [phase4-expert] GET http://localhost:8000/v1/work-requests/9d44686c-93e1-4736-b9f8-4c5d42e2174c/documents -> 200 bearer_jwt=true
+2026-11-06T18:15:34.477Z [phase4-expert] POST http://localhost:8000/v1/reconciliation/generate -> 201 bearer_jwt=true
+2026-11-06T18:15:34.549Z [phase4-expert] GET http://localhost:8000/v1/work-requests/9d44686c-93e1-4736-b9f8-4c5d42e2174c -> 200 bearer_jwt=true
+2026-11-06T18:15:34.550Z [phase4-expert] GET http://localhost:8000/v1/work-requests/9d44686c-93e1-4736-b9f8-4c5d42e2174c/proposals -> 200 bearer_jwt=true
+2026-11-06T18:15:34.553Z [phase4-expert] GET http://localhost:8000/v1/reconciliation/matches?work_request_id=9d44686c-93e1-4736-b9f8-4c5d42e2174c -> 200 bearer_jwt=true
+2026-11-06T18:15:34.563Z [phase4-expert] GET http://localhost:8000/v1/reconciliation/bank-transactions?work_request_id=9d44686c-93e1-4736-b9f8-4c5d42e2174c -> 200 bearer_jwt=true
+2026-11-06T18:15:34.807Z [phase4-expert] POST http://localhost:8000/v1/reconciliation/matches/4357a6e7-4abf-44b8-842f-c72097617d84/accept -> 200 bearer_jwt=true
+2026-11-06T18:15:34.894Z [phase4-expert] GET http://localhost:8000/v1/reconciliation/matches?work_request_id=9d44686c-93e1-4736-b9f8-4c5d42e2174c -> 200 bearer_jwt=true
+2026-11-06T18:15:34.928Z [phase4-expert] GET http://localhost:8000/v1/work-requests/9d44686c-93e1-4736-b9f8-4c5d42e2174c -> 200 bearer_jwt=true
+2026-11-06T18:15:34.932Z [phase4-expert] GET http://localhost:8000/v1/work-requests/9d44686c-93e1-4736-b9f8-4c5d42e2174c/proposals -> 200 bearer_jwt=true
+2026-11-06T18:15:34.952Z [phase4-expert] GET http://localhost:8000/v1/reconciliation/bank-transactions?work_request_id=9d44686c-93e1-4736-b9f8-4c5d42e2174c -> 200 bearer_jwt=true
+[phase4-expert] matches=1 accepted=1 difference=0
+  ok  7 [chromium] › e2e\phase4-bank.spec.ts:24:1 › expert imports statements and reconciles the invoice payment (4.8s)
+2026-11-06T18:15:36.720Z [phase5-accountant] GET http://localhost:8000/v1/work-requests -> 200 bearer_jwt=true
+2026-11-06T18:15:36.722Z [phase5-accountant] GET http://localhost:8000/v1/client-entities -> 200 bearer_jwt=true
+2026-11-06T18:15:36.739Z [phase5-accountant] GET http://localhost:8000/v1/me -> 200 bearer_jwt=true
+  ok  8 [chromium] › e2e\phase5-approval-export.spec.ts:24:1 › accountant prepares a file and requests approval (2.1s)
+2026-11-06T18:16:00.425Z [phase5-expert-mapping] GET http://localhost:8000/v1/work-requests -> 200 bearer_jwt=true
+2026-11-06T18:16:00.426Z [phase5-expert-mapping] GET http://localhost:8000/v1/client-entities -> 200 bearer_jwt=true
+2026-11-06T18:16:00.428Z [phase5-expert-mapping] GET http://localhost:8000/v1/me -> 200 bearer_jwt=true
+2026-11-06T18:16:00.451Z [phase5-expert-mapping] GET http://localhost:8000/v1/client-entities -> 200 bearer_jwt=true
+2026-11-06T18:16:00.545Z [phase5-expert-mapping] GET http://localhost:8000/v1/client-entities/cd6b6580-b2b6-40f1-9ac4-3e208d2e064f -> 200 bearer_jwt=true
+2026-11-06T18:16:00.597Z [phase5-expert-mapping] GET http://localhost:8000/v1/client-entities/cd6b6580-b2b6-40f1-9ac4-3e208d2e064f/tax-mappings -> 200 bearer_jwt=true
+2026-11-06T18:16:00.599Z [phase5-expert-mapping] GET http://localhost:8000/v1/client-entities/cd6b6580-b2b6-40f1-9ac4-3e208d2e064f/periods -> 200 bearer_jwt=true
+2026-11-06T18:16:00.601Z [phase5-expert-mapping] GET http://localhost:8000/v1/client-entities/cd6b6580-b2b6-40f1-9ac4-3e208d2e064f/chart-accounts -> 200 bearer_jwt=true
+2026-11-06T18:16:00.627Z [phase5-expert-mapping] GET http://localhost:8000/v1/client-entities/cd6b6580-b2b6-40f1-9ac4-3e208d2e064f/chart-accounts -> 200 bearer_jwt=true
+2026-11-06T18:16:00.802Z [phase5-expert-mapping] PUT http://localhost:8000/v1/client-entities/cd6b6580-b2b6-40f1-9ac4-3e208d2e064f/tax-mappings -> 200 bearer_jwt=true
+2026-11-06T18:16:00.884Z [phase5-expert-mapping] GET http://localhost:8000/v1/client-entities/cd6b6580-b2b6-40f1-9ac4-3e208d2e064f/tax-mappings -> 200 bearer_jwt=true
+2026-11-06T18:16:00.885Z [phase5-expert-mapping] GET http://localhost:8000/v1/client-entities/cd6b6580-b2b6-40f1-9ac4-3e208d2e064f/chart-accounts -> 200 bearer_jwt=true
+  ok  9 [chromium] › e2e\phase5-approval-export.spec.ts:46:1 › expert approves the VAT account for the new company (23.7s)
+2026-11-06T18:16:01.993Z [phase5-accountant] GET http://localhost:8000/v1/work-requests -> 200 bearer_jwt=true
+2026-11-06T18:16:01.994Z [phase5-accountant] GET http://localhost:8000/v1/client-entities -> 200 bearer_jwt=true
+2026-11-06T18:16:01.999Z [phase5-accountant] GET http://localhost:8000/v1/me -> 200 bearer_jwt=true
+2026-11-06T18:16:02.125Z [phase5-accountant] GET http://localhost:8000/v1/work-requests/dc4df68c-6e03-4b57-8150-5bc041ad80d8 -> 200 bearer_jwt=true
+2026-11-06T18:16:02.160Z [phase5-accountant] GET http://localhost:8000/v1/client-entities/cd6b6580-b2b6-40f1-9ac4-3e208d2e064f -> 200 bearer_jwt=true
+2026-11-06T18:16:02.222Z [phase5-accountant] GET http://localhost:8000/v1/bank-accounts?client_entity_id=cd6b6580-b2b6-40f1-9ac4-3e208d2e064f -> 200 bearer_jwt=true
+2026-11-06T18:16:02.237Z [phase5-accountant] GET http://localhost:8000/v1/reconciliation/bank-transactions?work_request_id=dc4df68c-6e03-4b57-8150-5bc041ad80d8 -> 200 bearer_jwt=true
+2026-11-06T18:16:02.249Z [phase5-accountant] GET http://localhost:8000/v1/work-requests/dc4df68c-6e03-4b57-8150-5bc041ad80d8/issues -> 200 bearer_jwt=true
+2026-11-06T18:16:02.251Z [phase5-accountant] GET http://localhost:8000/v1/work-requests/dc4df68c-6e03-4b57-8150-5bc041ad80d8/documents -> 200 bearer_jwt=true
+2026-11-06T18:16:02.277Z [phase5-accountant] POST http://localhost:8000/v1/work-requests/dc4df68c-6e03-4b57-8150-5bc041ad80d8/uploads -> 201 bearer_jwt=true
+2026-11-06T18:16:02.338Z [phase5-accountant] PUT http://localhost:8000/v1/documents/dd432b35-c597-4707-bab0-4bf7c62ba4b5/content -> 200 bearer_jwt=true
+2026-11-06T18:16:04.560Z [phase5-accountant] POST http://localhost:8000/v1/documents/dd432b35-c597-4707-bab0-4bf7c62ba4b5:complete-upload -> 200 bearer_jwt=true
+2026-11-06T18:16:04.649Z [phase5-accountant] GET http://localhost:8000/v1/work-requests/dc4df68c-6e03-4b57-8150-5bc041ad80d8 -> 200 bearer_jwt=true
+2026-11-06T18:16:04.727Z [phase5-accountant] GET http://localhost:8000/v1/client-entities/cd6b6580-b2b6-40f1-9ac4-3e208d2e064f -> 200 bearer_jwt=true
+2026-11-06T18:16:04.817Z [phase5-accountant] GET http://localhost:8000/v1/work-requests/dc4df68c-6e03-4b57-8150-5bc041ad80d8/issues -> 200 bearer_jwt=true
+2026-11-06T18:16:04.850Z [phase5-accountant] GET http://localhost:8000/v1/work-requests/dc4df68c-6e03-4b57-8150-5bc041ad80d8/documents -> 200 bearer_jwt=true
+2026-11-06T18:16:05.128Z [phase5-accountant] POST http://localhost:8000/v1/documents/dd432b35-c597-4707-bab0-4bf7c62ba4b5:generate-proposal -> 200 bearer_jwt=true
+2026-11-06T18:16:05.170Z [phase5-accountant] GET http://localhost:8000/v1/work-requests/dc4df68c-6e03-4b57-8150-5bc041ad80d8 -> 200 bearer_jwt=true
+2026-11-06T18:16:05.244Z [phase5-accountant] GET http://localhost:8000/v1/client-entities/cd6b6580-b2b6-40f1-9ac4-3e208d2e064f -> 200 bearer_jwt=true
+2026-11-06T18:16:05.324Z [phase5-accountant] GET http://localhost:8000/v1/work-requests/dc4df68c-6e03-4b57-8150-5bc041ad80d8/issues -> 200 bearer_jwt=true
+2026-11-06T18:16:05.345Z [phase5-accountant] GET http://localhost:8000/v1/work-requests/dc4df68c-6e03-4b57-8150-5bc041ad80d8/documents -> 200 bearer_jwt=true
+2026-11-06T18:16:05.728Z [phase5-accountant] POST http://localhost:8000/v1/issues/7bcea85b-b1e6-4127-a347-aba31cd5a7dc:acknowledge -> 200 bearer_jwt=true
+2026-11-06T18:16:05.757Z [phase5-accountant] GET http://localhost:8000/v1/work-requests/dc4df68c-6e03-4b57-8150-5bc041ad80d8 -> 200 bearer_jwt=true
+2026-11-06T18:16:05.760Z [phase5-accountant] POST http://localhost:8000/v1/work-requests/dc4df68c-6e03-4b57-8150-5bc041ad80d8/approvals -> 201 bearer_jwt=true
+2026-11-06T18:16:05.787Z [phase5-accountant] GET http://localhost:8000/v1/work-requests/dc4df68c-6e03-4b57-8150-5bc041ad80d8 -> 200 bearer_jwt=true
+2026-11-06T18:16:05.826Z [phase5-accountant] GET http://localhost:8000/v1/client-entities/cd6b6580-b2b6-40f1-9ac4-3e208d2e064f -> 200 bearer_jwt=true
+2026-11-06T18:16:05.869Z [phase5-accountant] GET http://localhost:8000/v1/client-entities/cd6b6580-b2b6-40f1-9ac4-3e208d2e064f -> FAILED net::ERR_ABORTED
+2026-11-06T18:16:05.870Z [phase5-accountant] GET http://localhost:8000/v1/client-entities/cd6b6580-b2b6-40f1-9ac4-3e208d2e064f -> FAILED net::ERR_ABORTED
+  ok 10 [chromium] › e2e\phase5-approval-export.spec.ts:59:1 › accountant uploads, proposes, acknowledges and requests approval (4.8s)
+2026-11-06T18:16:30.452Z [phase5-expert] GET http://localhost:8000/v1/client-entities -> 200 bearer_jwt=true
+2026-11-06T18:16:30.453Z [phase5-expert] GET http://localhost:8000/v1/work-requests -> 200 bearer_jwt=true
+2026-11-06T18:16:30.455Z [phase5-expert] GET http://localhost:8000/v1/me -> 200 bearer_jwt=true
+2026-11-06T18:16:30.482Z [phase5-expert] GET http://localhost:8000/v1/approvals -> 200 bearer_jwt=true
+2026-11-06T18:16:30.607Z [phase5-expert] GET http://localhost:8000/v1/approvals -> 200 bearer_jwt=true
+2026-11-06T18:16:30.651Z [phase5-expert] GET http://localhost:8000/v1/work-requests/dc4df68c-6e03-4b57-8150-5bc041ad80d8/proposals -> 200 bearer_jwt=true
+2026-11-06T18:16:30.745Z [phase5-expert] GET http://localhost:8000/v1/work-requests/dc4df68c-6e03-4b57-8150-5bc041ad80d8 -> 200 bearer_jwt=true
+2026-11-06T18:16:30.746Z [phase5-expert] GET http://localhost:8000/v1/work-requests/dc4df68c-6e03-4b57-8150-5bc041ad80d8/issues -> 200 bearer_jwt=true
+[phase5-expert] waiting 305s so the MFA login is older than 5 minutes
+[phase5-expert] step-up redirect: prompt=login true max_age=300 true
+2026-11-06T18:21:36.744Z [phase5-expert] GET http://localhost:8000/v1/approvals -> 200 bearer_jwt=true
+2026-11-06T18:21:36.762Z [phase5-expert] GET http://localhost:8000/v1/me -> 200 bearer_jwt=true
+2026-11-06T18:21:36.778Z [phase5-expert] GET http://localhost:8000/v1/work-requests/dc4df68c-6e03-4b57-8150-5bc041ad80d8 -> 200 bearer_jwt=true
+2026-11-06T18:21:36.789Z [phase5-expert] GET http://localhost:8000/v1/work-requests/dc4df68c-6e03-4b57-8150-5bc041ad80d8/proposals -> 200 bearer_jwt=true
+2026-11-06T18:21:36.790Z [phase5-expert] GET http://localhost:8000/v1/work-requests/dc4df68c-6e03-4b57-8150-5bc041ad80d8/issues -> 200 bearer_jwt=true
+2026-11-06T18:21:37.029Z [phase5-expert] POST http://localhost:8000/v1/approvals/e1039b6c-ee41-4b75-a5ff-f36a96d6e3a3:decide -> 200 bearer_jwt=true
+2026-11-06T18:21:37.201Z [phase5-expert] POST http://localhost:8000/v1/work-requests/dc4df68c-6e03-4b57-8150-5bc041ad80d8/exports -> 201 bearer_jwt=true
+2026-11-06T18:21:37.295Z [phase5-expert] GET http://localhost:8000/v1/exports/65975e0d-9cda-4daa-b8d5-f0be5ea5033e/file -> 200 bearer_jwt=true
+[phase5-expert] downloaded export.csv (364 bytes)
+ACH;12092026;FAC-2026-0412;Facture achat N° FAC-2026-0412 - So;61110000;;Facture achat - Achats de marchandi;10000,00;0,00
+ACH;12092026;FAC-2026-0412;Facture achat N° FAC-2026-0412 - So;34552000;;TVA déductible (STANDARD_20);2000,00;0,00
+ACH;12092026;FAC-2026-0412;Facture achat N° FAC-2026-0412 - So;44110000;;Facture FAC-2026-0412 - SocieteAtla;0,00;12000,00
+  ok 11 [chromium] › e2e\phase5-approval-export.spec.ts:86:1 › expert approves after a real MFA step-up, then exports (5.5m)
+
+  Slow test file: [chromium] › e2e\phase5-approval-export.spec.ts (6.0m)
+  Consider running tests from slow files in parallel. See: https://playwright.dev/docs/test-parallel
+  11 passed (7.3m)
+docker compose stop api
+ Container avenel-api  Stopping
+ Container avenel-api  Stopped
+npx playwright test --grep @api-down
+
+Running 1 test using 1 worker
+
+2026-11-06T18:21:48.682Z [api-down] GET http://localhost:8000/v1/work-requests -> FAILED net::ERR_CONNECTION_REFUSED
+2026-11-06T18:21:48.684Z [api-down] GET http://localhost:8000/v1/client-entities -> FAILED net::ERR_CONNECTION_REFUSED
+2026-11-06T18:21:48.685Z [api-down] GET http://localhost:8000/v1/me -> FAILED net::ERR_CONNECTION_REFUSED
+  ok 1 [chromium] › e2e\queue-api-down.spec.ts:6:1 › @api-down queue shows the error state when the API is down (3.9s)
+
+  1 passed (5.2s)
+docker compose start api
+ Container avenel-postgres  Waiting
+ Container avenel-postgres  Healthy
+ Container avenel-migrate  Starting
+ Container avenel-migrate  Started
+ Container avenel-migrate  Waiting
+ Container avenel-migrate  Exited
+ Container avenel-seed  Starting
+ Container avenel-seed  Started
+ Container avenel-seed  Waiting
+ Container avenel-keycloak  Waiting
+ Container avenel-clamav  Waiting
+ Container avenel-keycloak  Healthy
+ Container avenel-clamav  Healthy
+ Container avenel-seed  Exited
+ Container avenel-api  Starting
+ Container avenel-api  Started
+C:/ProgramData/chocolatey/lib/make/tools/install/bin/make.exe e2e-down
+make[1]: Entering directory 'C:/Users/21263/Downloads/avenel-split'
+docker compose logs --no-color --timestamps api > docs/reports/phase-5c-1/e2e-api-container.log 2>&1 || true
+docker compose down -v
+ Container avenel-ocr-stub  Stopping
+ Container avenel-web  Stopping
+ Container avenel-freshclam  Stopping
+ Container avenel-worker  Stopping
+ Container avenel-freshclam  Stopped
+ Container avenel-freshclam  Removing
+ Container avenel-freshclam  Removed
+ Container avenel-web  Stopped
+ Container avenel-web  Removing
+ Container avenel-web  Removed
+ Container avenel-ocr-stub  Stopped
+ Container avenel-ocr-stub  Removing
+ Container avenel-ocr-stub  Removed
+ Container avenel-worker  Stopped
+ Container avenel-worker  Removing
+ Container avenel-worker  Removed
+ Container avenel-api  Stopping
+ Container avenel-api  Stopped
+ Container avenel-api  Removing
+ Container avenel-api  Removed
+ Container avenel-seed  Stopping
+ Container avenel-keycloak  Stopping
+ Container avenel-clamav  Stopping
+ Container avenel-seed  Stopped
+ Container avenel-seed  Removing
+ Container avenel-seed  Removed
+ Container avenel-migrate  Stopping
+ Container avenel-migrate  Stopped
+ Container avenel-migrate  Removing
+ Container avenel-migrate  Removed
+ Container avenel-postgres  Stopping
+ Container avenel-clamav  Stopped
+ Container avenel-clamav  Removing
+ Container avenel-clamav  Removed
+ Container avenel-postgres  Stopped
+ Container avenel-postgres  Removing
+ Container avenel-postgres  Removed
+ Container avenel-keycloak  Stopped
+ Container avenel-keycloak  Removing
+ Container avenel-keycloak  Removed
+ Network avenel-split_default  Removing
+ Volume avenel-split_pgdata  Removing
+ Volume avenel-split_docstore  Removing
+ Volume avenel-split_clamav_db  Removing
+ Volume avenel-split_pgdata  Removed
+ Volume avenel-split_docstore  Removed
+ Volume avenel-split_clamav_db  Removed
+ Network avenel-split_default  Removed
+make[1]: Leaving directory 'C:/Users/21263/Downloads/avenel-split'
+MAKE_CI_EXIT=0
+```
+
+</details>
+
+## E2E request log (Phase 5 tests, mutating and decision calls)
+
+Browser side:
+
+```
+2026-11-06T18:16:00.802Z [phase5-expert-mapping] PUT http://localhost:8000/v1/client-entities/cd6b6580-b2b6-40f1-9ac4-3e208d2e064f/tax-mappings -> 200 bearer_jwt=true
+2026-11-06T18:16:02.222Z [phase5-accountant] GET http://localhost:8000/v1/bank-accounts?client_entity_id=cd6b6580-b2b6-40f1-9ac4-3e208d2e064f -> 200 bearer_jwt=true
+2026-11-06T18:16:02.237Z [phase5-accountant] GET http://localhost:8000/v1/reconciliation/bank-transactions?work_request_id=dc4df68c-6e03-4b57-8150-5bc041ad80d8 -> 200 bearer_jwt=true
+2026-11-06T18:16:02.277Z [phase5-accountant] POST http://localhost:8000/v1/work-requests/dc4df68c-6e03-4b57-8150-5bc041ad80d8/uploads -> 201 bearer_jwt=true
+2026-11-06T18:16:02.338Z [phase5-accountant] PUT http://localhost:8000/v1/documents/dd432b35-c597-4707-bab0-4bf7c62ba4b5/content -> 200 bearer_jwt=true
+2026-11-06T18:16:04.560Z [phase5-accountant] POST http://localhost:8000/v1/documents/dd432b35-c597-4707-bab0-4bf7c62ba4b5:complete-upload -> 200 bearer_jwt=true
+2026-11-06T18:16:05.128Z [phase5-accountant] POST http://localhost:8000/v1/documents/dd432b35-c597-4707-bab0-4bf7c62ba4b5:generate-proposal -> 200 bearer_jwt=true
+2026-11-06T18:16:05.728Z [phase5-accountant] POST http://localhost:8000/v1/issues/7bcea85b-b1e6-4127-a347-aba31cd5a7dc:acknowledge -> 200 bearer_jwt=true
+2026-11-06T18:16:05.760Z [phase5-accountant] POST http://localhost:8000/v1/work-requests/dc4df68c-6e03-4b57-8150-5bc041ad80d8/approvals -> 201 bearer_jwt=true
+2026-11-06T18:16:30.482Z [phase5-expert] GET http://localhost:8000/v1/approvals -> 200 bearer_jwt=true
+2026-11-06T18:16:30.607Z [phase5-expert] GET http://localhost:8000/v1/approvals -> 200 bearer_jwt=true
+2026-11-06T18:21:36.744Z [phase5-expert] GET http://localhost:8000/v1/approvals -> 200 bearer_jwt=true
+2026-11-06T18:21:37.029Z [phase5-expert] POST http://localhost:8000/v1/approvals/e1039b6c-ee41-4b75-a5ff-f36a96d6e3a3:decide -> 200 bearer_jwt=true
+2026-11-06T18:21:37.201Z [phase5-expert] POST http://localhost:8000/v1/work-requests/dc4df68c-6e03-4b57-8150-5bc041ad80d8/exports -> 201 bearer_jwt=true
+2026-11-06T18:21:37.295Z [phase5-expert] GET http://localhost:8000/v1/exports/65975e0d-9cda-4daa-b8d5-f0be5ea5033e/file -> 200 bearer_jwt=true
+```
+
+API container side (approvals, exports, issues):
+
+```
+2026-11-06T18:16:05.727313133Z INFO:     192.168.32.1:59282 - "POST /v1/issues/7bcea85b-b1e6-4127-a347-aba31cd5a7dc%3Aacknowledge HTTP/1.1" 200 OK
+2026-11-06T18:16:05.759466329Z INFO:     192.168.32.1:59322 - "POST /v1/work-requests/dc4df68c-6e03-4b57-8150-5bc041ad80d8/approvals HTTP/1.1" 201 Created
+2026-11-06T18:16:30.480401834Z INFO:     192.168.32.1:37556 - "GET /v1/approvals HTTP/1.1" 200 OK
+2026-11-06T18:16:30.605146912Z INFO:     192.168.32.1:37556 - "GET /v1/approvals HTTP/1.1" 200 OK
+2026-11-06T18:21:36.743617317Z INFO:     192.168.32.1:48018 - "GET /v1/approvals HTTP/1.1" 200 OK
+2026-11-06T18:21:37.028751619Z INFO:     192.168.32.1:48026 - "POST /v1/approvals/e1039b6c-ee41-4b75-a5ff-f36a96d6e3a3%3Adecide HTTP/1.1" 200 OK
+2026-11-06T18:21:37.200550586Z INFO:     192.168.32.1:48018 - "POST /v1/work-requests/dc4df68c-6e03-4b57-8150-5bc041ad80d8/exports HTTP/1.1" 201 Created
+2026-11-06T18:21:37.294220165Z INFO:     192.168.32.1:48026 - "GET /v1/exports/65975e0d-9cda-4daa-b8d5-f0be5ea5033e/file HTTP/1.1" 200 OK
+2026-11-06T18:21:37.317461254Z INFO:     192.168.32.1:48034 - "GET /v1/exports/65975e0d-9cda-4daa-b8d5-f0be5ea5033e/file HTTP/1.1" 401 Unauthorized
+```
+
+## Screenshots
+
+| Approval summary | Step-up: Keycloak asks for the OTP again | Export ready |
+|---|---|---|
+| ![](phase-5/01-approval-summary.png) | ![](phase-5/02-step-up-otp.png) | ![](phase-5/03-export-ready.png) |
+
+## Unverified
+
+- **Round trip with Sage 100 and Odoo** (Part G exit criterion): column layouts, encodings and account padding are the earlier agent's; no real import has been done. The supplier sub-account (tiers) column is empty on the 4411 line, which Sage may require.
+- **GitHub CI** for these commits (not pushed). The CI e2e timeout was raised to 45 minutes for the 5-minute step-up wait.
+- **Client portal through the browser**: tested over HTTP (scope, answer); no e2e (the seeded client user's company has no request sent in the run).
+- **Approval reason** is a fixed sentence in the approval component ("Dossier complet, équilibré et contrôlé."), not typed by the approver.
+- **Evidence pack hash** is not returned by the export API, so the screen leaves it empty.
+- **Reconciliation decisions** do not yet count as "preparing" for segregation of duties (open question).
+- **BQ entries' piece number** still falls back to the statement document id.
+- **Usage records / billing** (Phase 5 list item) not exercised through the browser.
+
+## Stubbed
+
+- No LLM provider. Worker still a sleep loop. Seed data via `scripts/seed_e2e.py`; the Phase 5 e2e creates its company, period and file through the API before using the browser (no "Nouveau dossier" screen yet).

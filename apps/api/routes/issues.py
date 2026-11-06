@@ -152,14 +152,18 @@ def list_portal_requests_endpoint(
     client_entity_id: Annotated[uuid.UUID | None, Query()] = None,
 ) -> list[dict[str, Any]]:
     """Lists requests waiting for client action in the portal."""
-    scope_client = client_entity_id
-    if session.role == "client_user":
-        if scope_client and scope_client not in session.client_scope_ids:
+    if session.role != "client_user":
+        return list_portal_requests(conn, session.tenant_id, client_entity_id)
+    # Client users see exactly their scoped companies (Phase 5 fix: with no scope they used to
+    # see every waiting request of the firm; with several, only the first company's).
+    if client_entity_id:
+        if client_entity_id not in session.client_scope_ids:
             raise HTTPException(status_code=404, detail="Client introuvable.")
-        if not scope_client and session.client_scope_ids:
-            scope_client = session.client_scope_ids[0]
-
-    return list_portal_requests(conn, session.tenant_id, scope_client)
+        return list_portal_requests(conn, session.tenant_id, client_entity_id)
+    items: list[dict[str, Any]] = []
+    for cid in session.client_scope_ids:
+        items.extend(list_portal_requests(conn, session.tenant_id, cid))
+    return items
 
 
 @router.post("/portal/requests/{request_id}:answer", operation_id="answerPortalRequest")
@@ -170,6 +174,18 @@ def answer_portal_request_endpoint(
     conn: Annotated[psycopg.Connection, Depends(get_db)],
 ) -> dict[str, Any]:
     """Client user answers a request in the portal."""
+    # Only a client user of the request's company may answer (Phase 5 fix: any user could
+    # answer any request of the tenant by id).
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT client_entity_id FROM issues WHERE tenant_id = %s AND id = %s AND status = 'waiting_client';",
+            (session.tenant_id, request_id),
+        )
+        row = cur.fetchone()
+    if not row or (session.role == "client_user" and row[0] not in session.client_scope_ids):
+        raise HTTPException(status_code=404, detail="Demande introuvable.")
+    if session.role != "client_user":
+        raise HTTPException(status_code=403, detail="Seul le client peut répondre à une demande.")
     try:
         res = answer_portal_request(
             conn=conn,

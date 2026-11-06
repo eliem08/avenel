@@ -103,8 +103,8 @@ def test_hypothesis_every_proposal_balances_and_has_evidence(
         vat_rounded = round(vat1 + vat2, 2)
         ttc_rounded = round(ht_rounded + vat_rounded, 2)
         vat_breakdown = [
-            {"rate": 0.20, "base_ht": base1, "vat_amount": vat1},
-            {"rate": 0.10, "base_ht": base2, "vat_amount": vat2},
+            {"rate": 0.20, "base_ht": base1, "tax_amount": vat1},
+            {"rate": 0.10, "base_ht": base2, "tax_amount": vat2},
         ]
     else:
         vat_rounded = round(ht_rounded * single_vat_rate, 2)
@@ -123,8 +123,10 @@ def test_hypothesis_every_proposal_balances_and_has_evidence(
         "total_vat": {"value": vat_rounded, "page": 1, "confidence": 0.98, "bbox": [0.1, 0.2, 0.4, 0.25]},
         "total_ttc": {"value": ttc_rounded, "page": 1, "confidence": 0.98, "bbox": [0.1, 0.3, 0.4, 0.35]},
     }
-    if vat_breakdown:
-        mock_extracted["vat_breakdown"] = {"value": vat_breakdown}
+    # Same shape as avenel/extraction/extractor.py emits (Phase 3: the property test used an older
+    # shape, which hid a crash on `line_items` and an ignored `tax_breakdown`).
+    mock_extracted["line_items"] = [{"description": "Article de test", "amount": ht_rounded}]
+    mock_extracted["tax_breakdown"] = vat_breakdown
 
     entry = build_journal_proposal(
         conn=conn,

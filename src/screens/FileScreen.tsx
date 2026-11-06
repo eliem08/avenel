@@ -45,6 +45,7 @@ export function FileScreen() {
   const [info, setInfo] = useState<FileInfo | null | 'error' | 'missing'>(null);
   const [docs, setDocs] = useState<Doc[] | null | 'error'>(null);
   const [issues, setIssues] = useState<Issue[]>([]);
+  const [notice, setNotice] = useState<{ text: string; ok: boolean } | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -95,10 +96,17 @@ export function FileScreen() {
         </div>
       )}
 
+      <p className="mt-3 text-sm">
+        <Link to={`/files/${id}/review`} className="text-sky-ink hover:underline" data-testid="link-review">
+          Revoir les écritures proposées
+        </Link>
+      </p>
+
       <Uploader workRequestId={id} onDone={() => void load()} />
 
       <section className="mt-8" aria-labelledby="docs-title">
         <h2 id="docs-title" className="text-xl">Pièces</h2>
+        {notice && <Message kind={notice.ok ? 'ok' : 'error'}>{notice.text}</Message>}
         {docs === null && <LoadingState label="Chargement des pièces…" />}
         {docs === 'error' && <ErrorState title="Les pièces n'ont pas pu être chargées." detail={NETWORK_ERROR} />}
         {Array.isArray(docs) && docs.length === 0 && <EmptyState title="Aucune pièce. Déposez les pièces du mois pour commencer." />}
@@ -110,6 +118,7 @@ export function FileScreen() {
                 <th scope="col" className="px-3 font-medium">Type</th>
                 <th scope="col" className="px-3 font-medium">État</th>
                 <th scope="col" className="px-3 font-medium">Anomalies</th>
+                <th scope="col" className="px-3 font-medium"><span className="sr-only">Action</span></th>
               </tr>
             </thead>
             <tbody>
@@ -133,6 +142,11 @@ export function FileScreen() {
                     <td className="px-3">{d.doc_type ? DOC_TYPE_FR[d.doc_type] ?? d.doc_type : '—'}</td>
                     <td className={`px-3 ${needsPerson ? 'text-pink-ink' : ''}`}>{DOCUMENT_STATUS_FR[d.status] ?? d.status}</td>
                     <td className="px-3 tabular-nums">{n || '—'}</td>
+                    <td className="px-3 text-right">
+                      {(d.status === 'read' || d.status === 'needs_review') && (
+                        <ProposeButton documentId={d.id} onDone={(text, ok) => { setNotice({ text, ok }); void load(); }} />
+                      )}
+                    </td>
                   </tr>
                 );
               })}
@@ -251,5 +265,35 @@ function Uploader({ workRequestId, onDone }: { workRequestId: string; onDone: ()
       {busy && <p role="status" className="mt-2 text-sm text-ink-2" data-testid="upload-progress">{state.step}</p>}
       {state.kind === 'done' && <Message kind={state.ok ? 'ok' : 'error'}>{state.text}</Message>}
     </section>
+  );
+}
+
+function ProposeButton({ documentId, onDone }: { documentId: string; onDone: (text: string, ok: boolean) => void }) {
+  const raw = useRawFetch();
+  const [busy, setBusy] = useState(false);
+  async function propose() {
+    setBusy(true);
+    try {
+      const r = await raw(`/documents/${documentId}:generate-proposal`, { method: 'POST' });
+      const body = (await r.json().catch(() => ({}))) as { status?: string; issue_code?: string; detail?: string };
+      if (!r.ok) onDone(problemMessage(body, "L'écriture n'a pas pu être proposée."), false);
+      else if (body.status === 'blocked')
+        onDone(
+          body.issue_code === 'ACCOUNT_UNMAPPED'
+            ? "Écriture non proposée : un compte de TVA n'est pas approuvé pour cette société. Approuvez-le dans la fiche client (Comptes de TVA)."
+            : `Écriture non proposée : ${body.detail ?? body.issue_code ?? 'anomalie bloquante'}.`,
+          false,
+        );
+      else onDone('Écriture proposée. Revoyez-la dans les écritures proposées.', true);
+    } catch {
+      onDone(NETWORK_ERROR, false);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <Button variant="quiet" onClick={() => void propose()} disabled={busy} data-testid={`btn-propose-${documentId}`}>
+      Proposer l'écriture
+    </Button>
   );
 }

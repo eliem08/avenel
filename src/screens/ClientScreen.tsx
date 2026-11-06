@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { Field, Input, Message } from '@/components/ui/Form';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/States';
+import { TaxMappingsSection } from './TaxMappingsSection';
 
 const PERIOD_STATUS_FR: Record<string, string> = {
   open: 'Ouverte',
@@ -26,6 +27,8 @@ export function ClientScreen() {
   const [client, setClient] = useState<ClientEntity | null | 'error' | 'missing'>(null);
   const [archiving, setArchiving] = useState(false);
   const [archiveError, setArchiveError] = useState<string | null>(null);
+  // Bumped when the chart changes so the VAT account choices reload.
+  const [chartVersion, setChartVersion] = useState(0);
 
   const load = useCallback(async () => {
     setClient(null);
@@ -84,7 +87,8 @@ export function ClientScreen() {
       </p>
 
       <PeriodsSection clientId={id} canWrite={can(me, 'write')} />
-      <ChartSection clientId={id} canWrite={can(me, 'write')} />
+      <ChartSection clientId={id} canWrite={can(me, 'write')} onChanged={() => setChartVersion((v) => v + 1)} />
+      <TaxMappingsSection key={chartVersion} clientId={id} canWrite={can(me, 'write')} />
 
       <Dialog open={archiving} title="Archiver la société" onClose={() => setArchiving(false)}>
         <p className="text-sm">
@@ -204,7 +208,7 @@ function PeriodsSection({ clientId, canWrite }: { clientId: string; canWrite: bo
   );
 }
 
-function ChartSection({ clientId, canWrite }: { clientId: string; canWrite: boolean }) {
+function ChartSection({ clientId, canWrite, onChanged }: { clientId: string; canWrite: boolean; onChanged: () => void }) {
   const api = useApi();
   const { user } = useAuth();
   const [rows, setRows] = useState<ChartAccount[] | null | 'error'>(null);
@@ -233,6 +237,7 @@ function ChartSection({ clientId, canWrite }: { clientId: string; canWrite: bool
       else {
         setMsg({ kind: 'ok', text: (data as { message?: string })?.message ?? 'Plan CGNC chargé.' });
         void load();
+        onChanged();
       }
     } catch {
       setMsg({ kind: 'error', text: NETWORK_ERROR });
@@ -258,6 +263,7 @@ function ChartSection({ clientId, canWrite }: { clientId: string; canWrite: bool
       else {
         setMsg({ kind: 'ok', text: body.message ?? 'Plan comptable importé.' });
         void load();
+        onChanged();
       }
     } catch {
       setMsg({ kind: 'error', text: NETWORK_ERROR });

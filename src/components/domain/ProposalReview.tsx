@@ -262,7 +262,7 @@ export function ProposalReview({
               type="button"
               data-testid="save-edits-btn"
               onClick={handleSaveEdits}
-              className="px-3 py-1 bg-ok text-ink rounded text-xs font-medium hover:bg-ok transition-colors"
+              className="px-3 py-1 bg-sky text-ink hover:bg-sky-ink hover:text-paper rounded text-xs font-medium transition-colors"
             >
               Enregistrer
             </button>
@@ -273,7 +273,7 @@ export function ProposalReview({
               type="button"
               data-testid="confirm-line-btn"
               onClick={() => handleConfirmLine(focusedLineNo)}
-              className="px-3 py-1 bg-ink text-ink rounded text-xs font-medium hover:bg-ink transition-colors flex items-center space-x-1"
+              className="px-3 py-1 border border-line bg-paper text-ink hover:bg-surface rounded text-xs font-medium transition-colors flex items-center space-x-1"
             >
               <Check className="w-3.5 h-3.5 mr-1" />
               <span>Confirmer la ligne</span>
@@ -339,18 +339,23 @@ export function ProposalReview({
             <div
               className="relative shadow-float bg-paper transition-transform duration-100 ease-out origin-center"
               style={{
+                // Width only: the height follows the page image, so the evidence box (in % of this
+                // frame) lands on the image. A fixed 600x850 frame letterboxed the image and put
+                // the box about half a line off (Phase 3 finding).
                 width: `${(600 * zoomLevel) / 100}px`,
-                height: `${(850 * zoomLevel) / 100}px`,
+                maxWidth: '100%',
+                minHeight: documentPageUrl ? undefined : `${(850 * zoomLevel) / 100}px`,
               }}
             >
               {documentPageUrl ? (
                 <img
                   src={documentPageUrl}
-                  alt={`Document page ${currentPage}`}
-                  className="w-full h-full object-contain pointer-events-none select-none"
+                  alt={`Pièce source, page ${currentPage}`}
+                  data-testid="review-page-image"
+                  className="block w-full h-auto pointer-events-none select-none"
                 />
               ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center border-2 border-dashed border-line text-ink-2 text-xs">
+                <div className="w-full flex flex-col items-center justify-center border-2 border-dashed border-line text-ink-2 text-xs" style={{ minHeight: `${(850 * zoomLevel) / 100}px` }}>
                   <FileText className="w-8 h-8 mb-2 opacity-40" />
                   <span>Aperçu de la pièce comptable</span>
                 </div>
@@ -549,7 +554,7 @@ export function ProposalReview({
       {toastMessage && (
         <div
           data-testid="toast-message"
-          className="fixed bottom-4 right-4 bg-ink text-ink px-4 py-2 rounded shadow-float text-xs font-medium"
+          className="fixed bottom-4 right-4 border border-line bg-paper text-ink px-4 py-2 rounded shadow-float text-xs font-medium"
         >
           {toastMessage}
         </div>

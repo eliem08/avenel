@@ -12,6 +12,7 @@ import { SettingsScreen } from '@/screens/SettingsScreen';
 import { SessionProvider } from '@/session/SessionProvider';
 import { FileScreen } from '@/screens/FileScreen';
 import { DocumentScreen } from '@/screens/DocumentScreen';
+import { ReviewScreen } from '@/screens/ReviewScreen';
 
 export function App() {
   return (
@@ -32,6 +33,7 @@ export function App() {
           >
             <Route path="/queue" element={<QueueScreen />} />
             <Route path="/files/:id" element={<FileScreen />} />
+            <Route path="/files/:id/review" element={<ReviewScreen />} />
             <Route path="/documents/:id" element={<DocumentScreen />} />
             <Route path="/clients" element={<ClientsScreen />} />
             <Route path="/clients/:id" element={<ClientScreen />} />

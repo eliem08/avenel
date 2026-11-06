@@ -10,6 +10,7 @@ const realm = JSON.parse(readFileSync('docker/keycloak/realm-export-test.json', 
 
 export const ACCOUNTANT = 'ci-accountant@test.internal';
 export const CLIENT_USER = 'ci-client@test.internal';
+export const EXPERT = 'ci-expert@test.internal';
 
 function credentials(username: string): { password: string; otpSecret: string } {
   const u = realm.users.find((x) => x.username === username);

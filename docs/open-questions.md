@@ -70,3 +70,11 @@ This file records questions, ambiguities, and chosen restrictive interpretations
 - **Context**: Re-validating a document after a field correction used to `DELETE` its open auto-detected issues. The application role has no DELETE on `issues`, so every real intake failed (hidden because API tests ran as a superuser).
 - **Decision (human, 5 Nov 2026)**: supersede, never delete. Migration 010 adds status `superseded` and `superseded_at`. Superseded issues are excluded wherever "active" issues are counted (approval blocking check, issue actions). Part D.2 does not list this status.
 - **Open**: should D.2 be amended to include `superseded`, and should the UI show superseded issues in a history view?
+
+## Pack status `source_cited` (Phase 3, 6 Nov 2026)
+- **Context**: 48 rules (VAT rates, deduction, invoice mentions, identifier formats, issue rules) were marked `verified` by an earlier build agent; no professional ever signed (the sign-off sheet signature block is empty).
+- **Decision (human)**: new status `source_cited`: primary source cited, enabled, shown "à confirmer par un expert"; only a signed review sets `verified` (`verified_by`, `verified_at` required by a CI test).
+- **Open**: Part A.2 #1 / Part I wording does not know this status; should ARCHITECTURE.md record it as a Part K decision?
+
+## Tax mapping approval (Phase 3, 6 Nov 2026)
+- **Decision (human)**: only members with a professional registration approve a client tax mapping; others may propose (stored unapproved, never used). Changes are audited.

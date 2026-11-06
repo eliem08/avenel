@@ -375,7 +375,7 @@ export function ApprovalScreen({
                             setAckNote('');
                             setToastMessage('Anomalie de revue acquittée');
                           }}
-                          className="px-3 py-1.5 text-xs font-medium bg-pink hover:bg-pink text-ink rounded-panel"
+                          className="px-3 py-1.5 text-xs font-medium border border-line bg-paper text-ink hover:bg-surface rounded-panel"
                         >
                           Confirmer
                         </button>
@@ -442,7 +442,7 @@ export function ApprovalScreen({
             type="button"
             onClick={handleApprove}
             disabled={!canApprove || isLoading}
-            className="flex-1 sm:flex-none px-5 py-2.5 rounded-panel bg-ok hover:bg-ok text-ink font-medium text-sm transition-colors  disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="flex-1 sm:flex-none px-5 py-2.5 rounded-panel bg-sky text-ink hover:bg-sky-ink hover:text-paper font-medium text-sm transition-colors  disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             <CheckCircle2 className="h-4 w-4" />
             <span>Valider le dossier</span>
@@ -487,7 +487,7 @@ export function ApprovalScreen({
                 type="button"
                 onClick={handleReject}
                 disabled={!rejectReason.trim() || isLoading}
-                className="px-4 py-2 rounded-panel bg-fail hover:bg-fail text-ink text-sm font-medium disabled:opacity-50"
+                className="px-4 py-2 rounded-panel border border-fail bg-paper text-fail hover:bg-surface text-sm font-medium disabled:opacity-50"
               >
                 Confirmer le refus
               </button>

@@ -372,7 +372,7 @@ export const ReconciliationScreen: React.FC<ReconciliationScreenProps> = ({
                                 handleAccept(m.id);
                               }}
                               disabled={isProcessing}
-                              className="px-3 py-1.5 text-xs font-semibold text-ink bg-ok hover:bg-ok rounded-panel transition-colors flex items-center space-x-1  disabled:opacity-50"
+                              className="px-3 py-1.5 text-xs font-semibold bg-sky text-ink hover:bg-sky-ink hover:text-paper rounded-panel transition-colors flex items-center space-x-1  disabled:opacity-50"
                               data-testid={`btn-accept-${m.id}`}
                             >
                               <CheckCircle2 className="w-3.5 h-3.5" />

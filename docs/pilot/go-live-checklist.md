@@ -84,6 +84,7 @@
 - **Exigence :** La grille de validation légale (`docs/pilot/expert-sign-off-sheet.md`) a été formellement passée en revue. Seules les règles comptables et fiscales ayant recueilli une signature d'expert fiscaliste ou expert-comptable avec nom, date et citation textuelle de source légale sont activées (`status: verified`). Toutes les règles non attestées demeurent formellement désactivées avec le statut `status: needs_expert`.
 - **Statut :** `[ ] NON EFFECTUÉ` (Bloquant)
 - **Preuve requise :** Feuille de signature d'experts signée par l'expert-comptable référent.
+- **Ajout Phase 3 :** 48 règles étaient marquées `verified` sans aucune signature ; elles portent désormais le statut `source_cited` (appliquées, affichées « à confirmer »). La fiche de visa les liste (section 2, `SRC-xx`). Un test CI refuse toute règle `verified` sans `verified_by` et `verified_at`. Ce jalon n'est atteint que lorsque ces 48 règles et les 30 règles `needs_expert` ont été visées.
 - **Signataire désigné :**
   - **Nom du signataire :** ____________________________________
   - **Rôle / Titre :** Expert-Comptable Référent (Inscrit à l'OEC)
@@ -100,6 +101,7 @@
   - La variable `AVENEL_AUTH_TEST_MODE` est **absente** de l'environnement de l'API et du worker en production (vérifier `docker inspect` / manifeste). Si elle vaut `1`, l'API accepte une identité par en-tête : bloquant.
   - La CSP de `docker/nginx.conf` autorise l'hôte Keycloak de **production** dans `connect-src` et `frame-src` (aujourd'hui seule `http://localhost:8080`, valeur de test, y figure).
   - Le client `avenel-web` du realm de production a des URI de redirection `…/callback`, `…/silent-renew` et de déconnexion correspondant au domaine réel, PKCE S256, et un mapper d'audience `avenel-api`.
+  - Le realm de production déclare désormais un flux de connexion qui renseigne `amr` (`pwd`, `otp`) et un mapper d'audience `avenel-api` (Phase 3). Sans eux, aucun membre inscrit à l'Ordre ne pouvait se connecter (preuve MFA absente) et aucun jeton n'était accepté par l'API. **À vérifier sur l'instance Keycloak de production réelle.**
   - Connexion navigateur avec MFA vérifiée en e2e **sur le realm de test uniquement** ; le parcours de ré-authentification (step-up ≤ 5 min) avant validation n'est pas encore exercé dans le navigateur (écran de validation non câblé).
 - **Signataire désigné :**
   - **Nom du signataire :** ____________________________________

@@ -23,5 +23,12 @@
     "subject": "5c1e2e00-0000-4000-8000-000000000002",
     "email": "ci-client@test.internal",
     "scoped_to": "Atlas Distribution SARL"
+  },
+  "expert": {
+    "subject": "5c1e2e00-0000-4000-8000-000000000003",
+    "email": "ci-expert@test.internal",
+    "name": "CI Expert",
+    "professional_title": "expert_comptable",
+    "professional_registration_no": "OEC-E2E-0001 (synthétique)"
   }
 }

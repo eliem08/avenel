@@ -60,6 +60,18 @@ def main() -> None:
                 "INSERT INTO memberships (id, user_id, tenant_id, role, status) VALUES (%s, %s, %s, 'client_user', 'active');",
                 (cu_membership, cu_id, t_id),
             )
+            # Registered professional (Phase 3): approves tax mappings; MFA proof required by the API.
+            ex = SEED["expert"]
+            ex_id = uuid.uuid4()
+            cur.execute(
+                "INSERT INTO users (id, identity_subject, email, full_name, status) VALUES (%s, %s, %s, %s, 'active');",
+                (ex_id, ex["subject"], ex["email"], ex["name"]),
+            )
+            cur.execute(
+                """INSERT INTO memberships (id, user_id, tenant_id, role, status, professional_title, professional_registration_no)
+                   VALUES (%s, %s, %s, 'accountant', 'active', %s, %s);""",
+                (uuid.uuid4(), ex_id, t_id, ex["professional_title"], ex["professional_registration_no"]),
+            )
         set_rls_context(conn, t_id, u_id)
         for c in SEED["clients"]:
             client = create_client_entity(conn, t_id, c["legal_name"], str(u_id), ice=c["ice"])

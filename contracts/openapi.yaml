@@ -617,6 +617,54 @@ paths:
         "404":
           $ref: "#/components/responses/ProblemDetails"
 
+  /documents/{id}/content:
+    put:
+      operationId: uploadDocumentContent
+      tags:
+        - Documents
+      summary: Upload the original bytes of a document
+      description: Stores the original file of a document created by POST /work-requests/{id}/uploads. The body must match the declared byte size and SHA-256. Originals are write-once.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "200":
+          description: Original stored
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [document_id, byte_size, sha256, stored]
+                properties:
+                  document_id:
+                    type: string
+                    format: uuid
+                  byte_size:
+                    type: integer
+                  sha256:
+                    type: string
+                  stored:
+                    type: boolean
+        "404":
+          $ref: "#/components/responses/ProblemDetails"
+        "409":
+          $ref: "#/components/responses/ProblemDetails"
+        "413":
+          $ref: "#/components/responses/ProblemDetails"
+        "422":
+          $ref: "#/components/responses/ProblemDetails"
+
   /documents/{id}:complete-upload:
     post:
       operationId: completeDocumentUpload

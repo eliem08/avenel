@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import uuid
 from typing import Annotated, Any
 
 import psycopg
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
 from apps.api.deps import get_current_session, get_db
@@ -18,7 +19,7 @@ from avenel.documents.service import (
     correct_extraction_fields,
     process_uploaded_document,
 )
-from avenel.infrastructure.storage import get_storage
+from avenel.infrastructure.storage import MAX_DOCUMENT_BYTE_SIZE, get_storage
 from avenel.tenancy.auth import UserSession
 
 router = APIRouter(prefix="/v1", tags=["Documents"])
@@ -73,6 +74,60 @@ async def get_document(
     conn: Annotated[psycopg.Connection, Depends(get_db)],
 ) -> dict[str, Any]:
     return _resolve_document_scope(conn, session, id)
+
+
+@router.put("/documents/{id}/content", operation_id="uploadDocumentContent")
+async def upload_document_content(
+    id: uuid.UUID,
+    request: Request,
+    session: Annotated[UserSession, Depends(get_current_session)],
+    conn: Annotated[psycopg.Connection, Depends(get_db)],
+) -> dict[str, Any]:
+    """Stores the original bytes of a document initialised by POST /work-requests/{id}/uploads.
+
+    Human decision (Phase 2, 6 Nov 2026): uploads go through the API, for every storage backend.
+    The body must match the size and SHA-256 declared at init (duplicate detection and evidence
+    rely on that hash). Originals are write-once: a second upload for the same version is refused.
+    """
+    _resolve_document_scope(conn, session, id)
+    if session.role == "operator":
+        raise HTTPException(status_code=403, detail="Les opérateurs ne peuvent pas téléverser de documents.")
+
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT dv.object_key, dv.byte_size, dv.sha256, dv.mime_type
+            FROM document_versions dv
+            WHERE dv.tenant_id = %s AND dv.document_id = %s
+            ORDER BY dv.version_number DESC
+            LIMIT 1;
+            """,
+            (session.tenant_id, id),
+        )
+        row = cur.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Document introuvable.")
+    object_key, byte_size, sha256, mime_type = str(row[0]), int(row[1]), str(row[2]).lower(), str(row[3])
+
+    storage = get_storage()
+    if storage.object_exists(object_key):
+        raise HTTPException(status_code=409, detail="Le fichier original de cette pièce est déjà enregistré.")
+
+    data = bytearray()
+    limit = min(byte_size, MAX_DOCUMENT_BYTE_SIZE)
+    async for chunk in request.stream():
+        data.extend(chunk)
+        if len(data) > limit:
+            raise HTTPException(status_code=413, detail="Le fichier est plus volumineux que la taille déclarée.")
+    if len(data) != byte_size:
+        raise HTTPException(status_code=422, detail="La taille du fichier reçu ne correspond pas à la taille déclarée.")
+    if hashlib.sha256(bytes(data)).hexdigest() != sha256:
+        raise HTTPException(status_code=422, detail="L'empreinte SHA-256 du fichier reçu ne correspond pas à celle déclarée.")
+
+    # retain_until stays unset: the retention period is needs_expert in the pack
+    # (compliance.documents.retention_years_after_fiscal_year_end, TODO(EXPERT)).
+    storage.put_original(object_key, bytes(data), mime_type, retain_until=None)
+    return {"document_id": str(id), "byte_size": byte_size, "sha256": sha256, "stored": True}
 
 
 @router.post("/documents/{id}:complete-upload")

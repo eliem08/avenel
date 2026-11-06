@@ -21,3 +21,11 @@
   source: "Loi 05-20 relative à la cybersécurité"
   status: "needs_expert"
   note: "Applicability of Loi 05-20 to cloud-hosted fiduciaire data requires counsel assessment (Part I #8)"
+
+- key: "compliance.documents.retention_years_after_fiscal_year_end"
+  value: null
+  effective_from: "2026-01-01"
+  effective_to: null
+  source: "Loi 9-88 art. 22; CGI art. 211 (cited in ARCHITECTURE.md C.4 #10, to be confirmed)"
+  status: "needs_expert"
+  note: "TODO(EXPERT): retention period for document originals, used for S3 Object Lock retain-until. Disabled until confirmed: originals are stored without a computed retain-until date."

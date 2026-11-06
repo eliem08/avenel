@@ -364,6 +364,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/documents/{id}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Upload the original bytes of a document
+         * @description Stores the original file of a document created by POST /work-requests/{id}/uploads. The body must match the declared byte size and SHA-256. Originals are write-once.
+         */
+        put: operations["uploadDocumentContent"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/documents/{id}:complete-upload": {
         parameters: {
             query?: never;
@@ -1964,6 +1984,42 @@ export interface operations {
                 };
             };
             404: components["responses"]["ProblemDetails"];
+        };
+    };
+    uploadDocumentContent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/octet-stream": string;
+            };
+        };
+        responses: {
+            /** @description Original stored */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        document_id: string;
+                        byte_size: number;
+                        sha256: string;
+                        stored: boolean;
+                    };
+                };
+            };
+            404: components["responses"]["ProblemDetails"];
+            409: components["responses"]["ProblemDetails"];
+            413: components["responses"]["ProblemDetails"];
+            422: components["responses"]["ProblemDetails"];
         };
     };
     completeDocumentUpload: {

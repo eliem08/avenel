@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useApi } from '@/api/useApi';
 import { idem } from '@/api/client';
 import { NETWORK_ERROR, problemMessage } from '@/api/problem';
@@ -42,20 +42,23 @@ export function LettrageSection({ clientId, canWrite }: { clientId: string; canW
   const [busy, setBusy] = useState(false);
   const prefix = cls === 'customer' ? '342' : '441';
 
+  const seq = useRef(0);
   const load = useCallback(async () => {
+    const mine = ++seq.current;
     try {
       const [o, p, a] = await Promise.all([
         api.GET('/clients/{client_id}/open-items', { params: { path: { client_id: clientId }, query: { account_class: cls } } }),
         api.GET('/clients/{client_id}/lettrage-groups', { params: { path: { client_id: clientId }, query: { status: 'proposed' } } }),
         api.GET('/clients/{client_id}/lettrage-groups', { params: { path: { client_id: clientId }, query: { status: 'accepted' } } }),
       ]);
+      if (mine !== seq.current) return;
       if (!o.data) return setItems('error');
       setItems(o.data);
       setGroups((p.data ?? []).filter((g) => g.account_code.startsWith(prefix)));
       setAccepted((a.data ?? []).filter((g) => g.account_code.startsWith(prefix)));
       setSelected(new Set());
     } catch {
-      setItems('error');
+      if (mine === seq.current) setItems('error');
     }
   }, [api, clientId, cls, prefix]);
 

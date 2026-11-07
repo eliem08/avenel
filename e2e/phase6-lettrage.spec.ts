@@ -11,7 +11,7 @@ mkdirSync(SHOTS, { recursive: true });
 test.describe.configure({ mode: 'serial' });
 const INVOICE = readFileSync('e2e/assets/invoice-text.pdf');
 const COMPANY = `Draa Lettrage E2E ${Date.now().toString().slice(-6)}`;
-const RIB = '007780000000000000050406';
+const RIB = '007780000000000000061270';
 const STATEMENT = `# Solde initial: 100000.00
 # Solde final: 88000.00
 Date,Libelle,Debit,Credit
@@ -73,7 +73,7 @@ test('accountant books the invoice, reconciles the payment and requests approval
 
   await page.locator('input[name="rib"]').fill(RIB);
   await page.getByRole('button', { name: 'Ajouter le compte' }).click();
-  await expect(page.getByTestId('select-bank-account')).toContainText('0406');
+  await expect(page.getByTestId('select-bank-account')).toContainText('1270');
   await page.getByTestId('input-statement').setInputFiles({ name: 'releve-septembre.csv', mimeType: 'text/csv', buffer: Buffer.from(STATEMENT) });
   await expect(page.getByTestId('statement-row').filter({ hasText: 'releve-septembre.csv' })).toHaveAttribute('data-balance', 'ok');
 

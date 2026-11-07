@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useApi } from '@/api/useApi';
 import { useAuth } from '@/auth/AuthProvider';
@@ -127,12 +127,17 @@ function PeriodsSection({ clientId, canWrite }: { clientId: string; canWrite: bo
   const [fye, setFye] = useState('');
   const [msg, setMsg] = useState<{ kind: 'error' | 'ok'; text: string } | null>(null);
 
+  // Only the latest request may update the list: the request sent on mount can answer after the
+  // reload that follows a creation and would otherwise overwrite it with the older, empty list
+  // (seen in CI, Phase 6b).
+  const seq = useRef(0);
   const load = useCallback(async () => {
+    const mine = ++seq.current;
     try {
       const { data, error } = await api.GET('/client-entities/{id}/periods', { params: { path: { id: clientId } } });
-      setRows(!data || error ? 'error' : data.items);
+      if (mine === seq.current) setRows(!data || error ? 'error' : data.items);
     } catch {
-      setRows('error');
+      if (mine === seq.current) setRows('error');
     }
   }, [api, clientId]);
 

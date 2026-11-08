@@ -27,3 +27,4 @@ reportlab>=4.0.0
 boto3>=1.34.0
 
 scrapling[fetchers]==0.5.1
+playwright>=1.40

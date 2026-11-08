@@ -7,6 +7,7 @@ Runs as the application role (AVENEL_KG_DATABASE_URL, default avenel_app on loca
 from __future__ import annotations
 
 import argparse
+import contextlib
 import dataclasses
 import os
 import sys
@@ -17,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import psycopg
 
 from avenel.jurisdiction.loader import JurisdictionPackLoader
-from avenel.knowledge.crawler import Crawler, scrapling_fetch
+from avenel.knowledge.crawler import BrowserRenderer, Crawler, scrapling_fetch
 from avenel.knowledge.graph import link_pack, rebuild_mentions, store_all
 from avenel.knowledge.sources import SOURCES
 
@@ -26,9 +27,16 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--source", action="append", help="source code (repeatable); default: all enabled")
     ap.add_argument("--max", type=int, default=None, help="cap documents per source")
+    ap.add_argument("--render", action="store_true", help="enable the headless browser for script-rendered sources")
+    ap.add_argument("--chromium", default=None, help="Chromium executable (default: Playwright's own)")
     args = ap.parse_args()
     url = os.environ.get("AVENEL_KG_DATABASE_URL", "postgresql://avenel_app@localhost:5432/avenel")
-    crawler = Crawler(scrapling_fetch)
+    with contextlib.ExitStack() as stack:
+        render = stack.enter_context(BrowserRenderer(args.chromium)) if args.render else None
+        return _run(args, url, Crawler(scrapling_fetch, render=render))
+
+
+def _run(args: argparse.Namespace, url: str, crawler: Crawler) -> int:
     with psycopg.connect(url) as conn:
         print(f"pack rules linked: {link_pack(conn, JurisdictionPackLoader())}")
         print(f"stored documents re-read: {rebuild_mentions(conn)}")

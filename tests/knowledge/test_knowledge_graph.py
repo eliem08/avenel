@@ -15,6 +15,7 @@ import pytest
 
 from avenel.jurisdiction.loader import JurisdictionPackLoader
 from avenel.knowledge.crawler import (
+    MIN_BROWSER_DELAY_SECONDS,
     MIN_DELAY_SECONDS,
     CrawledDocument,
     Crawler,
@@ -150,11 +151,72 @@ def test_minimum_delay_between_requests_to_one_host():
 
 
 def test_disabled_sources_make_no_request():
-    for code in ("dgi", "marches_publics"):
-        web = FakeWeb({})
-        crawler, _, _ = _crawler(web)
-        assert list(crawler.crawl(source_by_code(code))) == []
-        assert web.requests == []
+    web = FakeWeb({})
+    crawler, _, _ = _crawler(web)
+    assert list(crawler.crawl(source_by_code("marches_publics"))) == []
+    assert web.requests == []
+
+
+def test_render_source_is_skipped_without_a_browser():
+    web = FakeWeb({})
+    crawler, _, log = _crawler(web)
+    assert list(crawler.crawl(source_by_code("finances"))) == []
+    assert web.requests == []
+    assert any("needs browser rendering" in line for line in log)
+
+
+def test_dgi_with_browser_is_still_blocked_by_its_503_robots():
+    # 8 Nov 2026: tax.gov.ma/robots.txt answers 503. RFC 9309: unreachable robots = disallow all.
+    web, renders = FakeWeb({"https://www.tax.gov.ma/robots.txt": Fetched("", 503, "text/html", b"")}), []
+    clock = FakeClock()
+    crawler = Crawler(web, sleep=clock.sleep, clock=clock.clock, log=lambda _: None,
+                      render=lambda u: renders.append(u) or Fetched(u, 200, "text/html", b""))
+    assert list(crawler.crawl(source_by_code("dgi"))) == []
+    assert web.requests == ["https://www.tax.gov.ma/robots.txt"]
+    assert renders == []
+
+
+def test_render_pages_in_browser_and_pdfs_over_plain_http():
+    seed = f"{HOST}/fr/lf.aspx"
+    pdf = f"{HOST}/Publication/db/2026/corps-LF2026-fr.pdf"
+    web = FakeWeb({
+        f"{HOST}/robots.txt": Fetched("", 404, "text/html", b""),
+        pdf: Fetched(pdf, 200, "application/pdf", _pdf("Article 6 du CGI, voir CGI art. 106")),
+    })
+    rendered: list[str] = []
+
+    def render(url: str) -> Fetched:
+        rendered.append(url)
+        return _html(url, f'<a href="{pdf}">Corps</a><a href="/Publication/db/2026/autre.pdf">x</a>')
+
+    clock = FakeClock()
+    crawler = Crawler(web, sleep=clock.sleep, clock=clock.clock, log=lambda _: None, render=render)
+    src = Source(code="test_src", label="T", seeds=(seed,), render=True,
+                 follow=(re.compile(rf"^{re.escape(HOST)}/Publication/db/20\d\d/corps-[A-Za-z0-9-]*\.pdf$"),))
+    docs = list(crawler.crawl(src))
+    assert rendered == [seed]
+    assert web.requests == [f"{HOST}/robots.txt", pdf]
+    assert [d.url for d in docs] == [pdf]
+    assert {r.key for r in extract_references(docs[0].text)} == {"CGI art. 6", "CGI art. 106"}
+
+
+def test_browser_pages_wait_longer_between_requests():
+    seeds = (f"{HOST}/a.aspx", f"{HOST}/b.aspx")
+    web = FakeWeb({f"{HOST}/robots.txt": Fetched("", 404, "text/html", b"")})
+    clock = FakeClock()
+    crawler = Crawler(web, sleep=clock.sleep, clock=clock.clock, log=lambda _: None,
+                      render=lambda u: _html(u, ""))
+    list(crawler.crawl(Source(code="test_src", label="T", seeds=seeds, follow=(), render=True)))
+    assert clock.slept == [MIN_BROWSER_DELAY_SECONDS, MIN_BROWSER_DELAY_SECONDS]
+
+
+def test_finances_patterns_keep_only_finance_law_texts():
+    follow = source_by_code("finances").follow
+    base = "https://www.finances.gov.ma/Publication/db/2027/"
+    keep = ["corps-PLF2027-fr.pdf", "Note-presentation_Fr.pdf", "Rapport-depenses-fiscales_Fr.pdf"]
+    drop = ["Rapport-Dette-publique_Fr.pdf", "Rapport-Genre_Fr.pdf", "Rapport-SEGMA_Fr.pdf"]
+    assert all(any(p.match(base + f) for p in follow) for f in keep)
+    assert not any(any(p.match(base + f) for p in follow) for f in drop)
 
 
 def test_max_documents_cap():

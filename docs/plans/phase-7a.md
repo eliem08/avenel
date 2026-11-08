@@ -20,6 +20,8 @@ payment terms) will read from this graph later. Scope chosen: plan + prototype.
 |---|---|---|
 | SGG — Bulletin Officiel (sgg.gov.ma) | Home page is static HTML with direct BO PDF links (`/BO/AR/3111/2026/BO_7556-bis_Ar.pdf`). The French BO list is loaded by script. No robots.txt (404 = allowed). | Crawled: home page + linked BO PDFs |
 | DGI (tax.gov.ma) | Portal is IBM WebSphere; section pages (Notes circulaires, CGI, Décrets) are rendered by JavaScript, and the server answered 503 after two quick requests. robots.txt returns 503. | **Not crawled.** A 5xx robots.txt means "disallowed" in this crawler. Needs either a permitted API/export from the DGI or a decision to render pages in a browser |
+
+**8 Nov 2026:** finances.gov.ma is now crawled with slow browser rendering; DGI rendering is enabled but blocked by its 503 robots.txt. See the report update.
 | Finances (finances.gov.ma) — includes "Normalisation et profession comptable" (CNC) | robots.txt allows everything except `/_layouts/`, `/_vti_bin/`, `/_catalogs/`. The sitemap index points to `sitemap0.xml`, which is an empty `<urlset/>`; menus are rendered by SharePoint script | **Not crawled**: no static links to follow. Same decision as DGI |
 | Marchés publics (marchespublics.gov.ma) | Portal suspended by the TGR "pour des raisons de sécurité" (503 notice) | **Not crawled** while suspended |
 

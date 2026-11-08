@@ -1,14 +1,13 @@
 """Allowlisted public sources for the legal knowledge graph (docs/plans/phase-7a.md).
 
-Only these hosts and path patterns are fetched. DGI, finances and marchés publics are listed but
-disabled: the DGI robots.txt answers 5xx and its pages need script rendering; the finances sitemap
-is empty and its menus are script-rendered; the TGR procurement portal is suspended. Re-enable only after a human decision.
+Only these hosts and path patterns are fetched. Script-rendered sites (finances, DGI) use a slow
+headless browser, still behind robots.txt. Marchés publics is disabled: the TGR portal is suspended.
 """
 
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
@@ -20,7 +19,7 @@ class Source:
     enabled: bool = True
     disabled_reason: str | None = None
     max_documents: int = 50
-    extra_hosts: tuple[str, ...] = field(default_factory=tuple)
+    render: bool = False  # HTML pages rendered in a headless browser (PDFs are always plain HTTP)
 
 
 SOURCES: tuple[Source, ...] = (
@@ -32,22 +31,30 @@ SOURCES: tuple[Source, ...] = (
     ),
     Source(
         code="finances",
-        label="Ministère de l'économie et des finances (normalisation comptable, lois de finances)",
-        seeds=("https://www.finances.gov.ma/sitemap0.xml",),
-        follow=(
-            re.compile(r"^https://www\.finances\.gov\.ma(:443)?/fr/.*(normalisation|comptab|loi-de-finances|loi_de_finances|CNC).*", re.IGNORECASE),
-            re.compile(r"^https://www\.finances\.gov\.ma(:443)?/.*\.pdf$", re.IGNORECASE),
+        label="Ministère de l'économie et des finances — lois de finances",
+        # Pages are rendered by script (SharePoint); founder decision 8 Nov 2026: slow browser rendering.
+        # LF 2026 is the law in force; PLF 2027 is a bill, labelled as such by its file name.
+        seeds=(
+            "https://www.finances.gov.ma/fr/vous-orientez/Pages/plf2026.aspx",
+            "https://www.finances.gov.ma/fr/vous-orientez/Pages/plf2027.aspx",
         ),
-        enabled=False,
-        disabled_reason="sitemap0.xml is empty and menus are rendered by script; awaiting decision",
+        follow=(
+            re.compile(
+                r"^https://www\.finances\.gov\.ma/Publication/db/20\d\d/"
+                r"(corps-[A-Za-z0-9-]*|Note-presentation[A-Za-z_-]*|Rapport-depenses-fiscales[A-Za-z_-]*)\.pdf$",
+                re.IGNORECASE,
+            ),
+        ),
+        render=True,
     ),
     Source(
         code="dgi",
         label="Direction générale des impôts",
         seeds=("https://www.tax.gov.ma/wps/portal/DGI",),
         follow=(),
-        enabled=False,
-        disabled_reason="robots.txt answers 5xx and pages need script rendering; awaiting decision",
+        render=True,
+        # Browser rendering is allowed (8 Nov 2026) but robots.txt answers 503, which RFC 9309 treats as
+        # "disallow everything". Enabled so the robots check runs each time; nothing is fetched until it answers.
     ),
     Source(
         code="marches_publics",

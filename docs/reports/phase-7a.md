@@ -69,3 +69,34 @@ Result in the database: 4 documents (4.5 M characters of Arabic text), 22 pack r
    treats as "no")?
 2. Arabic texts: parse with the Unlimited-OCR adapter (Phase 6a) instead of PDF text, or use French sources only?
 3. Approve adding ARCHITECTURE.md D.9 "Legal knowledge graph" and Phase 7a to Part G.
+
+## Update 8 Nov 2026 — slow browser rendering (founder decision)
+
+- `Source.render`: HTML pages of script-rendered sources go through a plain headless Chromium
+  (`BrowserRenderer`, Playwright), 15 s minimum between page loads. robots.txt and PDFs stay on the plain
+  HTTP fetcher. No stealth mode, no fingerprint changes, no CAPTCHA handling.
+- finances.gov.ma enabled: seeds are the LF 2026 and PLF 2027 pages; only the finance bill body, the
+  presentation note and the tax-expenditure report PDFs are kept.
+- DGI enabled with rendering, but its robots.txt still answers 503, so nothing past robots.txt is fetched
+  (RFC 9309). It will start working by itself once the DGI serves a robots.txt that allows it.
+- 5 new tests (render path, DGI blocked, browser delay, finances patterns, skip without browser): 23 in total.
+
+Real run (`--render --max 5`, Playwright container on the compose network), request log:
+
+```
+GET https://www.finances.gov.ma/robots.txt -> 200
+RENDER https://www.finances.gov.ma/fr/vous-orientez/Pages/plf2026.aspx -> 200
+RENDER https://www.finances.gov.ma/fr/vous-orientez/Pages/plf2027.aspx -> 200
+GET https://www.finances.gov.ma/Publication/db/2026/note-presentation_Fr.pdf -> 200
+GET https://www.finances.gov.ma/Publication/db/2026/Rapport-depenses-fiscales_Fr.pdf -> 200
+GET https://www.finances.gov.ma/Publication/db/2027/corps-PLF2027-fr.pdf -> 200
+GET https://www.finances.gov.ma/Publication/db/2027/Note-presentation_Fr.pdf -> 200
+GET https://www.finances.gov.ma/Publication/db/2027/Rapport-depenses-fiscales_Fr.pdf -> 200
+finances: 5 new documents, 0 unchanged
+GET https://www.tax.gov.ma/robots.txt -> 503
+robots disallow https://www.tax.gov.ma/wps/portal/DGI
+```
+
+Graph after the run: 90 laws, 34 decrees, 13 dahirs, 19 CGI articles, 3 BO issues mentioned (216 `mentions`
+edges). 6 pack rules now reach crawled evidence, all through CGI art. 145 (invoice mentions, ICE/IF).
+The cap of 5 left out the LF 2026 body (`corps-LF2026`); an uncapped run picks it up.

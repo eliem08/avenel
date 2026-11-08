@@ -14,6 +14,7 @@ import time
 import urllib.robotparser
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
+from typing import Any
 from urllib.parse import urldefrag, urlparse
 
 from scrapling.parser import Selector
@@ -32,6 +33,7 @@ class Fetched:
     status: int
     content_type: str
     body: bytes
+    captured: tuple[str, ...] = ()  # same-site data responses seen while rendering (JSON lists)
 
 
 @dataclass(frozen=True)
@@ -43,6 +45,7 @@ class CrawledDocument:
     sha256: str
     title: str | None
     text: str
+    original: bytes = b""  # the exact bytes fetched (PDF or rendered HTML), kept forever
 
 
 Fetch = Callable[[str], Fetched]
@@ -74,9 +77,25 @@ class BrowserRenderer:  # pragma: no cover - live browser, used by the CLI only
         self._pw.stop()
 
     def __call__(self, url: str) -> Fetched:
-        res = self._page.goto(url, wait_until="networkidle", timeout=90_000)
+        # Keep the page's own same-site data calls (e.g. the SGG list of all BO issues is one JSON call):
+        # their links are followed like the page's links. Nothing is sent that the page would not send.
+        captured: list[str] = []
+        host = urlparse(url).netloc
+
+        def on_response(r: Any) -> None:
+            if r.request.resource_type in ("xhr", "fetch") and urlparse(r.url).netloc == host:
+                try:
+                    captured.append(r.text())
+                except Exception:  # noqa: BLE001 - a body we cannot read is simply not used
+                    return
+
+        self._page.on("response", on_response)
+        try:
+            res = self._page.goto(url, wait_until="networkidle", timeout=90_000)
+        finally:
+            self._page.remove_listener("response", on_response)
         status = res.status if res is not None else 0
-        return Fetched(url, status, "text/html; rendered", self._page.content().encode("utf-8"))
+        return Fetched(url, status, "text/html; rendered", self._page.content().encode("utf-8"), tuple(captured))
 
 
 def _pdf_text(body: bytes) -> str:
@@ -155,7 +174,7 @@ class Crawler:
         queue = list(source.seeds)
         seen: set[str] = set()
         produced = 0
-        while queue and produced < source.max_documents:
+        while queue and (source.max_documents is None or produced < source.max_documents):
             url = urldefrag(queue.pop(0))[0]
             if url in seen:
                 continue
@@ -166,7 +185,6 @@ class Crawler:
             res = self._get(url, rendered=source.render and not url.lower().endswith(".pdf"))
             if res is None or res.status != 200:
                 continue
-            is_seed = url in source.seeds
             title: str | None
             if "pdf" in res.content_type or url.lower().endswith(".pdf"):
                 text, title = _pdf_text(res.body), str(url.rsplit("/", 1)[-1])
@@ -174,21 +192,23 @@ class Crawler:
                 page = Selector(content=res.body, url=url)
                 found = page.css("title::text").get()
                 title = str(found) if found is not None else None
-                for link in _links(page, res.body):
+                for link in _links(page, res.body, res.captured):
                     if any(p.match(link) for p in source.follow) and link not in seen:
                         queue.append(link)
                 text = re.sub(r"\s+", " ", " ".join(page.css("body *::text").getall())).strip()
-            if is_seed and not any(p.match(url) for p in source.follow):
-                continue  # seeds are for discovery; only allowlisted pages become documents
+            # Every fetched page and file is kept, seeds included (founder rule 8 Nov 2026: forget nothing).
             text = text.replace("\x00", "")  # PostgreSQL text cannot hold NUL; some BO PDFs contain it
             produced += 1
             yield CrawledDocument(
                 source.code, url, res.status, res.content_type or "application/octet-stream",
-                hashlib.sha256(res.body).hexdigest(), (title or "").strip() or None, text,
+                hashlib.sha256(res.body).hexdigest(), (title or "").strip() or None, text, res.body,
             )
 
 
-def _links(page: Selector, body: bytes) -> list[str]:
+def _links(page: Selector, body: bytes, captured: tuple[str, ...] = ()) -> list[str]:
     hrefs = [page.urljoin(a.attrib.get("href", "")) for a in page.css("a[href]")]
     hrefs += re.findall(r"<loc>\s*([^<\s]+)\s*</loc>", body.decode("utf-8", "replace"))  # sitemaps
+    for data in captured:  # file paths inside JSON data responses, e.g. "BoUrl": "/BO/FR/.../BO_7554_Fr.pdf"
+        plain = data.replace('\\"', '"').replace("\\/", "/")  # JSON may be encoded twice
+        hrefs += [page.urljoin(m) for m in re.findall(r'"((?:https?:)?[^"\s]*?\.pdf)"', plain, re.IGNORECASE)]
     return [h.replace(":443/", "/") for h in hrefs if h.startswith("https://")]

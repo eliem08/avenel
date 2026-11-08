@@ -12,6 +12,7 @@ from typing import Any
 
 import psycopg
 
+from avenel.infrastructure.storage import StorageBackend, get_storage
 from avenel.jurisdiction.loader import JurisdictionPackLoader
 from avenel.knowledge.crawler import CrawledDocument
 from avenel.knowledge.extract import cgi_article_of, extract_references
@@ -40,9 +41,25 @@ def _edge(
     )
 
 
-def store_document(conn: psycopg.Connection[Any], doc: CrawledDocument) -> tuple[uuid.UUID, bool]:
+def original_key(sha256: str) -> str:
+    return f"kg/{sha256[:2]}/{sha256}"
+
+
+def store_document(
+    conn: psycopg.Connection[Any], doc: CrawledDocument, storage: StorageBackend | None = None,
+) -> tuple[uuid.UUID, bool]:
     """Insert the document and its reference edges. Returns (id, created)."""
     with conn.cursor() as cur:
+        if doc.original:  # exact bytes, kept forever; also back-fills documents stored before migration 013
+            cur.execute("SELECT 1 FROM kg_originals WHERE sha256 = %s", (doc.sha256,))
+            if cur.fetchone() is None:
+                key = original_key(doc.sha256)
+                (storage or get_storage()).put_original(key, doc.original, doc.content_type)
+                cur.execute(
+                    """INSERT INTO kg_originals (sha256, content_type, byte_size, storage_key)
+                       VALUES (%s, %s, %s, %s) ON CONFLICT (sha256) DO NOTHING""",
+                    (doc.sha256, doc.content_type, len(doc.original), key),
+                )
         cur.execute("SELECT id FROM kg_documents WHERE url = %s AND sha256 = %s", (doc.url, doc.sha256))
         row = cur.fetchone()
         if row is not None:

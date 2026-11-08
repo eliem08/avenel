@@ -6,6 +6,7 @@ All fetches are fixtures (A.2.7); no network.
 from __future__ import annotations
 
 import dataclasses
+import hashlib
 import re
 import uuid
 
@@ -13,6 +14,7 @@ import psycopg
 import pymupdf
 import pytest
 
+from avenel.infrastructure.storage import LocalStorageBackend
 from avenel.jurisdiction.loader import JurisdictionPackLoader
 from avenel.knowledge.crawler import (
     MIN_BROWSER_DELAY_SECONDS,
@@ -22,7 +24,12 @@ from avenel.knowledge.crawler import (
     Fetched,
 )
 from avenel.knowledge.extract import cgi_article_of, extract_references
-from avenel.knowledge.graph import evidence_for_rule, link_pack, store_document
+from avenel.knowledge.graph import (
+    evidence_for_rule,
+    link_pack,
+    original_key,
+    store_document,
+)
 from avenel.knowledge.sources import Source, source_by_code
 
 HOST = "https://www.example.gov.ma"
@@ -88,9 +95,37 @@ def test_follows_only_allowlisted_links_and_reads_pdf_text():
     })
     crawler, _, _ = _crawler(web)
     docs = list(crawler.crawl(SOURCE))
-    assert [d.url for d in docs] == [f"{HOST}/BO/2026/BO_7556_Fr.pdf"]
-    assert "CGI art. 106" in docs[0].text
+    # forget nothing: the seed page is kept too, with the PDF
+    assert [d.url for d in docs] == [f"{HOST}/", f"{HOST}/BO/2026/BO_7556_Fr.pdf"]
+    assert "CGI art. 106" in docs[1].text
+    assert docs[1].original == web.pages[f"{HOST}/BO/2026/BO_7556_Fr.pdf"].body
     assert not any("other.pdf" in u or "evil" in u for u in web.requests)
+
+
+def test_no_cap_by_default():
+    assert all(s.max_documents is None for s in __import__("avenel.knowledge.sources", fromlist=["SOURCES"]).SOURCES)
+
+
+def test_pdfs_listed_in_a_captured_json_call_are_followed():
+    # The SGG BO page lists every issue through one same-site JSON call (BoUrl, sometimes encoded twice).
+    seed = f"{HOST}/BulletinOfficiel.aspx"
+    listing = '"[{\\"BoNum\\":\\"1\\",\\"BoUrl\\":\\"/BO/bo_fr/1912/bo_1_fr.pdf\\"}]"'
+    old, new = f"{HOST}/BO/bo_fr/1912/bo_1_fr.pdf", f"{HOST}/BO/FR/2026/BO_7554_Fr.pdf"
+    web = FakeWeb({
+        f"{HOST}/robots.txt": Fetched("", 404, "text/html", b""),
+        old: Fetched(old, 200, "application/pdf", _pdf("Loi de finances pour l'annee 1913")),
+        new: Fetched(new, 200, "application/pdf", _pdf("x")),
+    })
+    clock = FakeClock()
+
+    def render(url: str) -> Fetched:
+        page = _html(url, "")
+        return Fetched(url, 200, page.content_type, page.body, (listing, '{"BoUrl": "' + new + '"}'))
+
+    crawler = Crawler(web, sleep=clock.sleep, clock=clock.clock, log=lambda _: None, render=render)
+    src = Source(code="test_src", label="T", seeds=(seed,), render=True,
+                 follow=(re.compile(rf"^{re.escape(HOST)}/BO/(FR|bo_fr)/.+\.pdf$", re.IGNORECASE),))
+    assert [d.url for d in crawler.crawl(src)] == [seed, old, new]
 
 
 def test_nul_bytes_in_extracted_text_are_removed(monkeypatch: pytest.MonkeyPatch):
@@ -104,7 +139,7 @@ def test_nul_bytes_in_extracted_text_are_removed(monkeypatch: pytest.MonkeyPatch
         f"{HOST}/BO/a.pdf": Fetched("", 200, "application/pdf", b"%PDF"),
     })
     crawler, _, _ = _crawler(web)
-    assert [d.text for d in crawler.crawl(SOURCE)] == ["BO 7556"]
+    assert [d.text for d in crawler.crawl(SOURCE)][-1] == "BO 7556"
 
 
 def test_robots_disallow_is_respected():
@@ -113,7 +148,7 @@ def test_robots_disallow_is_respected():
         f"{HOST}/": _html(f"{HOST}/", '<a href="/BO/a.pdf">a</a>'),
     })
     crawler, _, log = _crawler(web)
-    assert list(crawler.crawl(SOURCE)) == []
+    assert [d.url for d in crawler.crawl(SOURCE)] == [f"{HOST}/"]  # the allowed page only
     assert f"{HOST}/BO/a.pdf" not in web.requests
     assert any(line.startswith("robots disallow") for line in log)
 
@@ -134,7 +169,7 @@ def test_503_stops_the_host_for_the_run():
         f"{HOST}/BO/b.pdf": Fetched("", 200, "application/pdf", _pdf("x")),
     })
     crawler, _, _ = _crawler(web)
-    assert list(crawler.crawl(SOURCE)) == []
+    assert [d.url for d in crawler.crawl(SOURCE)] == [f"{HOST}/"]
     assert f"{HOST}/BO/b.pdf" not in web.requests
 
 
@@ -196,8 +231,8 @@ def test_render_pages_in_browser_and_pdfs_over_plain_http():
     docs = list(crawler.crawl(src))
     assert rendered == [seed]
     assert web.requests == [f"{HOST}/robots.txt", pdf]
-    assert [d.url for d in docs] == [pdf]
-    assert {r.key for r in extract_references(docs[0].text)} == {"CGI art. 6", "CGI art. 106"}
+    assert [d.url for d in docs] == [seed, pdf]
+    assert {r.key for r in extract_references(docs[1].text)} == {"CGI art. 6", "CGI art. 106"}
 
 
 def test_browser_pages_wait_longer_between_requests():
@@ -210,13 +245,16 @@ def test_browser_pages_wait_longer_between_requests():
     assert clock.slept == [MIN_BROWSER_DELAY_SECONDS, MIN_BROWSER_DELAY_SECONDS]
 
 
-def test_finances_patterns_keep_only_finance_law_texts():
+def test_finances_patterns_keep_every_finance_law_file_and_year():
     follow = source_by_code("finances").follow
-    base = "https://www.finances.gov.ma/Publication/db/2027/"
-    keep = ["corps-PLF2027-fr.pdf", "Note-presentation_Fr.pdf", "Rapport-depenses-fiscales_Fr.pdf"]
-    drop = ["Rapport-Dette-publique_Fr.pdf", "Rapport-Genre_Fr.pdf", "Rapport-SEGMA_Fr.pdf"]
-    assert all(any(p.match(base + f) for p in follow) for f in keep)
-    assert not any(any(p.match(base + f) for p in follow) for f in drop)
+    root = "https://www.finances.gov.ma"
+    keep = [f"{root}/Publication/db/2027/{f}" for f in
+            ("corps-PLF2027-fr.pdf", "Rapport-Dette-publique_Fr.pdf", "Rapport-SEGMA_Fr.pdf")]
+    keep += [f"{root}/Publication/db/2010/x.pdf"]
+    keep += [f"{root}/fr/vous-orientez/Pages/{p}.aspx" for p in ("lf-2010", "plf2026", "plfr-2020")]
+    drop = [f"{root}/fr/Contact/Pages/annuaire.aspx", f"{root}/Publication/ajr/2002/rapport.pdf"]
+    assert all(any(p.match(u) for p in follow) for u in keep)
+    assert not any(any(p.match(u) for p in follow) for u in drop)
 
 
 def test_max_documents_cap():
@@ -282,6 +320,52 @@ def test_documents_are_append_only(db_conn: psycopg.Connection):
     doc_id, _ = store_document(db_conn, _doc("x"))
     with pytest.raises(psycopg.Error), db_conn.cursor() as cur:
         cur.execute("UPDATE kg_documents SET title = 'y' WHERE id = %s", (doc_id,))
+
+
+def test_original_bytes_kept_in_storage_and_never_changed(db_conn: psycopg.Connection, tmp_path):
+    storage = LocalStorageBackend(tmp_path)
+    body = _pdf("Loi de finances pour l'année 1958")
+    sha = hashlib.sha256(body).hexdigest()
+    doc = dataclasses.replace(_doc("Loi de finances pour l'année 1958", url=f"{HOST}/BO/{uuid.uuid4()}.pdf", sha=sha),
+                              original=body)
+    store_document(db_conn, doc, storage=storage)
+    store_document(db_conn, doc, storage=storage)  # same file again: one original, untouched
+    assert storage.get_object(original_key(sha)) == body
+    with db_conn.cursor() as cur:
+        cur.execute("SELECT byte_size, storage_key FROM kg_originals WHERE sha256 = %s", (sha,))
+        assert cur.fetchall() == [(len(body), original_key(sha))]
+        for stmt in ("UPDATE kg_originals SET byte_size = 0", "DELETE FROM kg_originals"):
+            cur.execute("SAVEPOINT s")
+            with pytest.raises(psycopg.Error):
+                cur.execute(stmt + " WHERE sha256 = %s", (sha,))
+            cur.execute("ROLLBACK TO SAVEPOINT s")
+
+
+def test_original_back_filled_for_a_document_stored_before(db_conn: psycopg.Connection, tmp_path):
+    storage = LocalStorageBackend(tmp_path)
+    body = b"%PDF-1.4 old"
+    sha = hashlib.sha256(body).hexdigest()
+    doc = _doc("x", url=f"{HOST}/BO/{uuid.uuid4()}.pdf", sha=sha)
+    store_document(db_conn, doc, storage=storage)  # stored without original (before migration 013)
+    _, created = store_document(db_conn, dataclasses.replace(doc, original=body), storage=storage)
+    assert created is False
+    assert storage.get_object(original_key(sha)) == body
+
+
+def test_finance_laws_are_tagged_by_year(db_conn: psycopg.Connection):
+    text = ("Loi de finances n° 7-25 pour l'année 2026 ... loi de finances rectificative n° 35-20 pour "
+            "l'année 2020 ... Loi de finances pour l’année 1958")
+    assert {(r.kind, r.key) for r in extract_references(text) if r.kind == "finance_law"} == {
+        ("finance_law", "2026"), ("finance_law", "2020-rectificative"), ("finance_law", "1958"),
+    }
+    store_document(db_conn, _doc(text, url=f"{HOST}/BO/{uuid.uuid4()}.pdf", sha="d" * 64))
+    with db_conn.cursor() as cur:
+        cur.execute("SELECT label FROM kg_nodes WHERE kind = 'finance_law' AND key = '1958'")
+        assert cur.fetchone() == ("Loi de finances 1958",)
+
+
+def test_old_bo_file_names_give_the_issue_number():
+    assert [(r.kind, r.key) for r in extract_references("bo_1_fr.pdf")] == [("bo_issue", "1")]
 
 
 def test_pack_rule_links_to_crawled_evidence(db_conn: psycopg.Connection):

@@ -21,7 +21,11 @@ _PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("dahir", re.compile(rf"\bdahir\s+{_NUM}?(1[-.]\d{{2}}[-.]\d{{1,4}})\b", re.IGNORECASE)),
     ("circular", re.compile(rf"\bnote\s+circulaire\s+{_NUM}?(\d{{1,4}})\b", re.IGNORECASE)),
     ("bo_issue", re.compile(rf"\b(?:bulletin\s+officiel|B\.?O\.?)\s+{_NUM}?(\d{{4}}(?:[-\s]?bis)?)\b", re.IGNORECASE)),
-    ("bo_issue", re.compile(r"\bBO_(\d{4}(?:-bis)?)_(?:Ar|Fr)\.pdf\b", re.IGNORECASE)),
+    ("bo_issue", re.compile(r"\bBO_(\d{1,4}(?:-bis)?)_(?:Ar|Fr)\.pdf\b", re.IGNORECASE)),
+    ("finance_law", re.compile(
+        r"\bloi\s+de\s+finances\s+(rectificative\s+)?(?:" + _NUM + r"?[\d.-]+\s+)?pour\s+l['’]\s*ann[ée]e\s+(\d{4})\b",
+        re.IGNORECASE,
+    )),
     ("article", re.compile(r"\b(?:CGI|code\s+g[ée]n[ée]ral\s+des\s+imp[ôo]ts)\s*,?\s*art(?:icle|\.)?\s*(\d{1,3})\b", re.IGNORECASE)),
     ("article", re.compile(r"\bart(?:icle|\.)?\s*(\d{1,3})(?:[-\s]?[IVX]+)?\s+du\s+(?:CGI|code\s+g[ée]n[ée]ral\s+des\s+imp[ôo]ts)\b", re.IGNORECASE)),
 )
@@ -60,7 +64,12 @@ def extract_references(text: str) -> list[Reference]:
     seen: dict[tuple[str, str], Reference] = {}
     for kind, pat in _PATTERNS:
         for m in pat.finditer(text):
-            key, label = _normalise(kind, m.group(1))
+            if kind == "finance_law":  # key "2026" or "2020-rectificative"
+                year = m.group(2)
+                key = f"{year}-rectificative" if m.group(1) else year
+                label = f"Loi de finances rectificative {year}" if m.group(1) else f"Loi de finances {year}"
+            else:
+                key, label = _normalise(kind, m.group(1))
             if (kind, key) not in seen:
                 seen[(kind, key)] = Reference(kind, key, label, _snippet(text, m.start(), m.end()))
     return sorted(seen.values(), key=lambda r: (r.kind, r.key))

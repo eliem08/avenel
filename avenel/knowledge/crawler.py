@@ -25,6 +25,9 @@ USER_AGENT = "AVENEL-KG/0.1 (public legal texts index; contact via eliem08/avene
 MIN_DELAY_SECONDS = 5.0
 MIN_BROWSER_DELAY_SECONDS = 15.0  # a rendered page loads many resources; be slower
 STOP_STATUSES = frozenset({403, 429, 503})
+BUSY_STATUSES = frozenset({429, 503})  # the host is busy: pause, slow down, try again
+BACKOFF_SECONDS = 600.0  # 10 minutes after a busy answer
+MAX_BACKOFFS = 3  # busy this many times in a row: stop the host for the run
 
 
 @dataclass(frozen=True)
@@ -113,7 +116,10 @@ class Crawler:
         clock: Callable[[], float] = time.monotonic,
         log: Callable[[str], None] = print,
         render: Fetch | None = None,
+        known: frozenset[str] = frozenset(),
     ) -> None:
+        self._known = known  # files already stored: not requested again (resume)
+        self._slow: dict[str, float] = {}  # per-host delay multiplier, doubled after each busy answer
         self._fetch = fetch
         self._render = render
         self._sleep = sleep
@@ -123,13 +129,28 @@ class Crawler:
         self._last: dict[str, float] = {}
         self.stopped_hosts: set[str] = set()
 
-    def _get(self, url: str, rendered: bool = False) -> Fetched | None:
+    def _get(self, url: str, rendered: bool = False, retry_busy: bool = True) -> Fetched | None:
+        host = urlparse(url).netloc
+        for attempt in range(MAX_BACKOFFS + 1):
+            res = self._get_once(url, rendered)
+            if res is None or res.status not in BUSY_STATUSES or not retry_busy:
+                break
+            if attempt == MAX_BACKOFFS:
+                break
+            self._slow[host] = min(self._slow.get(host, 1.0) * 2, 8.0)
+            self._log(f"busy {host}: pause {int(BACKOFF_SECONDS)}s, then delay x{self._slow[host]:g}")
+            self._sleep(BACKOFF_SECONDS)
+        if res is not None and res.status in STOP_STATUSES:
+            self.stopped_hosts.add(host)
+        return res
+
+    def _get_once(self, url: str, rendered: bool) -> Fetched | None:
         host = urlparse(url).netloc
         if host in self.stopped_hosts:
             return None
         last = self._last.get(host)
         if last is not None:
-            delay = MIN_BROWSER_DELAY_SECONDS if rendered else MIN_DELAY_SECONDS
+            delay = (MIN_BROWSER_DELAY_SECONDS if rendered else MIN_DELAY_SECONDS) * self._slow.get(host, 1.0)
             wait = delay - (self._clock() - last)
             if wait > 0:
                 self._sleep(wait)
@@ -143,15 +164,13 @@ class Crawler:
         finally:
             self._last[host] = self._clock()
         self._log(f"{'RENDER' if fetch is self._render else 'GET'} {url} -> {res.status}")
-        if res.status in STOP_STATUSES:
-            self.stopped_hosts.add(host)
         return res
 
     def allowed(self, url: str) -> bool:
         parts = urlparse(url)
         host = parts.netloc
         if host not in self._robots:
-            res = self._get(f"{parts.scheme}://{host}/robots.txt")
+            res = self._get(f"{parts.scheme}://{host}/robots.txt", retry_busy=False)
             if res is None or res.status >= 500:
                 self._robots[host] = None  # unknown policy: disallow everything
             else:
@@ -179,6 +198,8 @@ class Crawler:
             if url in seen:
                 continue
             seen.add(url)
+            if url in self._known and url.lower().endswith(".pdf"):
+                continue  # already stored with its original; a listing page is always re-read
             if not self.allowed(url):
                 self._log(f"robots disallow {url}")
                 continue

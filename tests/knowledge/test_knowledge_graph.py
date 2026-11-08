@@ -17,6 +17,8 @@ import pytest
 from avenel.infrastructure.storage import LocalStorageBackend
 from avenel.jurisdiction.loader import JurisdictionPackLoader
 from avenel.knowledge.crawler import (
+    BACKOFF_SECONDS,
+    MAX_BACKOFFS,
     MIN_BROWSER_DELAY_SECONDS,
     MIN_DELAY_SECONDS,
     CrawledDocument,
@@ -171,6 +173,53 @@ def test_503_stops_the_host_for_the_run():
     crawler, _, _ = _crawler(web)
     assert [d.url for d in crawler.crawl(SOURCE)] == [f"{HOST}/"]
     assert f"{HOST}/BO/b.pdf" not in web.requests
+
+
+def test_busy_host_is_paused_slowed_and_retried_before_stopping():
+    a, b = f"{HOST}/BO/a.pdf", f"{HOST}/BO/b.pdf"
+    web = FakeWeb({
+        f"{HOST}/robots.txt": Fetched("", 404, "text/html", b""),
+        f"{HOST}/": _html(f"{HOST}/", '<a href="/BO/a.pdf">a</a><a href="/BO/b.pdf">b</a>'),
+        b: Fetched(b, 200, "application/pdf", _pdf("y")),
+    })
+    answers = [Fetched("", 503, "text/html", b""), Fetched(a, 200, "application/pdf", _pdf("x"))]
+
+    def fetch(url: str) -> Fetched:
+        return answers.pop(0) if url == a else web(url)
+
+    clock = FakeClock()
+    crawler = Crawler(fetch, sleep=clock.sleep, clock=clock.clock, log=lambda _: None)
+    assert [d.url for d in crawler.crawl(SOURCE)] == [f"{HOST}/", a, b]
+    # pause after the busy answer, then twice the normal delay before the next request
+    assert clock.slept == [MIN_DELAY_SECONDS, MIN_DELAY_SECONDS, BACKOFF_SECONDS, MIN_DELAY_SECONDS * 2]
+    assert crawler.stopped_hosts == set()
+
+
+def test_host_busy_every_time_is_stopped_after_max_backoffs():
+    web = FakeWeb({
+        f"{HOST}/robots.txt": Fetched("", 404, "text/html", b""),
+        f"{HOST}/": _html(f"{HOST}/", '<a href="/BO/a.pdf">a</a>'),
+        f"{HOST}/BO/a.pdf": Fetched("", 503, "text/html", b""),
+    })
+    crawler, clock, _ = _crawler(web)
+    list(crawler.crawl(SOURCE))
+    assert web.requests.count(f"{HOST}/BO/a.pdf") == MAX_BACKOFFS + 1
+    assert clock.slept.count(BACKOFF_SECONDS) == MAX_BACKOFFS
+    assert HOST.split("//")[1] in crawler.stopped_hosts
+
+
+def test_files_already_stored_are_not_requested_again():
+    a, b = f"{HOST}/BO/a.pdf", f"{HOST}/BO/b.pdf"
+    web = FakeWeb({
+        f"{HOST}/robots.txt": Fetched("", 404, "text/html", b""),
+        f"{HOST}/": _html(f"{HOST}/", '<a href="/BO/a.pdf">a</a><a href="/BO/b.pdf">b</a>'),
+        b: Fetched(b, 200, "application/pdf", _pdf("x")),
+    })
+    clock = FakeClock()
+    crawler = Crawler(web, sleep=clock.sleep, clock=clock.clock, log=lambda _: None,
+                      known=frozenset({a, f"{HOST}/"}))
+    assert [d.url for d in crawler.crawl(SOURCE)] == [f"{HOST}/", b]  # listing page always re-read
+    assert a not in web.requests
 
 
 def test_minimum_delay_between_requests_to_one_host():

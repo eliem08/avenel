@@ -33,7 +33,9 @@ def main() -> int:
     url = os.environ.get("AVENEL_KG_DATABASE_URL", "postgresql://avenel_app@localhost:5432/avenel")
     with contextlib.ExitStack() as stack:
         render = stack.enter_context(BrowserRenderer(args.chromium)) if args.render else None
-        return _run(args, url, Crawler(scrapling_fetch, render=render))
+        with psycopg.connect(url) as conn:  # resume: files already stored are not requested again
+            known = frozenset(row[0] for row in conn.execute("SELECT DISTINCT url FROM kg_documents"))
+        return _run(args, url, Crawler(scrapling_fetch, render=render, known=known))
 
 
 def _run(args: argparse.Namespace, url: str, crawler: Crawler) -> int:

@@ -20,7 +20,7 @@ choose before work starts (ARCHITECTURE.md A.4).
 
 ## Next three priorities
 
-1. **B-01** — durable job queue and worker.
+1. **B-01 steps 2 and 3** — prove step 1 on the Docker stack, then move the normal reading path to the queue (upload answers 202, the file screen shows progress) and let workflow transitions queue the next job.
 2. **B-02** — AI provider, once the provider and region are decided.
 3. **B-03 / B-04** — proof on a pilot firm's real documents and software.
 
@@ -30,3 +30,4 @@ choose before work starts (ARCHITECTURE.md A.4).
 |---|---|
 | 11 Nov 2026 | Idempotency keys durable, per tenant, claimed after authentication (ADR-003). |
 | 11 Nov 2026 | Migration-hash guard extended to migrations 009–013. |
+| 11 Nov 2026 | B-01 step 1: job queue (migration 014), real worker, failed document readings queued and retried. |

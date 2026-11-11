@@ -1385,6 +1385,13 @@ export interface components {
             extraction_id: string;
             validation?: Record<string, never>;
         };
+        CompleteUploadQueued: {
+            /** Format: uuid */
+            document_id: string;
+            /** @enum {string} */
+            status: "processing";
+            queued: boolean;
+        };
         DocumentDetail: {
             /** Format: uuid */
             id: string;
@@ -2420,6 +2427,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CompleteUploadResponse"];
+                };
+            };
+            /** @description Reading engine unavailable. The original is stored and the reading is queued; the worker retries it. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompleteUploadQueued"];
                 };
             };
             404: components["responses"]["ProblemDetails"];

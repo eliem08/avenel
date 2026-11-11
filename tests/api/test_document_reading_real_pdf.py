@@ -146,13 +146,43 @@ def test_unrenderable_pdf_fails_loudly(env, monkeypatch):
     assert ex.status_code == 404  # nothing half-written
 
 
-def test_ocr_engine_unavailable_returns_503(env, monkeypatch):
-    import avenel.ocr.adapter as adapter
+def test_ocr_engine_unavailable_queues_the_reading_and_the_worker_finishes_it(env, monkeypatch, postgres_url, db_conn):
+    """OCR down: the upload answers 202, a read_document job is queued, nothing is half-written.
+    Once OCR is back the worker reads the document (ARCHITECTURE.md D.1; was a 503 before 11 Nov 2026)."""
+    from avenel.jobs.worker import run_once
+    from avenel.ocr import adapter
 
+    db_conn.execute("UPDATE jobs SET status = 'failed', locked_at = NULL, finished_at = now() "
+                    "WHERE status IN ('queued','running')")  # nothing else is due: the next job is this test's
+    db_conn.commit()
     c = TestClient(app)
-    doc = _upload(c, env, _pdf())
-    monkeypatch.setattr(adapter.LocalOcrEngine, "_get_latin_ocr", lambda self: False)
-    monkeypatch.setattr(adapter.LocalOcrEngine, "_get_arabic_ocr", lambda self: False)
-    r = c.post(f"/v1/documents/{doc}:complete-upload", headers=_h(env["sub"], env["t"]))
-    assert r.status_code == 503, r.text
-    assert c.get(f"/v1/documents/{doc}/extraction", headers=_h(env["sub"], env["t"])).status_code == 404
+    doc = _upload(c, env, _pdf(scanned=True))
+    with monkeypatch.context() as m:
+        m.setattr(adapter.LocalOcrEngine, "_get_latin_ocr", lambda self: False)
+        m.setattr(adapter.LocalOcrEngine, "_get_arabic_ocr", lambda self: False)
+        r = c.post(f"/v1/documents/{doc}:complete-upload", headers=_h(env["sub"], env["t"]))
+        assert r.status_code == 202, r.text
+        assert r.json() == {"document_id": doc, "status": "processing", "queued": True}
+        assert c.get(f"/v1/documents/{doc}/extraction", headers=_h(env["sub"], env["t"])).status_code == 404
+        job = db_conn.execute(
+            "SELECT step, status, attempts FROM jobs WHERE tenant_id = %s AND subject_id = %s", (env["t"], doc)
+        ).fetchone()
+        assert job == ("read_document", "queued", 0)
+        # The worker tries while OCR is still down: first attempt fails and is scheduled again, not lost.
+        assert run_once(postgres_url) == "retry"
+        db_conn.rollback()
+        assert db_conn.execute(
+            "SELECT status, attempts, run_after > now() FROM jobs WHERE tenant_id = %s AND subject_id = %s",
+            (env["t"], doc),
+        ).fetchone() == ("queued", 1, True)
+
+    # OCR is back; the retry becomes due and the worker reads the document.
+    db_conn.rollback()
+    db_conn.execute("UPDATE jobs SET run_after = now() WHERE tenant_id = %s AND subject_id = %s", (env["t"], doc))
+    db_conn.commit()
+    assert run_once(postgres_url) == "succeeded"
+    fields = c.get(f"/v1/documents/{doc}/extraction", headers=_h(env["sub"], env["t"])).json()["fields"]
+    assert fields["invoice_number"]["value"] == "FAC-2026-0412"
+    assert db_conn.execute(
+        "SELECT status FROM jobs WHERE tenant_id = %s AND subject_id = %s", (env["t"], doc)
+    ).fetchone() == ("succeeded",)

@@ -6,7 +6,7 @@ are in `ENGINEERING_BACKLOG.md`.
 | # | Debt | Where | Consequence if left | Fix |
 |---|---|---|---|---|
 | D-01 | Document reading runs inside the upload request. | `apps/api/routes/documents.py::complete_upload`, `avenel/documents/service.py::process_uploaded_document` | Long requests, no automatic retry, work lost on a crash. | Backlog B-01. |
-| D-02 | The worker container runs an empty loop. | `avenel/jobs/worker.py` | A container that does nothing is deployed and health-checked as if it worked. | B-01. |
+| D-02 | The worker only handles readings that failed in the upload request; the normal path is still synchronous. | `avenel/jobs/worker.py`, `apps/api/routes/documents.py` | Long upload requests remain. | B-01 step 2. |
 | D-03 | The idempotency answer is saved after the handler's commit, in a separate connection. | `apps/api/idempotency.py`, ADR-003 | A crash between the two lets the operation run again after 10 minutes. | Complete the key inside the handler's transaction, or make each handler naturally idempotent. |
 | D-04 | No connection pool; each request opens a connection, plus one for rate limiting and two for idempotency. | `apps/api/deps.py`, `apps/api/middleware.py` | Connection exhaustion under load. | B-07. |
 | D-05 | The rate limiter falls back to per-process memory when the database is unreachable. | `apps/api/middleware.py::RateLimitStore` | Limits are not shared between processes during an outage. | Decide: fail closed or keep the fallback; record in Part K. |
@@ -16,3 +16,6 @@ are in `ENGINEERING_BACKLOG.md`.
 | D-09 | The legal-source crawler's 5-minute download cap is not tested against a real stalled connection. | `avenel/knowledge/crawler.py` | A crawl could hang for hours again. | Add a hard wall-clock timeout around each fetch. |
 | D-10 | Accuracy numbers come from synthetic documents. | `docs/benchmarks/` | False confidence. | B-03. |
 | D-11 | A test run rewrites the date line of a tracked file. | `docs/benchmarks/synthetic-pipeline-test.md` | Every local test run leaves a modified file in the working tree. | Write the benchmark report outside the tracked tree, or only on request. |
+| D-12 | The worker uses the `avenel_app` role, which may call `app.claim_next_job` and so learn job and tenant identifiers of every tenant (identifiers only, server side). | migration 014 | The API role has a cross-tenant capability it does not need. | A separate `avenel_worker` role; revoke EXECUTE from `avenel_app`. |
+| D-13 | Job handlers run with no time limit; a hung handler holds the job for the 15-minute stale delay. | `avenel/jobs/worker.py` | Slow recovery from a hang. | Per-step timeout. |
+| D-14 | The upload screen says the reading "will resume automatically" but does not refresh when it does. | `src/screens/FileScreen.tsx` | The user must reload to see the result. | B-01 step 2 (status polling). |

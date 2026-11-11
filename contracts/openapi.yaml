@@ -774,6 +774,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CompleteUploadResponse"
+        "202":
+          description: Reading engine unavailable. The original is stored and the reading is queued; the worker retries it.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompleteUploadQueued"
         "404":
           $ref: "#/components/responses/ProblemDetails"
         "422":
@@ -2695,6 +2701,22 @@ components:
           format: uuid
         validation:
           type: object
+
+    CompleteUploadQueued:
+      type: object
+      required:
+        - document_id
+        - status
+        - queued
+      properties:
+        document_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [processing]
+        queued:
+          type: boolean
 
     DocumentDetail:
       type: object

@@ -224,6 +224,13 @@ function Uploader({ workRequestId, onDone }: { workRequestId: string; onDone: ()
       const body = (await done.json().catch(() => ({}))) as { status?: string };
       onDone();
       if (!done.ok) return setState({ kind: 'done', ok: false, text: problemMessage(body, "La pièce n'a pas pu être lue.") });
+      if (body.status === 'processing') {
+        return setState({
+          kind: 'done',
+          ok: true,
+          text: `${file.name} enregistrée. La lecture est en attente et reprendra automatiquement.`,
+        });
+      }
       setState({
         kind: 'done',
         ok: true,

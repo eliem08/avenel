@@ -9,6 +9,7 @@ from typing import Annotated, Any
 
 import psycopg
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from apps.api.deps import get_current_session, get_db
@@ -20,8 +21,9 @@ from avenel.documents.service import (
     process_uploaded_document,
 )
 from avenel.infrastructure.storage import MAX_DOCUMENT_BYTE_SIZE, get_storage
+from avenel.jobs.queue import enqueue
 from avenel.ocr.adapter import OcrUnavailableError, PageExtractionError
-from avenel.tenancy.auth import UserSession
+from avenel.tenancy.auth import UserSession, set_rls_context
 
 router = APIRouter(prefix="/v1", tags=["Documents"])
 
@@ -136,7 +138,7 @@ async def complete_upload(
     id: uuid.UUID,
     session: Annotated[UserSession, Depends(get_current_session)],
     conn: Annotated[psycopg.Connection, Depends(get_db)],
-) -> dict[str, Any]:
+) -> Any:
     # 1. Scope-first check: 404 if out of scope
     _resolve_document_scope(conn, session, id)
 
@@ -170,12 +172,30 @@ async def complete_upload(
             status_code=422,
             detail="La pièce n'a pas pu être lue : le fichier est illisible ou endommagé. Téléversez une autre copie.",
         ) from err
-    except OcrUnavailableError as err:
+    except OcrUnavailableError:
+        # The reading engine is down. The original is stored, so the reading is queued and the worker
+        # retries it with backoff (ARCHITECTURE.md D.1, docs/plans/b-01-job-queue.md).
         conn.rollback()
-        raise HTTPException(
-            status_code=503,
-            detail="La lecture des pièces est indisponible pour le moment. La pièce est conservée ; relancez la lecture plus tard.",
-        ) from err
+        set_rls_context(conn, session.tenant_id, session.user_id)
+        row = conn.execute(
+            "SELECT work_request_id FROM documents WHERE tenant_id = %s AND id = %s;",
+            (session.tenant_id, id),
+        ).fetchone()
+        if not row or row[0] is None:
+            raise HTTPException(
+                status_code=503,
+                detail="La lecture des pièces est indisponible pour le moment. La pièce est conservée ; relancez la lecture plus tard.",
+            ) from None
+        enqueue(conn, session.tenant_id, uuid.UUID(str(row[0])), "read_document", id)
+        conn.execute(
+            "UPDATE documents SET status = 'processing' WHERE tenant_id = %s AND id = %s AND status = 'received';",
+            (session.tenant_id, id),
+        )
+        conn.commit()
+        return JSONResponse(
+            status_code=202,
+            content={"document_id": str(id), "status": "processing", "queued": True},
+        )
 
 
 @router.get("/documents/{id}/pages/{n}")

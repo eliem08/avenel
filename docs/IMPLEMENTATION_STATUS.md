@@ -41,7 +41,7 @@ data unless the line says so.
 | Quality control | Partial | Validation plus the approval quality gate. No separate QC agent. |
 | Accountant approval (subject hash, separation of duties, MFA) | Works | |
 | Export (Sage 100 CSV/PNM, Odoo CSV, evidence pack) | Works | Round-trip import into a real Sage or Odoo not yet done. |
-| Background processing with retries | **Not built** | `avenel/jobs/worker.py` is an empty loop. Reading runs inside the upload HTTP request. |
+| Background processing with retries | Partial (since 11 Nov 2026) | Job queue (migration 014) and a real worker: retries with backoff, 4 attempts, then a blocking issue. Used when the reading engine is down (upload answers 202, the worker retries). The normal reading path still runs inside the upload request. **Not yet run on the Docker stack.** |
 | Idempotent mutating requests | Works since this cycle | Now durable and per tenant (ADR-003). |
 
 ## Cross-cutting

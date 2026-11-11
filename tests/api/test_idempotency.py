@@ -12,21 +12,12 @@ from __future__ import annotations
 import hashlib
 import uuid
 
-from fastapi.testclient import TestClient
 import psycopg
-import pytest
+from fastapi.testclient import TestClient
 
 from apps.api.main import app
 from apps.api.middleware import get_idempotency_store
 from tests.helpers import seed_membership, seed_tenant, seed_user
-
-
-@pytest.fixture(autouse=True)
-def clean_idempotency_store():
-    store = get_idempotency_store()
-    store.clear()
-    yield
-    store.clear()
 
 
 def test_missing_idempotency_key_returns_400(db_conn: psycopg.Connection):
@@ -116,12 +107,11 @@ def test_concurrent_in_flight_returns_409(db_conn: psycopg.Connection):
     client = TestClient(app)
     idem_key = str(uuid.uuid4())
 
-    # Pre-register an in-flight key in the store
+    # Another API process has claimed the key and is still working on it
     payload_bytes = b'{"legal_name":"Concurrent Corp"}'
-    req_hash = hashlib.sha256(b"POST:/v1/client-entities:" + payload_bytes).hexdigest()
     store = get_idempotency_store()
-    started, _ = store.start(idem_key, req_hash)
-    assert started is True
+    claim = store.claim(t_id, idem_key, "POST", "/v1/client-entities", hashlib.sha256(payload_bytes).hexdigest())
+    assert claim.outcome == "started"
 
     headers = {
         "X-Identity-Subject": sub,
@@ -150,3 +140,96 @@ def test_non_mutating_get_does_not_require_idempotency_key(db_conn: psycopg.Conn
         headers={"X-Identity-Subject": sub, "X-Tenant-Id": str(t_id)},
     )
     assert res.status_code == 200
+
+
+def _owner(db_conn: psycopg.Connection, name: str) -> tuple[uuid.UUID, str]:
+    t_id = seed_tenant(db_conn, name)
+    sub = f"user-{uuid.uuid4()}"
+    seed_membership(db_conn, seed_user(db_conn, identity_subject=sub, email=f"{sub}@example.com"), t_id, role="owner")
+    return t_id, sub
+
+
+def test_key_is_stored_in_postgres_and_replayed_by_another_process(db_conn: psycopg.Connection):
+    """The answer survives a restart and is shared by every API process: it lives in idempotency_keys."""
+    t_id, sub = _owner(db_conn, "Cabinet Durable")
+    key = str(uuid.uuid4())
+    headers = {"X-Identity-Subject": sub, "X-Tenant-Id": str(t_id), "Idempotency-Key": key}
+    payload = {"legal_name": "Societe Durable SARL"}
+    first = TestClient(app).post("/v1/client-entities", headers=headers, json=payload)
+    assert first.status_code == 201, first.text
+
+    row = db_conn.execute(
+        "SELECT status, response_code, method, path FROM idempotency_keys WHERE tenant_id = %s AND key = %s",
+        (t_id, key),
+    ).fetchone()
+    assert row == ("completed", 201, "POST", "/v1/client-entities")
+
+    # A fresh store (as in another worker process, or after a restart) sees the same answer.
+    body = b'{"legal_name":"Societe Durable SARL"}'
+    claim = get_idempotency_store().claim(t_id, key, "POST", "/v1/client-entities", hashlib.sha256(body).hexdigest())
+    assert claim.outcome in ("replay", "mismatch")  # byte-exact body decides; never "started"
+    again = TestClient(app).post("/v1/client-entities", headers=headers, json=payload)
+    assert again.headers.get("Idempotency-Replay") == "true"
+    assert again.json()["id"] == first.json()["id"]
+    count = db_conn.execute(
+        "SELECT count(*) FROM client_entities WHERE tenant_id = %s AND legal_name = %s", (t_id, payload["legal_name"])
+    ).fetchone()
+    assert count == (1,)
+
+
+def test_same_key_from_another_tenant_never_replays_the_first_tenants_answer(db_conn: psycopg.Connection):
+    """Tenant isolation: a key is only meaningful inside the tenant that used it."""
+    a_id, a_sub = _owner(db_conn, "Cabinet A")
+    b_id, b_sub = _owner(db_conn, "Cabinet B")
+    key, payload = str(uuid.uuid4()), {"legal_name": "Meme Nom SARL"}
+    client = TestClient(app)
+    res_a = client.post("/v1/client-entities", json=payload,
+                        headers={"X-Identity-Subject": a_sub, "X-Tenant-Id": str(a_id), "Idempotency-Key": key})
+    res_b = client.post("/v1/client-entities", json=payload,
+                        headers={"X-Identity-Subject": b_sub, "X-Tenant-Id": str(b_id), "Idempotency-Key": key})
+    assert res_a.status_code == 201 and res_b.status_code == 201
+    assert res_b.headers.get("Idempotency-Replay") is None
+    assert res_b.json()["id"] != res_a.json()["id"]
+
+
+def test_replay_is_refused_without_authentication(db_conn: psycopg.Connection):
+    """A stored answer is never served to a caller who is not authenticated for the tenant."""
+    t_id, sub = _owner(db_conn, "Cabinet Auth Replay")
+    key, payload = str(uuid.uuid4()), {"legal_name": "Societe Privee SARL"}
+    client = TestClient(app)
+    ok = client.post("/v1/client-entities", json=payload,
+                     headers={"X-Identity-Subject": sub, "X-Tenant-Id": str(t_id), "Idempotency-Key": key})
+    assert ok.status_code == 201
+    anonymous = client.post("/v1/client-entities", json=payload, headers={"Idempotency-Key": key})
+    assert anonymous.status_code == 401
+    assert "Societe Privee" not in anonymous.text
+
+
+def test_claim_left_by_a_crashed_process_is_released_after_the_stale_delay(db_conn: psycopg.Connection):
+    from apps.api.idempotency import STALE_IN_PROGRESS_MINUTES
+
+    t_id, _ = _owner(db_conn, "Cabinet Stale")
+    key, sha = str(uuid.uuid4()), hashlib.sha256(b"{}").hexdigest()
+    store = get_idempotency_store()
+    assert store.claim(t_id, key, "POST", "/v1/x", sha).outcome == "started"
+    assert store.claim(t_id, key, "POST", "/v1/x", sha).outcome == "in_progress"
+    db_conn.execute(
+        "UPDATE idempotency_keys SET created_at = now() - make_interval(mins => %s) WHERE tenant_id = %s AND key = %s",
+        (STALE_IN_PROGRESS_MINUTES + 1, t_id, key),
+    )
+    db_conn.commit()
+    assert store.claim(t_id, key, "POST", "/v1/x", sha).outcome == "started"
+
+
+def test_server_errors_are_not_kept_so_the_same_key_can_retry(db_conn: psycopg.Connection):
+    from types import SimpleNamespace
+
+    from apps.api.idempotency import finish
+
+    t_id, _ = _owner(db_conn, "Cabinet Retry")
+    key, sha = str(uuid.uuid4()), hashlib.sha256(b"{}").hexdigest()
+    store = get_idempotency_store()
+    assert store.claim(t_id, key, "POST", "/v1/x", sha).outcome == "started"
+    request = SimpleNamespace(state=SimpleNamespace(idempotency_claim=(t_id, key)))
+    finish(store, request, 503, b'{"detail":"indisponible"}')
+    assert store.claim(t_id, key, "POST", "/v1/x", sha).outcome == "started"

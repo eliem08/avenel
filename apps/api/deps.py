@@ -11,6 +11,7 @@ import psycopg
 from fastapi import Depends, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
 
+from apps.api.idempotency import PgIdempotencyStore, claim_or_short_circuit
 from avenel.tenancy.auth import UserSession, resolve_user_session, set_rls_context
 from avenel.tenancy.jwt import AuthenticationError, MfaRequiredError, get_jwt_verifier
 
@@ -147,4 +148,6 @@ def get_current_session(
 
     # Enforce PostgreSQL Row-Level Security with spec parameters 'app.tenant_id' and 'app.user_id'
     set_rls_context(conn, session.tenant_id, session.user_id)
+    # Idempotency key: claimed only now, for this tenant, by an authenticated caller (ADR-003).
+    claim_or_short_circuit(PgIdempotencyStore(get_db_url()), request, session.tenant_id)
     return session

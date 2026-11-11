@@ -8,8 +8,9 @@ from typing import Any
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 
+from apps.api.idempotency import IdempotencyShortCircuit
 from apps.api.middleware import (
     IdempotencyMiddleware,
     RateLimitMiddleware,
@@ -71,6 +72,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(IdempotencyShortCircuit)
+async def idempotency_short_circuit_handler(request: Request, exc: IdempotencyShortCircuit) -> Response:
+    """Replay, conflict or mismatch decided for an authenticated caller (ADR-003)."""
+    return exc.response
 
 
 @app.exception_handler(MfaRequiredError)

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import uuid
 from typing import Annotated, Any
 
@@ -133,6 +134,32 @@ async def upload_document_content(
     return {"document_id": str(id), "byte_size": byte_size, "sha256": sha256, "stored": True}
 
 
+def read_in_background() -> bool:
+    """AVENEL_READ_IN_BACKGROUND=1: every reading goes through the job queue (B-01 step 2).
+    Off by default: without a running worker nothing would read the documents."""
+    return os.environ.get("AVENEL_READ_IN_BACKGROUND", "").strip().lower() in ("1", "true", "yes")
+
+
+def _queue_reading(conn: psycopg.Connection, session: UserSession, id: uuid.UUID) -> JSONResponse:
+    set_rls_context(conn, session.tenant_id, session.user_id)
+    row = conn.execute(
+        "SELECT work_request_id FROM documents WHERE tenant_id = %s AND id = %s;",
+        (session.tenant_id, id),
+    ).fetchone()
+    if not row or row[0] is None:
+        raise HTTPException(
+            status_code=503,
+            detail="La lecture des pièces est indisponible pour le moment. La pièce est conservée ; relancez la lecture plus tard.",
+        )
+    enqueue(conn, session.tenant_id, uuid.UUID(str(row[0])), "read_document", id)
+    conn.execute(
+        "UPDATE documents SET status = 'processing' WHERE tenant_id = %s AND id = %s AND status = 'received';",
+        (session.tenant_id, id),
+    )
+    conn.commit()
+    return JSONResponse(status_code=202, content={"document_id": str(id), "status": "processing", "queued": True})
+
+
 @router.post("/documents/{id}:complete-upload")
 async def complete_upload(
     id: uuid.UUID,
@@ -145,6 +172,10 @@ async def complete_upload(
     # 2. Role permission check: operator cannot trigger document processing
     if session.role == "operator":
         raise HTTPException(status_code=403, detail="Les opérateurs ne peuvent pas lancer le traitement de documents.")
+
+    if read_in_background():
+        # B-01 step 2: the request only queues the reading; the worker does it and the screen polls.
+        return _queue_reading(conn, session, id)
 
     try:
         res = process_uploaded_document(
@@ -176,26 +207,7 @@ async def complete_upload(
         # The reading engine is down. The original is stored, so the reading is queued and the worker
         # retries it with backoff (ARCHITECTURE.md D.1, docs/plans/b-01-job-queue.md).
         conn.rollback()
-        set_rls_context(conn, session.tenant_id, session.user_id)
-        row = conn.execute(
-            "SELECT work_request_id FROM documents WHERE tenant_id = %s AND id = %s;",
-            (session.tenant_id, id),
-        ).fetchone()
-        if not row or row[0] is None:
-            raise HTTPException(
-                status_code=503,
-                detail="La lecture des pièces est indisponible pour le moment. La pièce est conservée ; relancez la lecture plus tard.",
-            ) from None
-        enqueue(conn, session.tenant_id, uuid.UUID(str(row[0])), "read_document", id)
-        conn.execute(
-            "UPDATE documents SET status = 'processing' WHERE tenant_id = %s AND id = %s AND status = 'received';",
-            (session.tenant_id, id),
-        )
-        conn.commit()
-        return JSONResponse(
-            status_code=202,
-            content={"document_id": str(id), "status": "processing", "queued": True},
-        )
+        return _queue_reading(conn, session, id)
 
 
 @router.get("/documents/{id}/pages/{n}")
@@ -302,4 +314,4 @@ async def correct_extraction(
         return res
     except DocumentNotFoundError as err:
         conn.rollback()
-        raise HTTPException(status_code=404, detail=str(err)) from err
+        raise HTTPException(status_code=404, detail=str(err)) from err

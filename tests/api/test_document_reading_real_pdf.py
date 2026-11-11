@@ -186,3 +186,36 @@ def test_ocr_engine_unavailable_queues_the_reading_and_the_worker_finishes_it(en
     assert db_conn.execute(
         "SELECT status FROM jobs WHERE tenant_id = %s AND subject_id = %s", (env["t"], doc)
     ).fetchone() == ("succeeded",)
+
+
+def test_background_mode_queues_every_reading_and_the_status_shows_progress(env, monkeypatch, postgres_url, db_conn):
+    """B-01 step 2: with AVENEL_READ_IN_BACKGROUND=1 the upload request reads nothing; it answers 202 and the
+    worker reads the document. GET /documents/{id} goes from 'processing' to the read status (what the screen polls)."""
+    from avenel.jobs.worker import run_once
+
+    db_conn.execute("UPDATE jobs SET status = 'failed', locked_at = NULL, finished_at = now() "
+                    "WHERE status IN ('queued','running')")
+    db_conn.commit()
+    monkeypatch.setenv("AVENEL_READ_IN_BACKGROUND", "1")
+    c = TestClient(app)
+    h = _h(env["sub"], env["t"])
+    doc = _upload(c, env, _pdf(scanned=False))
+    r = c.post(f"/v1/documents/{doc}:complete-upload", headers=h)
+    assert r.status_code == 202, r.text
+    assert r.json() == {"document_id": doc, "status": "processing", "queued": True}
+    assert c.get(f"/v1/documents/{doc}", headers=h).json()["status"] == "processing"
+    assert c.get(f"/v1/documents/{doc}/extraction", headers=h).status_code == 404
+
+    assert run_once(postgres_url) == "succeeded"
+    assert c.get(f"/v1/documents/{doc}", headers=h).json()["status"] != "processing"
+    fields = c.get(f"/v1/documents/{doc}/extraction", headers=h).json()["fields"]
+    assert fields["invoice_number"]["value"] == "FAC-2026-0412"
+
+
+def test_background_mode_does_not_let_an_out_of_scope_user_queue_a_reading(env, monkeypatch, db_conn):
+    monkeypatch.setenv("AVENEL_READ_IN_BACKGROUND", "1")
+    c = TestClient(app)
+    doc = _upload(c, env, _pdf(scanned=False))
+    r = c.post(f"/v1/documents/{doc}:complete-upload", headers=_h(env["other"], env["t"]))
+    assert r.status_code == 404, r.text
+    assert db_conn.execute("SELECT count(*) FROM jobs WHERE subject_id = %s", (doc,)).fetchone() == (0,)

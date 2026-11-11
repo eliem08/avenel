@@ -181,13 +181,42 @@ export function FileScreen() {
   );
 }
 
+const POLL_INTERVAL_MS = 3000;
+const POLL_LIMIT_MS = 10 * 60 * 1000;
+
 type UploadState = { kind: 'idle' } | { kind: 'busy'; step: string } | { kind: 'done'; ok: boolean; text: string };
+
+function readOutcome(name: string, status: string | undefined): UploadState {
+  if (status === 'quarantined') return { kind: 'done', ok: false, text: `${name} a été mise en quarantaine.` };
+  if (status === 'received') {
+    return { kind: 'done', ok: false, text: `${name} n'a pas pu être lue après plusieurs essais. Voir les anomalies.` };
+  }
+  if (status === 'needs_review') return { kind: 'done', ok: true, text: `${name} lue : des champs sont à traiter.` };
+  return { kind: 'done', ok: true, text: `${name} lue.` };
+}
 
 function Uploader({ workRequestId, onDone }: { workRequestId: string; onDone: () => void }) {
   const raw = useRawFetch();
   const input = useRef<HTMLInputElement>(null);
   const [state, setState] = useState<UploadState>({ kind: 'idle' });
   const [over, setOver] = useState(false);
+
+  const unmounted = useRef(false);
+  useEffect(() => () => {
+    unmounted.current = true;
+  }, []);
+
+  async function waitWhileProcessing(documentId: string): Promise<string | undefined> {
+    const deadline = Date.now() + POLL_LIMIT_MS;
+    while (Date.now() < deadline && !unmounted.current) {
+      await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+      const res = await raw(`/documents/${documentId}`).catch(() => null);
+      if (!res?.ok) continue;
+      const doc = (await res.json().catch(() => ({}))) as { status?: string };
+      if (doc.status && doc.status !== 'processing') return doc.status;
+    }
+    return 'processing';
+  }
 
   async function upload(file: File) {
     try {
@@ -224,18 +253,21 @@ function Uploader({ workRequestId, onDone }: { workRequestId: string; onDone: ()
       const body = (await done.json().catch(() => ({}))) as { status?: string };
       onDone();
       if (!done.ok) return setState({ kind: 'done', ok: false, text: problemMessage(body, "La pièce n'a pas pu être lue.") });
-      if (body.status === 'processing') {
-        return setState({
-          kind: 'done',
-          ok: true,
-          text: `${file.name} enregistrée. La lecture est en attente et reprendra automatiquement.`,
-        });
+      let status = body.status;
+      if (status === 'processing') {
+        // The reading runs in the background worker: follow the document's status until it is read.
+        setState({ kind: 'busy', step: `${file.name} enregistrée. Lecture en cours en arrière-plan…` });
+        status = await waitWhileProcessing(initBody.document_id);
+        onDone();
+        if (status === 'processing') {
+          return setState({
+            kind: 'done',
+            ok: true,
+            text: `${file.name} enregistrée. La lecture est en attente et reprendra automatiquement.`,
+          });
+        }
       }
-      setState({
-        kind: 'done',
-        ok: true,
-        text: body.status === 'needs_review' ? `${file.name} lue : des champs sont à traiter.` : `${file.name} lue.`,
-      });
+      setState(readOutcome(file.name, status));
     } catch {
       setState({ kind: 'done', ok: false, text: NETWORK_ERROR });
     }

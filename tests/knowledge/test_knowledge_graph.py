@@ -208,6 +208,48 @@ def test_host_busy_every_time_is_stopped_after_max_backoffs():
     assert HOST.split("//")[1] in crawler.stopped_hosts
 
 
+def test_dropped_connection_is_paused_and_retried_like_a_busy_host():
+    a = f"{HOST}/BO/a.pdf"
+    web = FakeWeb({
+        f"{HOST}/robots.txt": Fetched("", 404, "text/html", b""),
+        f"{HOST}/": _html(f"{HOST}/", '<a href="/BO/a.pdf">a</a>'),
+        a: Fetched(a, 200, "application/pdf", _pdf("x")),
+    })
+    failures = [ConnectionError("closed abruptly")]
+
+    def fetch(url: str) -> Fetched:
+        if url == a and failures:
+            raise failures.pop()
+        return web(url)
+
+    clock = FakeClock()
+    crawler = Crawler(fetch, sleep=clock.sleep, clock=clock.clock, log=lambda _: None)
+    assert [d.url for d in crawler.crawl(SOURCE)] == [f"{HOST}/", a]
+    assert BACKOFF_SECONDS in clock.slept
+    assert crawler.stopped_hosts == set()
+
+
+def test_connection_dropped_every_time_stops_the_host():
+    a = f"{HOST}/BO/a.pdf"
+    web = FakeWeb({
+        f"{HOST}/robots.txt": Fetched("", 404, "text/html", b""),
+        f"{HOST}/": _html(f"{HOST}/", '<a href="/BO/a.pdf">a</a>'),
+    })
+    calls: list[str] = []
+
+    def fetch(url: str) -> Fetched:
+        if url == a:
+            calls.append(url)
+            raise ConnectionError("closed abruptly")
+        return web(url)
+
+    clock = FakeClock()
+    crawler = Crawler(fetch, sleep=clock.sleep, clock=clock.clock, log=lambda _: None)
+    assert [d.url for d in crawler.crawl(SOURCE)] == [f"{HOST}/"]
+    assert len(calls) == MAX_BACKOFFS + 1
+    assert HOST.split("//")[1] in crawler.stopped_hosts
+
+
 def test_files_already_stored_are_not_requested_again():
     a, b = f"{HOST}/BO/a.pdf", f"{HOST}/BO/b.pdf"
     web = FakeWeb({

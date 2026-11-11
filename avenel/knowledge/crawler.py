@@ -28,6 +28,8 @@ STOP_STATUSES = frozenset({403, 429, 503})
 BUSY_STATUSES = frozenset({429, 503})  # the host is busy: pause, slow down, try again
 BACKOFF_SECONDS = 600.0  # 10 minutes after a busy answer
 MAX_BACKOFFS = 3  # busy this many times in a row: stop the host for the run
+NETWORK_ERROR = -1  # status recorded for a dropped connection or timeout; handled like a busy answer
+FETCH_TIMEOUT_SECONDS = 300  # one download may take at most 5 minutes (some PDFs are over 20 MB)
 
 
 @dataclass(frozen=True)
@@ -57,7 +59,8 @@ Fetch = Callable[[str], Fetched]
 def scrapling_fetch(url: str) -> Fetched:  # pragma: no cover - live network, used by the CLI only
     from scrapling.fetchers import Fetcher
 
-    r = Fetcher.get(url, timeout=60, headers={"User-Agent": USER_AGENT}, stealthy_headers=False)
+    r = Fetcher.get(url, timeout=FETCH_TIMEOUT_SECONDS, retries=1, headers={"User-Agent": USER_AGENT},
+                    stealthy_headers=False)  # one try: the crawler's own backoff decides about retrying
     return Fetched(url, int(r.status), str(r.headers.get("content-type", "")), bytes(r.body))
 
 
@@ -133,16 +136,17 @@ class Crawler:
         host = urlparse(url).netloc
         for attempt in range(MAX_BACKOFFS + 1):
             res = self._get_once(url, rendered)
-            if res is None or res.status not in BUSY_STATUSES or not retry_busy:
+            busy = res is not None and (res.status in BUSY_STATUSES or res.status == NETWORK_ERROR)
+            if not busy or not retry_busy:
                 break
             if attempt == MAX_BACKOFFS:
                 break
             self._slow[host] = min(self._slow.get(host, 1.0) * 2, 8.0)
             self._log(f"busy {host}: pause {int(BACKOFF_SECONDS)}s, then delay x{self._slow[host]:g}")
             self._sleep(BACKOFF_SECONDS)
-        if res is not None and res.status in STOP_STATUSES:
+        if res is not None and (res.status in STOP_STATUSES or res.status == NETWORK_ERROR):
             self.stopped_hosts.add(host)
-        return res
+        return None if res is None or res.status == NETWORK_ERROR else res
 
     def _get_once(self, url: str, rendered: bool) -> Fetched | None:
         host = urlparse(url).netloc
@@ -157,10 +161,9 @@ class Crawler:
         fetch = self._render if rendered and self._render is not None else self._fetch
         try:
             res = fetch(url)
-        except Exception as exc:  # noqa: BLE001 - network failure: stop the host, keep the run going
+        except Exception as exc:  # noqa: BLE001 - network failure: back off like a busy host
             self._log(f"GET {url} -> error {type(exc).__name__}")
-            self.stopped_hosts.add(host)
-            return None
+            return Fetched(url, NETWORK_ERROR, "", b"")
         finally:
             self._last[host] = self._clock()
         self._log(f"{'RENDER' if fetch is self._render else 'GET'} {url} -> {res.status}")

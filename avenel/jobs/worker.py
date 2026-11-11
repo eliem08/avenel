@@ -16,6 +16,7 @@ from collections.abc import Callable
 
 import psycopg
 
+from avenel.documents.scanner import check_intake_health
 from avenel.documents.service import QuarantineError, process_uploaded_document
 from avenel.jobs.queue import Job, claim_next, mark_succeeded, record_failure
 from avenel.tenancy.auth import set_rls_context
@@ -26,6 +27,10 @@ logger = logging.getLogger("avenel.worker")
 IDLE_POLL_SECONDS = 5.0
 
 Handler = Callable[[psycopg.Connection, Job], None]
+
+
+class IntakePausedError(RuntimeError):
+    """The malware scanner cannot vouch for files right now; the job is retried with backoff."""
 
 
 def read_document(conn: psycopg.Connection, job: Job) -> None:
@@ -40,10 +45,15 @@ def read_document(conn: psycopg.Connection, job: Job) -> None:
     ).fetchone()
     if already:  # read by an earlier attempt or by the upload request itself
         return
+    # A paused intake (scanner down or signatures stale) is temporary: retry later, do not quarantine.
+    # Found on the real stack, 11 Nov 2026: treating it as a quarantine left documents unread for good.
+    health = check_intake_health()
+    if health.intake_paused:
+        raise IntakePausedError(health.banner_message or "intake paused")
     try:
         process_uploaded_document(conn=conn, tenant_id=job.tenant_id, document_id=job.subject_id)
     except QuarantineError:
-        # The document was quarantined and its issue recorded: that is a finished job, not a failure.
+        # Malware found: the document is quarantined and its issue recorded. A finished job, not a failure.
         logger.info("job %s: document %s quarantined", job.id, job.subject_id)
 
 

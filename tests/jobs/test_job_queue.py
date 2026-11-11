@@ -186,3 +186,22 @@ def test_app_role_sees_only_its_tenants_jobs(db_conn, app_conn, env):  # noqa: F
     set_rls_context(app_conn, env["t"])
     assert app_conn.execute("SELECT count(*) FROM jobs WHERE subject_id = %s", (subject,)).fetchone() == (1,)
     app_conn.rollback()
+
+
+def test_paused_intake_is_retried_not_quarantined(db_conn, env, postgres_url, monkeypatch):  # noqa: F811
+    """Real-stack finding (11 Nov 2026): stale scanner signatures pause intake; the reading must wait, not
+    end with the document quarantined for good."""
+    from avenel.documents.scanner import SystemIntakeHealth
+    from avenel.jobs import worker
+
+    subject = _queue(db_conn, env)
+    paused = SystemIntakeHealth(intake_paused=True, reason="signatures_stale", banner_message="Lecture en pause.",
+                               signature_age_hours=6127.6, scanner_available=True)
+    monkeypatch.setattr(worker, "check_intake_health", lambda: paused)
+    status_before = db_conn.execute("SELECT status FROM documents WHERE id = %s", (subject,)).fetchone()
+    db_conn.rollback()
+    assert run_once(postgres_url) == "retry"
+    status, attempts, error, in_future = _job(db_conn, subject)
+    assert (status, attempts, in_future) == ("queued", 1, True)
+    assert "IntakePausedError" in error
+    assert db_conn.execute("SELECT status FROM documents WHERE id = %s", (subject,)).fetchone() == status_before

@@ -134,6 +134,8 @@ services:
     volumes:
       - docstore:/var/lib/avenel/storage
     environment:
+      # This stack runs a worker, so every reading goes through the job queue (B-01 step 2).
+      AVENEL_READ_IN_BACKGROUND: "1"
       DATABASE_URL: "postgresql://avenel_app:avenel_app_secret@postgres:5432/avenel"
       AVENEL_KMS_KEY: "avenel-dev-kms-key-for-docker-compose-only-32c"
       AVENEL_CLAMAV_HOST: "clamav"

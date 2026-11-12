@@ -202,8 +202,12 @@ function Uploader({ workRequestId, onDone }: { workRequestId: string; onDone: ()
   const [over, setOver] = useState(false);
 
   const unmounted = useRef(false);
-  useEffect(() => () => {
-    unmounted.current = true;
+  useEffect(() => {
+    // Reset on mount too: React's development mode mounts, unmounts and mounts again.
+    unmounted.current = false;
+    return () => {
+      unmounted.current = true;
+    };
   }, []);
 
   async function waitWhileProcessing(documentId: string): Promise<string | undefined> {

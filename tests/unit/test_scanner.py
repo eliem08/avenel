@@ -148,3 +148,32 @@ def test_clamd_reply_nul_terminator_is_stripped(monkeypatch):
     res = scanner._scan_stream_clamd(b"%PDF-1.4 clean", "127.0.0.1", 3310)
     assert res.is_clean is True
     assert "\x00" not in res.details["clamd_response"]
+
+
+def test_fixture_mode_is_off_unless_explicitly_set():
+    """Real-code finding (13 Nov 2026): the fixture defaulted to on, so with ClamAV unreachable an upload
+    was passed as clean. Without the variable, an unreachable scanner must quarantine."""
+    env = {k: v for k, v in os.environ.items() if k != "AVENEL_SCANNER_OFFLINE_FIXTURE"}
+    env["AVENEL_CLAMAV_PORT"] = "59999"
+    with patch.dict(os.environ, env, clear=True):
+        res = scan_bytes(b"%PDF-1.4 clean document content")
+        assert (res.is_clean, res.threat_name) == (False, "SCANNER_UNAVAILABLE")
+        health = check_intake_health()
+        assert health.intake_paused is True and health.scanner_available is False
+
+
+def test_unknown_signature_age_pauses_intake():
+    """D-15: clamd answers PING but its VERSION reply has no date -> age unknown -> intake paused."""
+    unknown = SignatureStatus(is_fresh=True, age_hours=0.0, signature_date=None, version_info="ClamAV 1.4.1")
+    sock = MagicMock()
+    sock.__enter__.return_value.recv.return_value = b"PONG"
+    with (
+        patch.dict(os.environ, {"AVENEL_SCANNER_OFFLINE_FIXTURE": "false"}),
+        patch("avenel.documents.scanner.get_clamav_signature_status", return_value=unknown),
+        patch("avenel.documents.scanner.socket.create_connection", return_value=sock),
+    ):
+        os.environ.pop("AVENEL_CLAMAV_SIGNATURE_AGE_HOURS", None)
+        health = check_intake_health()
+    assert health.intake_paused is True
+    assert health.scanner_available is True
+    assert health.reason == "ClamAV virus signature age is unknown"

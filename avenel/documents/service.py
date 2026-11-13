@@ -59,7 +59,9 @@ class InvalidDocumentPayloadError(Exception):
 
 
 class QuarantineError(Exception):
-    pass
+    def __init__(self, message: str, threat_name: str | None = None) -> None:
+        super().__init__(message)
+        self.threat_name = threat_name  # "SCANNER_UNAVAILABLE" when no scan could be done
 
 
 @dataclass(frozen=True)
@@ -302,7 +304,8 @@ def process_uploaded_document(
             )
         raise QuarantineError(
             f"Pièce mise en quarantaine : logiciel malveillant détecté ({scan_result.threat_name}). "
-            "Elle ne sera pas lue. Demandez une copie saine au client."
+            "Elle ne sera pas lue. Demandez une copie saine au client.",
+            threat_name=scan_result.threat_name,
         )
 
     # 5. Page rendering

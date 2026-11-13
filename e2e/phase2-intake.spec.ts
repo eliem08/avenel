@@ -9,7 +9,11 @@ mkdirSync(SHOTS, { recursive: true });
 test.describe.configure({ mode: 'serial' });
 
 // Synthetic test invoice rendered to an image-only PDF (no text layer): OCR must read it.
-const SCANNED = readFileSync('e2e/assets/invoice-scanned.pdf');
+// A trailing PDF comment makes the bytes unique per run, so the upload is not refused as a resubmission
+// on a stack that already holds this file (D-18). Content and OCR result are unchanged.
+const SCANNED = Buffer.concat([readFileSync('e2e/assets/invoice-scanned.pdf'), Buffer.from(`
+%run-${Date.now()}
+`)]);
 // EICAR standard antivirus test string (harmless by design), at offset 0 as the standard requires.
 const EICAR = Buffer.from('X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*');
 const OUT_OF_SCOPE_FILE = 'Riad Menara SARL'; // the client user is scoped to Atlas only (scripts/e2e_seed.json)

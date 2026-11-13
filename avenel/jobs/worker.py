@@ -52,7 +52,11 @@ def read_document(conn: psycopg.Connection, job: Job) -> None:
         raise IntakePausedError(health.banner_message or "intake paused")
     try:
         process_uploaded_document(conn=conn, tenant_id=job.tenant_id, document_id=job.subject_id)
-    except QuarantineError:
+    except QuarantineError as exc:
+        if exc.threat_name == "SCANNER_UNAVAILABLE":
+            # No scan could be done (clamd timed out or refused): temporary, like a paused intake. Raising
+            # rolls back the quarantine and its issue, and the job is retried. Real stack, 13 Nov 2026.
+            raise IntakePausedError("scanner unavailable during the scan") from exc
         # Malware found: the document is quarantined and its issue recorded. A finished job, not a failure.
         logger.info("job %s: document %s quarantined", job.id, job.subject_id)
 

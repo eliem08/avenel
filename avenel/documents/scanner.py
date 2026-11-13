@@ -88,6 +88,24 @@ def _scan_stream_clamd(data: bytes, host: str, port: int, timeout: float = 3.0) 
     )
 
 
+def _scan_timeout_seconds() -> float:
+    """Time allowed for one clamd scan. Was 1 s: on the real stack (13 Nov 2026) the first scans after a
+    restart took longer and were treated as "scanner unreachable", quarantining clean documents."""
+    try:
+        return float(os.environ.get("AVENEL_CLAMAV_SCAN_TIMEOUT_SECONDS", "30"))
+    except ValueError:
+        return 30.0
+
+
+def _fixture_mode() -> bool:
+    """Offline test fixture: only when explicitly set (tests/conftest.py). Off by default.
+
+    Real-code finding, 13 Nov 2026: it used to default to on, and no compose file turned it off, so an
+    unreachable ClamAV let uploads through as clean and the "scanner down" pause never ran.
+    """
+    return os.environ.get("AVENEL_SCANNER_OFFLINE_FIXTURE", "false").strip().lower() in ("1", "true", "yes")
+
+
 def scan_bytes(data: bytes) -> ScanResult:
     """Scans document bytes with ClamAV clamd or offline test fixture.
 
@@ -96,11 +114,11 @@ def scan_bytes(data: bytes) -> ScanResult:
     """
     clamav_host = os.environ.get("AVENEL_CLAMAV_HOST", "127.0.0.1")
     clamav_port = int(os.environ.get("AVENEL_CLAMAV_PORT", "3310"))
-    fixture_mode = os.environ.get("AVENEL_SCANNER_OFFLINE_FIXTURE", "true").lower() in ("1", "true", "yes")
+    fixture_mode = _fixture_mode()
 
     # 1. Attempt connection to clamd if reachable
     try:
-        return _scan_stream_clamd(data, clamav_host, clamav_port, timeout=1.0)
+        return _scan_stream_clamd(data, clamav_host, clamav_port, timeout=_scan_timeout_seconds())
     except (TimeoutError, ConnectionRefusedError, OSError):
         pass
 
@@ -256,7 +274,7 @@ def check_intake_health() -> SystemIntakeHealth:
     - Sets banner_message = ANTIVIRUS_UNAVAILABLE_BANNER
     Does NOT insert issue rows (system health flag controls intake pause).
     """
-    fixture_mode = os.environ.get("AVENEL_SCANNER_OFFLINE_FIXTURE", "true").lower() in ("1", "true", "yes")
+    fixture_mode = _fixture_mode()
     sig_status = get_clamav_signature_status()
 
     # Allow test overrides via environment
@@ -277,11 +295,16 @@ def check_intake_health() -> SystemIntakeHealth:
         except (OSError, TimeoutError):
             scanner_down = True
 
-    is_stale = (age > 48.0)
+    # An unknown signature age is treated as stale (D-15): clamd answered but its VERSION reply had no
+    # date, or the query failed. Outside fixture mode intake must not run without a known age.
+    age_unknown = forced_age is None and not fixture_mode and sig_status.signature_date in (None, "offline_fixture")
+    is_stale = age_unknown or (age > 48.0)
 
     if scanner_down or is_stale:
         reason = (
-            f"ClamAV virus signatures are older than 48 hours ({age:.1f}h old)"
+            "ClamAV virus signature age is unknown"
+            if age_unknown
+            else f"ClamAV virus signatures are older than 48 hours ({age:.1f}h old)"
             if is_stale
             else f"ClamAV daemon unreachable at {clamav_host}:{clamav_port}"
         )

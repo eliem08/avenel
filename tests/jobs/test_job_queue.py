@@ -205,3 +205,25 @@ def test_paused_intake_is_retried_not_quarantined(db_conn, env, postgres_url, mo
     assert (status, attempts, in_future) == ("queued", 1, True)
     assert "IntakePausedError" in error
     assert db_conn.execute("SELECT status FROM documents WHERE id = %s", (subject,)).fetchone() == status_before
+
+
+def test_scanner_unavailable_during_the_scan_is_retried_not_quarantined(db_conn, env, postgres_url, monkeypatch):  # noqa: F811
+    """Real-stack finding (13 Nov 2026): clamd answered PING but the scan timed out; the document was
+    quarantined for good. The worker must roll that back and retry the job."""
+    from avenel.documents import service
+    from avenel.documents.scanner import ScanResult
+
+    subject = _queue(db_conn, env)
+    unavailable = ScanResult(is_clean=False, threat_name="SCANNER_UNAVAILABLE", engine="clamav",
+                             details={"quarantined_by_policy": True})
+    monkeypatch.setattr(service, "scan_bytes", lambda data: unavailable)
+    status_before = db_conn.execute("SELECT status FROM documents WHERE id = %s", (subject,)).fetchone()
+    db_conn.rollback()
+    assert run_once(postgres_url) == "retry"
+    status, attempts, error, in_future = _job(db_conn, subject)
+    assert (status, attempts, in_future) == ("queued", 1, True)
+    assert "IntakePausedError" in error
+    assert db_conn.execute("SELECT status FROM documents WHERE id = %s", (subject,)).fetchone() == status_before
+    assert db_conn.execute(
+        "SELECT count(*) FROM issues WHERE subject_document_id = %s AND code = 'DOC_MALWARE'", (subject,)
+    ).fetchone() == (0,)

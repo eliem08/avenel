@@ -7,7 +7,11 @@ import { API_ORIGIN, EXPERT, loginThroughKeycloak, recordApiTraffic } from './st
 
 const SHOTS = 'docs/reports/phase-3';
 mkdirSync(SHOTS, { recursive: true });
-const SCANNED = readFileSync('e2e/assets/invoice-scanned.pdf');
+// A trailing PDF comment makes the bytes unique per run, so the upload is not refused as a resubmission
+// on a stack that already holds this file (D-18). Content and OCR result are unchanged.
+const SCANNED = Buffer.concat([readFileSync('e2e/assets/invoice-scanned.pdf'), Buffer.from(`
+%run-${Date.now()}
+`)]);
 const FILE = 'Atlas Distribution SARL'; // Phase 2 used the other company, so this upload is not a duplicate
 
 test('expert approves VAT account, proposes an entry from a read invoice, reviews it', async ({ page, request }) => {

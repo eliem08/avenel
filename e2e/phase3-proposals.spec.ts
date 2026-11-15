@@ -12,7 +12,9 @@ mkdirSync(SHOTS, { recursive: true });
 const SCANNED = Buffer.concat([readFileSync('e2e/assets/invoice-scanned.pdf'), Buffer.from(`
 %run-${Date.now()}
 `)]);
-const FILE = 'Atlas Distribution SARL'; // Phase 2 used the other company, so this upload is not a duplicate
+// A new client company per run: tax-account approvals are kept for good, so a reused company would
+// already show the 20 % account as approved (D-18). Created through the API with the expert's own token.
+const FILE = `Atlas E2E ${Date.now()} SARL`;
 
 test('expert approves VAT account, proposes an entry from a read invoice, reviews it', async ({ page, request }) => {
   const log = recordApiTraffic(page, 'phase3-expert');
@@ -28,6 +30,24 @@ test('expert approves VAT account, proposes an entry from a read invoice, review
   const claims = JSON.parse(Buffer.from(bearer.split('.')[1], 'base64url').toString()) as { amr?: string[] };
   console.log(`[phase3-expert] token amr=${JSON.stringify(claims.amr)}`);
   expect(claims.amr).toContain('otp');
+
+  const auth = { Authorization: bearer };
+  const client = await request.post(`${API_ORIGIN}/v1/client-entities`, {
+    headers: { ...auth, 'Idempotency-Key': `e2e-client-${FILE}` }, data: { legal_name: FILE, ice: `99${String(Date.now()).slice(-13)}` }, // one client per ICE per firm
+  });
+  expect(client.status()).toBe(201);
+  const clientId = ((await client.json()) as { id: string }).id;
+  const period = await request.post(`${API_ORIGIN}/v1/client-entities/${clientId}/periods`, {
+    headers: { ...auth, 'Idempotency-Key': `e2e-period-${FILE}` },
+    data: { period_code: '2026-09', starts_on: '2026-09-01', ends_on: '2026-09-30', fiscal_year_end: '2026-12-31' },
+  });
+  expect(period.status()).toBe(201);
+  const periodId = ((await period.json()) as { id: string }).id;
+  const wr = await request.post(`${API_ORIGIN}/v1/work-requests`, {
+    headers: { ...auth, 'Idempotency-Key': `e2e-wr-${FILE}` }, data: { client_entity_id: clientId, accounting_period_id: periodId },
+  });
+  expect(wr.status(), await wr.text()).toBe(201);
+  // No page reload: the session token lives in memory, a reload would log the expert out.
 
   // 1. Client page: chart, then approve the account for 20 % purchases
   await page.getByRole('link', { name: 'Clients' }).click();

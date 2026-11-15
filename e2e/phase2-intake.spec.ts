@@ -15,7 +15,12 @@ const SCANNED = Buffer.concat([readFileSync('e2e/assets/invoice-scanned.pdf'), B
 %run-${Date.now()}
 `)]);
 // EICAR standard antivirus test string (harmless by design), at offset 0 as the standard requires.
-const EICAR = Buffer.from('X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*');
+const EICAR = Buffer.from('X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*' +
+  // The standard allows only trailing whitespace: the run's timestamp written as spaces, tabs and newlines
+  // makes the bytes unique, so the file is scanned again instead of refused as already received (D-18).
+  [...Date.now().toString(3)].map((d) => ' \t\n'[Number(d)]).join(''));
+const UPLOAD_NAME = `facture-scannee-${Date.now()}.pdf`; // unique per run: earlier runs leave rows with the same name (D-18)
+const EICAR_NAME = `eicar-${Date.now()}.pdf`;
 const OUT_OF_SCOPE_FILE = 'Riad Menara SARL'; // the client user is scoped to Atlas only (scripts/e2e_seed.json)
 
 function bearerOf(page: Page): () => string {
@@ -36,9 +41,9 @@ test('accountant uploads a scanned invoice, it is read, reviewed and corrected',
   await expect(page.getByTestId('file-title')).toHaveText(OUT_OF_SCOPE_FILE);
 
   // Upload: init (SHA-256 computed in the browser) → content → complete-upload (scan, render, OCR)
-  await page.getByTestId('input-upload').setInputFiles({ name: 'facture-scannee.pdf', mimeType: 'application/pdf', buffer: SCANNED });
-  await expect(page.getByTestId('msg-ok')).toContainText('facture-scannee.pdf lue', { timeout: 120_000 });
-  const row = page.getByTestId('doc-row').filter({ hasText: 'facture-scannee.pdf' });
+  await page.getByTestId('input-upload').setInputFiles({ name: UPLOAD_NAME, mimeType: 'application/pdf', buffer: SCANNED });
+  await expect(page.getByTestId('msg-ok')).toContainText(`${UPLOAD_NAME} lue`, { timeout: 120_000 });
+  const row = page.getByTestId('doc-row').filter({ hasText: UPLOAD_NAME });
   await expect(row).toContainText("Facture d'achat");
   await page.screenshot({ path: `${SHOTS}/01-file-upload-read.png`, fullPage: true });
 
@@ -84,7 +89,7 @@ test('accountant uploads a scanned invoice, it is read, reviewed and corrected',
   for (const p of [
     '/uploads -> 201',
     `/documents/${docId}/content -> 200`,
-    `/documents/${docId}:complete-upload -> 200`,
+    `/documents/${docId}:complete-upload -> 202`, // this stack reads in the background (AVENEL_READ_IN_BACKGROUND)
     `/documents/${docId}/pages/1/image -> 200`,
     `/documents/${docId}/extraction -> 200`,
     `PATCH http://localhost:8000/v1/documents/${docId}/extraction -> 200`,
@@ -94,13 +99,18 @@ test('accountant uploads a scanned invoice, it is read, reviewed and corrected',
 
   // Malware: real ClamAV detects EICAR → quarantined, blocking issue shown, no review link
   await page.getByRole('link', { name: 'Dossier mensuel' }).click();
-  await page.getByTestId('input-upload').setInputFiles({ name: 'eicar.pdf', mimeType: 'application/pdf', buffer: EICAR });
+  await expect(page.getByTestId('doc-row').filter({ hasText: UPLOAD_NAME })).toBeVisible(); // file page loaded
+  // Earlier runs leave their own malware issues on this file (D-18): expect exactly one more.
+  const malwareIssues = page.locator('[data-testid="issue-row"][data-code="DOC_MALWARE"]');
+  const malwareBefore = await malwareIssues.count();
+  await page.getByTestId('input-upload').setInputFiles({ name: EICAR_NAME, mimeType: 'application/pdf', buffer: EICAR });
   await expect(page.getByTestId('msg-error')).toBeVisible({ timeout: 60_000 });
-  await expect(page.getByTestId('doc-row').filter({ hasText: 'eicar.pdf' })).toHaveAttribute('data-status', 'quarantined');
+  await expect(page.getByTestId('doc-row').filter({ hasText: EICAR_NAME })).toHaveAttribute('data-status', 'quarantined');
   await expect(page.getByTestId('issue-strip')).toContainText('bloquante');
-  await expect(page.locator('[data-testid="issue-row"][data-code="DOC_MALWARE"]')).toBeVisible();
+  await expect(malwareIssues).toHaveCount(malwareBefore + 1);
   await page.screenshot({ path: `${SHOTS}/03-eicar-quarantined.png`, fullPage: true });
-  await expect.poll(() => log.some((l) => /:complete-upload -> 422/.test(l))).toBe(true);
+  // Background reading: the API accepts the file (202) and the worker's ClamAV scan quarantines it.
+  await expect.poll(() => log.some((l) => /:complete-upload -> 202/.test(l))).toBe(true);
 
   await page.getByTestId('btn-logout').click();
   await page.waitForURL((u) => u.pathname === '/');

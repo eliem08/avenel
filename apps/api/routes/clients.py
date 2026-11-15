@@ -110,6 +110,13 @@ async def create_client(
         )
         conn.commit()
         return client.to_dict()
+    except psycopg.errors.UniqueViolation as e:
+        conn.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="Une entreprise cliente avec cet ICE existe déjà dans ce cabinet "
+            "(une seule entreprise peut être enregistrée sans ICE).",
+        ) from e
     except ValueError as e:
         conn.rollback()
         raise HTTPException(status_code=422, detail=str(e)) from e

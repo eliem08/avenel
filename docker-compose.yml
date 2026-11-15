@@ -134,6 +134,11 @@ services:
     volumes:
       - docstore:/var/lib/avenel/storage
     environment:
+      # AI help for fields the rules miss (B-02). Key from the git-ignored .env; calls happen only for a firm
+      # whose data_residency_policy allows the region (NVIDIA hosted API: GLOBAL_ALLOWED).
+      NVIDIA_API_KEY: "${NVIDIA_API_KEY:-}"
+      AVENEL_AI_MODEL: "${AVENEL_AI_MODEL:-minimaxai/minimax-m3.1-flash}"
+      AVENEL_AI_BASE_URL: "${AVENEL_AI_BASE_URL:-https://integrate.api.nvidia.com/v1}"
       # This stack runs a worker, so every reading goes through the job queue (B-01 step 2).
       AVENEL_READ_IN_BACKGROUND: "1"
       DATABASE_URL: "postgresql://avenel_app:avenel_app_secret@postgres:5432/avenel"
@@ -163,6 +168,11 @@ services:
     volumes:
       - docstore:/var/lib/avenel/storage
     environment:
+      # AI help for fields the rules miss (B-02). Key from the git-ignored .env; calls happen only for a firm
+      # whose data_residency_policy allows the region (NVIDIA hosted API: GLOBAL_ALLOWED).
+      NVIDIA_API_KEY: "${NVIDIA_API_KEY:-}"
+      AVENEL_AI_MODEL: "${AVENEL_AI_MODEL:-minimaxai/minimax-m3.1-flash}"
+      AVENEL_AI_BASE_URL: "${AVENEL_AI_BASE_URL:-https://integrate.api.nvidia.com/v1}"
       DATABASE_URL: "postgresql://avenel_app:avenel_app_secret@postgres:5432/avenel"
       AVENEL_KMS_KEY: "avenel-dev-kms-key-for-docker-compose-only-32c"
       AVENEL_CLAMAV_HOST: "clamav"

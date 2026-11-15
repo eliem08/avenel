@@ -31,3 +31,4 @@ choose before work starts (ARCHITECTURE.md A.4).
 | 11 Nov 2026 | Idempotency keys durable, per tenant, claimed after authentication (ADR-003). |
 | 11 Nov 2026 | Migration-hash guard extended to migrations 009–013. |
 | 11 Nov 2026 | B-01 step 1: job queue (migration 014), real worker, failed document readings queued and retried. |
+| 15 Nov 2026 | B-02 first step: AI help (NVIDIA NIM, MiniMax M3.1 Flash) for fields the rules miss, through the residency router. Only empty fields are filled; identifiers are never taken from the AI; amounts and dates are kept only if printed; every AI value is marked for review. Proven on the stack (D-22). |

@@ -487,8 +487,12 @@ def run_extractor(
     doc_type: str = "purchase_invoice",
     provider_call_id: uuid.UUID | None = None,
     validation_report: Any | None = None,
+    fields: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Runs the extractor agent, validates schemas, writes extractions and agent_runs."""
+    """Runs the extractor agent, validates schemas, writes extractions and agent_runs.
+
+    `fields`, when given, are the fields already read (rules, then AI help for empty ones), so the stored
+    extraction is exactly what was validated."""
     agent_input = {
         "doc_type": doc_type,
         "full_text": ocr.full_text,
@@ -497,7 +501,7 @@ def run_extractor(
     }
     jsonschema.validate(instance=agent_input, schema=EXTRACTOR_INPUT_SCHEMA)
 
-    extracted_fields = extract_fields_from_ocr(ocr, doc_type)
+    extracted_fields = fields if fields is not None else extract_fields_from_ocr(ocr, doc_type)
     output = {
         "fields": extracted_fields,
         "confidence": 0.96,

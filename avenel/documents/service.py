@@ -362,6 +362,10 @@ def process_uploaded_document(
     # Pre-extract fields for deterministic validation
     from avenel.extraction.extractor import extract_fields_from_ocr
     extracted_fields = extract_fields_from_ocr(ocr_res, doc_type)
+    # AI help for fields the rules missed (B-02): only under a residency policy that allows the provider,
+    # identifiers masked, amounts kept only if printed, every AI value marked for review.
+    from avenel.extraction.ai_fill import fill_missing_fields
+    ai_fill = fill_missing_fields(conn, tenant_id, ocr_res, extracted_fields)
     val_report = validate_invoice_extraction(
         fields=extracted_fields,
         doc_type=doc_type,
@@ -378,6 +382,8 @@ def process_uploaded_document(
         ocr=ocr_res,
         doc_type=doc_type,
         validation_report=val_report,
+        fields=extracted_fields,
+        provider_call_id=ai_fill["provider_call_id"],
     )
     extraction_id = extraction_out["extraction_id"]
 

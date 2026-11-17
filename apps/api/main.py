@@ -10,6 +10,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 
+from apps.api.deps import close_pool
 from apps.api.idempotency import IdempotencyShortCircuit
 from apps.api.middleware import (
     IdempotencyMiddleware,
@@ -45,6 +46,7 @@ async def lifespan(app: FastAPI):
     # Refuse startup if RIB encryption key is missing
     get_rib_encryption_raw_key()
     yield
+    close_pool()
 
 
 app = FastAPI(

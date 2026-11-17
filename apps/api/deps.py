@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import threading
 import uuid
 from collections.abc import Generator
 from typing import Annotated, Any
@@ -10,9 +11,15 @@ from typing import Annotated, Any
 import psycopg
 from fastapi import Depends, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
+from psycopg_pool import ConnectionPool
 
 from apps.api.idempotency import PgIdempotencyStore, claim_or_short_circuit
-from avenel.tenancy.auth import UserSession, resolve_user_session, set_rls_context
+from avenel.tenancy.auth import (
+    UserSession,
+    reset_rls_context,
+    resolve_user_session,
+    set_rls_context,
+)
 from avenel.tenancy.jwt import AuthenticationError, MfaRequiredError, get_jwt_verifier
 
 
@@ -43,10 +50,56 @@ def get_db_url() -> str:
     return os.environ.get("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/avenel")
 
 
+_POOL: ConnectionPool | None = None
+_POOL_LOCK = threading.Lock()
+
+
+def _reset_pooled_connection(conn: psycopg.Connection) -> None:
+    """Runs when a connection goes back to the pool: no tenant or user context may survive the request.
+
+    RLS settings are session-level (set_config(..., false)), so without this a reused connection would
+    carry the previous request's firm into the next one.
+    """
+    if conn.info.transaction_status != psycopg.pq.TransactionStatus.IDLE:
+        conn.rollback()
+    conn.execute("RESET ALL;")
+    reset_rls_context(conn)
+    conn.commit()  # the pool discards a connection that is not idle after reset
+
+
+def get_pool() -> ConnectionPool:
+    """The API's connection pool (B-07), opened on first use for the current DATABASE_URL."""
+    global _POOL
+    url = get_db_url()
+    with _POOL_LOCK:
+        if _POOL is None or _POOL.conninfo != url:
+            if _POOL is not None:
+                _POOL.close()
+            _POOL = ConnectionPool(
+                url,
+                min_size=int(os.environ.get("AVENEL_DB_POOL_MIN", "1")),
+                max_size=int(os.environ.get("AVENEL_DB_POOL_MAX", "10")),
+                timeout=float(os.environ.get("AVENEL_DB_POOL_TIMEOUT_SECONDS", "10")),
+                kwargs={"autocommit": False},
+                reset=_reset_pooled_connection,
+                check=ConnectionPool.check_connection,
+                name="avenel-api",
+                open=True,
+            )
+        return _POOL
+
+
+def close_pool() -> None:
+    global _POOL
+    with _POOL_LOCK:
+        if _POOL is not None:
+            _POOL.close()
+            _POOL = None
+
+
 def get_db() -> Generator[psycopg.Connection, None, None]:
-    """Provides a database connection with auto-rollback on exception."""
-    db_url = get_db_url()
-    with psycopg.connect(db_url, autocommit=False) as conn:
+    """Provides a pooled connection: committed if the request succeeds, rolled back on exception."""
+    with get_pool().connection() as conn:
         yield conn
 
 

@@ -7,7 +7,7 @@ real ClamAV, OCR. No AI provider is connected yet (B-02): reading uses rules and
 
 1. Start Docker Desktop. Check the stack: `docker ps` shows avenel-api, avenel-worker, avenel-postgres, avenel-keycloak, avenel-clamav.
 2. Start the web app: `npx vite --port 5173 --strictPort` (from the repo root).
-3. Create a fresh demo company: `npx playwright test e2e/demo-setup.spec.ts`, then note the printed name (`Société Démo … SARL`).
+3. Create a fresh demo company: `npx playwright test -c playwright.demo.config.ts`, then note the printed name (`Société Démo … SARL`).
 4. Keep `docs/demo/facture-demo.pdf` at hand (a scanned purchase invoice, FAC-2026-0412, 12 000 MAD TTC).
 5. Virus signatures must be under 48 h old, or uploads pause (by design). If intake says paused: `docker restart avenel-freshclam`.
 

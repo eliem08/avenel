@@ -4,6 +4,9 @@ import { defineConfig, devices } from '@playwright/test';
 // No webServer: Playwright never starts a static preview, and no request is intercepted (Part K 26).
 export default defineConfig({
   testDir: './e2e',
+  // The live-demo setup adds a client company; in the suite it ran first and broke the exact client and
+  // queue counts of login-queue and phase 1 (CI, 15-18 Nov 2026). Run it with playwright.demo.config.ts.
+  testIgnore: ['**/demo-setup.spec.ts'],
   fullyParallel: false,
   workers: 1,
   // A second login may wait up to 30 s for a fresh TOTP window (e2e/stack.ts).

@@ -99,6 +99,9 @@ Spec: ARCHITECTURE.md D.1. Plan: `docs/plans/phase-8c-workflow.md`.
   - **Still failing, not caused by this phase:** the login-queue test expects the queue to hold only the
     seeded files (`toHaveCount(seed.clients.length)`). The reused dev stack holds many files left by other
     tests. This is the known leftover-data issue, the same one phase 1 has.
+  - **Correction, 18 Nov 2026 (after the CI fix):** on CI's fresh stack, login-queue and phase 1 also failed
+    (2 expected, 3 found). The cause was the live-demo setup script in `e2e/`, which ran first and added a
+    client. It now has its own config (`playwright.demo.config.ts`) and is not part of the suite.
 
 ## Not done (needs a decision)
 

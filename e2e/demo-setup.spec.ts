@@ -1,5 +1,5 @@
 // Demo setup (local stack): logs in as the expert through Keycloak and creates a fresh client company,
-// its September 2026 period and its monthly file, ready for a live upload. Run: npx playwright test e2e/demo-setup.spec.ts
+// its September 2026 period and its monthly file, ready for a live upload. Run: npx playwright test -c playwright.demo.config.ts
 import { expect, test } from '@playwright/test';
 import { API_ORIGIN, EXPERT, loginThroughKeycloak } from './stack';
 

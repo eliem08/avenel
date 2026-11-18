@@ -54,7 +54,7 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
+          GITLEAKS_CONFIG: .gitleaks.toml  # known false alarms only; any other finding fails the build
 
       - name: Dependency Vulnerability Audit
         run: |

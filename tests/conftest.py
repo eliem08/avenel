@@ -19,15 +19,17 @@ import psycopg
 import pytest
 
 from avenel.infrastructure.migrations import apply_migrations
+from tests import clamd_stub
 
 PG_BIN = r"C:\Program Files\PostgreSQL\16\bin"
 DEFAULT_TEST_PORT = 5439
 
 # Ensure RIB encryption key is available for integration tests
 os.environ["AVENEL_AUTH_TEST_MODE"] = "1"  # enables subject-header auth in tests only (apps/api/deps.py)
-# A.2.7: never reach a live ClamAV (e.g. the docker-compose one on :3310) from the suite.
-os.environ["AVENEL_CLAMAV_PORT"] = "1"
-os.environ.setdefault("AVENEL_SCANNER_OFFLINE_FIXTURE", "true")  # opt in: off by default outside tests
+# A.2.7: never reach a live ClamAV (e.g. the docker-compose one on :3310) from the suite. Scans go to a
+# stand-in clamd on a free local port; production code has no offline mode (Part K 25).
+os.environ["AVENEL_CLAMAV_HOST"] = "127.0.0.1"
+os.environ["AVENEL_CLAMAV_PORT"] = str(clamd_stub.start())
 os.environ.setdefault("AVENEL_KMS_KEY", "avenel-test-kms-key-fixture-32chars-min-ok")
 
 

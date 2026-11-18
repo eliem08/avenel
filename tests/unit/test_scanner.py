@@ -13,26 +13,24 @@ from avenel.documents.scanner import (
 )
 
 
-def test_clean_document_scan_in_fixture_mode():
-    data = b"%PDF-1.4 clean document content"
-    with patch.dict(os.environ, {"AVENEL_SCANNER_OFFLINE_FIXTURE": "true"}):
-        res = scan_bytes(data)
-        assert res.is_clean is True
-        assert res.threat_name is None
+def test_clean_document_scan_through_clamd():
+    """The suite's stand-in clamd (tests/clamd_stub.py) answers over a real socket."""
+    res = scan_bytes(b"%PDF-1.4 clean document content")
+    assert res.is_clean is True
+    assert res.threat_name is None
+    assert res.engine == "clamav"
 
 
 def test_eicar_signature_detection():
-    data = b"%PDF-1.4 " + EICAR_SIGNATURE
-    with patch.dict(os.environ, {"AVENEL_SCANNER_OFFLINE_FIXTURE": "true"}):
-        res = scan_bytes(data)
-        assert res.is_clean is False
-        assert res.threat_name == "EICAR_TEST_FILE"
+    res = scan_bytes(b"%PDF-1.4 " + EICAR_SIGNATURE)
+    assert res.is_clean is False
+    assert res.threat_name == "Win.Test.EICAR_HDB-1"
 
 
 def test_scanner_unavailable_fail_safe_quarantine():
     """When ClamAV daemon is unreachable, the document stays quarantined and is never processed."""
     data = b"%PDF-1.4 clean document content"
-    with patch.dict(os.environ, {"AVENEL_SCANNER_OFFLINE_FIXTURE": "false", "AVENEL_CLAMAV_PORT": "59999"}):
+    with patch.dict(os.environ, {"AVENEL_CLAMAV_PORT": "59999"}):
         res = scan_bytes(data)
         assert res.is_clean is False
         assert res.threat_name == "SCANNER_UNAVAILABLE"
@@ -97,7 +95,7 @@ def test_check_intake_health_paused_when_scanner_down():
     )
 
     with (
-        patch.dict(os.environ, {"AVENEL_SCANNER_OFFLINE_FIXTURE": "false", "AVENEL_CLAMAV_PORT": "59999"}),
+        patch.dict(os.environ, {"AVENEL_CLAMAV_PORT": "59999"}),
         patch("avenel.documents.scanner.get_clamav_signature_status", return_value=mock_status),
     ):
         health = check_intake_health()
@@ -150,12 +148,13 @@ def test_clamd_reply_nul_terminator_is_stripped(monkeypatch):
     assert "\x00" not in res.details["clamd_response"]
 
 
-def test_fixture_mode_is_off_unless_explicitly_set():
-    """Real-code finding (13 Nov 2026): the fixture defaulted to on, so with ClamAV unreachable an upload
-    was passed as clean. Without the variable, an unreachable scanner must quarantine."""
-    env = {k: v for k, v in os.environ.items() if k != "AVENEL_SCANNER_OFFLINE_FIXTURE"}
-    env["AVENEL_CLAMAV_PORT"] = "59999"
-    with patch.dict(os.environ, env, clear=True):
+def test_an_unreachable_scanner_never_passes_a_document():
+    """Real-code finding (13 Nov 2026, D-19): an offline test mode passed uploads as clean when ClamAV was
+    unreachable. The mode is gone from production code: even the old variable set to "true" changes nothing,
+    and the unknown signature age pauses intake."""
+    env = {"AVENEL_SCANNER_OFFLINE_FIXTURE": "true", "AVENEL_CLAMAV_PORT": "59999"}
+    with patch.dict(os.environ, env):
+        os.environ.pop("AVENEL_CLAMAV_SIGNATURE_AGE_HOURS", None)
         res = scan_bytes(b"%PDF-1.4 clean document content")
         assert (res.is_clean, res.threat_name) == (False, "SCANNER_UNAVAILABLE")
         health = check_intake_health()
@@ -168,7 +167,7 @@ def test_unknown_signature_age_pauses_intake():
     sock = MagicMock()
     sock.__enter__.return_value.recv.return_value = b"PONG"
     with (
-        patch.dict(os.environ, {"AVENEL_SCANNER_OFFLINE_FIXTURE": "false"}),
+        patch.dict(os.environ, {}),
         patch("avenel.documents.scanner.get_clamav_signature_status", return_value=unknown),
         patch("avenel.documents.scanner.socket.create_connection", return_value=sock),
     ):

@@ -1,0 +1,14 @@
+# Gitleaks: the default rules, plus an allowlist for the known false alarms only (18 Nov 2026).
+# Anything else it finds fails CI.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Test-only values and tax-pack rule names, not secrets"
+regexes = [
+  # The test-only encryption key used by the test suite and CI (tests/conftest.py, ci.yml, restore-drill.yml).
+  '''avenel-test-kms-key-fixture-32chars-min-ok''',
+  # Jurisdiction-pack rule names such as "vat.withholding.ras_2026.thresholds" (dotted identifiers).
+  '''^[a-z0-9_]+(\.[a-z0-9_]+)+$''',
+]

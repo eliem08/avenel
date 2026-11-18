@@ -2,8 +2,8 @@
 
 Integrates with ClamAV daemon (clamd) over TCP socket.
 Fail-safe policy: If ClamAV scanner is unavailable, the document stays quarantined
-and is never processed.
-Uses EICAR standard signature as offline test fixture.
+and is never processed. There is no offline mode: every scan goes to clamd (the test suite runs a
+stand-in clamd that speaks the same protocol, `tests/clamd_stub.py`).
 """
 
 from __future__ import annotations
@@ -97,49 +97,22 @@ def _scan_timeout_seconds() -> float:
         return 30.0
 
 
-def _fixture_mode() -> bool:
-    """Offline test fixture: only when explicitly set (tests/conftest.py). Off by default.
-
-    Real-code finding, 13 Nov 2026: it used to default to on, and no compose file turned it off, so an
-    unreachable ClamAV let uploads through as clean and the "scanner down" pause never ran.
-    """
-    return os.environ.get("AVENEL_SCANNER_OFFLINE_FIXTURE", "false").strip().lower() in ("1", "true", "yes")
-
-
 def scan_bytes(data: bytes) -> ScanResult:
-    """Scans document bytes with ClamAV clamd or offline test fixture.
+    """Scans document bytes with ClamAV clamd.
 
-    Invariant: If scanner is unavailable in standard mode, the document stays
-    in quarantine and is never processed.
+    Invariant: if the scanner is unavailable, the document stays in quarantine and is never processed.
+    Real-code finding, 13 Nov 2026 (D-19): an offline test mode used to pass uploads as clean when clamd was
+    unreachable. It was removed from production code on 18 Nov 2026.
     """
     clamav_host = os.environ.get("AVENEL_CLAMAV_HOST", "127.0.0.1")
     clamav_port = int(os.environ.get("AVENEL_CLAMAV_PORT", "3310"))
-    fixture_mode = _fixture_mode()
 
-    # 1. Attempt connection to clamd if reachable
     try:
         return _scan_stream_clamd(data, clamav_host, clamav_port, timeout=_scan_timeout_seconds())
     except (TimeoutError, ConnectionRefusedError, OSError):
         pass
 
-    # 2. ClamAV unreachable: check test fixture mode vs fail-safe quarantine
-    if fixture_mode:
-        # Standard EICAR test fixture check for offline CI and automated tests
-        if EICAR_SIGNATURE in data:
-            return ScanResult(
-                is_clean=False,
-                threat_name="EICAR_TEST_FILE",
-                engine="clamav_fixture_v1",
-                details={"signature": "EICAR standard antivirus test signature detected"},
-            )
-        return ScanResult(
-            is_clean=True,
-            threat_name=None,
-            engine="clamav_fixture_v1",
-            details={"status": "clean", "scanned_bytes": len(data)},
-        )
-
-    # 3. Fail-safe rule: scanner unavailable -> document stays quarantined, never processed
+    # Fail-safe rule: scanner unavailable -> document stays quarantined, never processed
     return ScanResult(
         is_clean=False,
         threat_name="SCANNER_UNAVAILABLE",
@@ -202,7 +175,7 @@ def get_clamav_signature_status(
     if port is None:
         port = int(os.environ.get("AVENEL_CLAMAV_PORT", "3310"))
 
-    # Test fixture or simulated override
+    # Simulated override
     sim_age = os.environ.get("AVENEL_CLAMAV_SIGNATURE_AGE_HOURS")
     if sim_age is not None:
         try:
@@ -245,11 +218,12 @@ def get_clamav_signature_status(
                 version_info=raw,
             )
     except (OSError, TimeoutError):
+        # Age unknown: check_intake_health treats it as stale and pauses intake (D-15).
         return SignatureStatus(
-            is_fresh=True,
+            is_fresh=False,
             age_hours=0.0,
-            signature_date="offline_fixture",
-            version_info="clamav_fixture_v1",
+            signature_date=None,
+            version_info="clamd unreachable",
         )
 
 
@@ -274,7 +248,6 @@ def check_intake_health() -> SystemIntakeHealth:
     - Sets banner_message = ANTIVIRUS_UNAVAILABLE_BANNER
     Does NOT insert issue rows (system health flag controls intake pause).
     """
-    fixture_mode = _fixture_mode()
     sig_status = get_clamav_signature_status()
 
     # Allow test overrides via environment
@@ -285,19 +258,18 @@ def check_intake_health() -> SystemIntakeHealth:
     clamav_port = int(os.environ.get("AVENEL_CLAMAV_PORT", "3310"))
 
     scanner_down = False
-    if not fixture_mode:
-        try:
-            with socket.create_connection((clamav_host, clamav_port), timeout=1.0) as sock:
-                sock.sendall(b"PING\n")
-                resp = sock.recv(16)
-                if b"PONG" not in resp:
-                    scanner_down = True
-        except (OSError, TimeoutError):
-            scanner_down = True
+    try:
+        with socket.create_connection((clamav_host, clamav_port), timeout=1.0) as sock:
+            sock.sendall(b"PING\n")
+            resp = sock.recv(16)
+            if b"PONG" not in resp:
+                scanner_down = True
+    except (OSError, TimeoutError):
+        scanner_down = True
 
     # An unknown signature age is treated as stale (D-15): clamd answered but its VERSION reply had no
-    # date, or the query failed. Outside fixture mode intake must not run without a known age.
-    age_unknown = forced_age is None and not fixture_mode and sig_status.signature_date in (None, "offline_fixture")
+    # date, or the query failed. Intake must not run without a known age.
+    age_unknown = forced_age is None and sig_status.signature_date is None
     is_stale = age_unknown or (age > 48.0)
 
     if scanner_down or is_stale:

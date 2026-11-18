@@ -35,3 +35,13 @@ as D-21 did for a duplicate ICE. The phase 4 and phase 6 browser tests use a fix
 their second run fails at "Ajouter le compte". Fix: map the violation to 409 and give each run a fresh valid
 RIB (key computed per run). Not fixed in phase 8a.
 
+**Fixed 18 Nov 2026:** the API answers 409 "Ce RIB est déjà enregistré dans ce cabinet." (test
+`test_same_rib_twice_is_a_conflict_not_a_server_error`), and the phase 4 and 6 browser tests use a fresh RIB
+(`e2e/rib.ts`). Phase 4 statements also carry a run reference. **Still open:** phase 4 reconciles a single
+seeded invoice that an earlier run has already matched, so a second run finds nothing to match; it needs a
+fresh company and invoice per run, as phase 3 has.
+
+## D-20 (again, 18 Nov 2026)
+Freshclam stalled a second time: signatures reached 53 h and intake paused until freshclam was restarted.
+Restarting by hand is not a fix; freshclam needs a health check that restarts it when signatures pass 24 h.
+

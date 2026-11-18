@@ -88,6 +88,16 @@ def test_same_statement_twice_is_not_ingested_twice(mp):  # noqa: F811
     assert second.status_code in (200, 409), second.text
 
 
+def test_same_rib_twice_is_a_conflict_not_a_server_error(mp):  # noqa: F811
+    """D-23 (17 Nov 2026): a RIB already registered in the firm returned 500."""
+    c = TestClient(app)
+    body = {"client_entity_id": str(mp["client"]), "rib": _rib(uuid.uuid4().int % 10**12)}
+    assert c.post("/v1/bank-accounts", headers=_h(mp["sub"], mp["t"]), json=body).status_code == 201
+    r = c.post("/v1/bank-accounts", headers=_h(mp["sub"], mp["t"]), json=body)
+    assert r.status_code == 409, r.text
+    assert "déjà enregistré" in r.text
+
+
 def test_scope_rules(mp, db_conn: psycopg.Connection):  # noqa: F811
     c = TestClient(app)
     acc = _account(c, mp)

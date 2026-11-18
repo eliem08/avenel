@@ -1087,6 +1087,8 @@ paths:
           $ref: "#/components/responses/ProblemDetails"
         "403":
           $ref: "#/components/responses/ProblemDetails"
+        "409":
+          $ref: "#/components/responses/ProblemDetails"
         "422":
           $ref: "#/components/responses/ProblemDetails"
 

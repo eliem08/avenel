@@ -83,6 +83,13 @@ def register_bank_account_endpoint(
         # which can happen after the client has already re-read (Phase 4 finding).
         conn.commit()
         return res
+    except psycopg.errors.UniqueViolation as err:
+        # D-23: a RIB already registered in the firm was a 500; it is a conflict the user can act on.
+        conn.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Ce RIB est déjà enregistré dans ce cabinet.",
+        ) from err
     except ValueError as err:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(err)) from err
 

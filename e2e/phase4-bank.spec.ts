@@ -1,4 +1,5 @@
 // Phase 4 through the browser, real stack: register a bank account (RIB), import statements
+import { freshRib } from './rib';
 // (balance check, balance break), and reconcile the payment with the invoice entry proposed in the
 // Phase 3 test (same company, same run). No interception (Part K 26); API traffic logged.
 import { mkdirSync } from 'node:fs';
@@ -8,17 +9,19 @@ import { API_ORIGIN, EXPERT, loginThroughKeycloak, recordApiTraffic } from './st
 const SHOTS = 'docs/reports/phase-4';
 mkdirSync(SHOTS, { recursive: true });
 const FILE = 'Atlas Distribution SARL';
-// Synthetic RIB with a valid key (computed with avenel.bank.rib.compute_moroccan_rib_key).
-const RIB = '007780000000000000050406';
+// Synthetic RIB with a valid key, fresh each run (e2e/rib.ts).
+const RIB = freshRib(); // unique per run (D-23)
+// The statements carry a run reference so a reused stack does not refuse them as already received.
+const RUN = Date.now().toString(36);
 const GOOD = `# Solde initial: 100000.00
 # Solde final: 88000.00
 Date,Libelle,Debit,Credit
-2026-09-20,VIR FOURNISSEUR ATLAS FOURNITURES FAC-2026-0412,12000.00,0.00
+2026-09-20,VIR FOURNISSEUR ATLAS FOURNITURES FAC-2026-0412 R${RUN},12000.00,0.00
 `;
 const BROKEN = `# Solde initial: 50000.00
 # Solde final: 49000.00
 Date,Libelle,Debit,Credit
-2026-09-25,FRAIS TENUE DE COMPTE,150.00,0.00
+2026-09-25,FRAIS TENUE DE COMPTE R${RUN},150.00,0.00
 `;
 
 test('expert imports statements and reconciles the invoice payment', async ({ page, request }) => {
@@ -35,23 +38,25 @@ test('expert imports statements and reconciles the invoice payment', async ({ pa
   await page.locator('input[name="rib"]').fill(RIB);
   await page.getByRole('button', { name: 'Ajouter le compte' }).click();
   await expect(page.getByTestId('msg-ok')).toContainText('enregistré');
-  await expect(page.getByTestId('select-bank-account')).toContainText('0406');
+  await expect(page.getByTestId('select-bank-account')).toContainText(RIB.slice(-4));
   await expect(page.getByTestId('select-bank-account')).not.toContainText(RIB);
 
   // 2. A statement whose balances agree, then one whose balances do not
-  await page.getByTestId('input-statement').setInputFiles({ name: 'releve-septembre.csv', mimeType: 'text/csv', buffer: Buffer.from(GOOD) });
-  await expect(page.getByTestId('statement-row').filter({ hasText: 'releve-septembre.csv' })).toHaveAttribute('data-balance', 'ok');
-  await page.getByTestId('input-statement').setInputFiles({ name: 'releve-errone.csv', mimeType: 'text/csv', buffer: Buffer.from(BROKEN) });
-  await expect(page.getByTestId('statement-row').filter({ hasText: 'releve-errone.csv' })).toHaveAttribute('data-balance', 'break');
+  await page.getByTestId('input-statement').setInputFiles({ name: `releve-septembre-${RUN}.csv`, mimeType: 'text/csv', buffer: Buffer.from(GOOD) });
+  await expect(page.getByTestId('statement-row').filter({ hasText: `releve-septembre-${RUN}.csv` })).toHaveAttribute('data-balance', 'ok');
+  await page.getByTestId('input-statement').setInputFiles({ name: `releve-errone-${RUN}.csv`, mimeType: 'text/csv', buffer: Buffer.from(BROKEN) });
+  await expect(page.getByTestId('statement-row').filter({ hasText: `releve-errone-${RUN}.csv` })).toHaveAttribute('data-balance', 'break');
   await expect(page.getByTestId('msg-error')).toContainText('les soldes ne concordent pas');
   await expect(page.getByTestId('issue-strip')).toContainText('bloquante');
   await page.getByTestId('statements-table').scrollIntoViewIfNeeded();
   await page.screenshot({ path: `${SHOTS}/01-statements-balance-check.png`, fullPage: true });
 
   // Same statement again: recognised as already received, not imported twice
-  await page.getByTestId('input-statement').setInputFiles({ name: 'releve-septembre-copie.csv', mimeType: 'text/csv', buffer: Buffer.from(GOOD) });
+  const rowsBefore = await page.getByTestId('statement-row').count(); // earlier runs may have left rows
+  await page.getByTestId('input-statement').setInputFiles({ name: `releve-septembre-copie-${RUN}.csv`, mimeType: 'text/csv', buffer: Buffer.from(GOOD) });
   await expect(page.getByTestId('msg-ok')).toContainText('déjà été reçu');
-  await expect(page.getByTestId('statement-row')).toHaveCount(2);
+  await expect(page.getByTestId('statement-row')).toHaveCount(rowsBefore);
+  await expect(page.getByTestId('statement-row').filter({ hasText: `releve-septembre-copie-${RUN}.csv` })).toHaveCount(0);
 
   // 3. Reconciliation: the 12 000,00 payment is matched to the invoice entry and accepted
   await page.getByTestId('link-reconciliation').click();

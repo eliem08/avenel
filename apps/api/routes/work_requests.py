@@ -16,6 +16,7 @@ from avenel.documents.service import (
     init_document_upload,
 )
 from avenel.tenancy.auth import UserSession
+from avenel.workflow import cancel as cancelling
 from avenel.workflow import state as workflow
 
 router = APIRouter(prefix="/v1", tags=["Work"])
@@ -24,6 +25,10 @@ router = APIRouter(prefix="/v1", tags=["Work"])
 class CreateWorkRequestInput(BaseModel):
     client_entity_id: uuid.UUID
     accounting_period_id: uuid.UUID
+
+
+class CancelInput(BaseModel):
+    reason: str = Field(min_length=1, max_length=500)
 
 
 class UploadInitInput(BaseModel):
@@ -140,7 +145,10 @@ async def create_work_request(
             raise HTTPException(status_code=404, detail="Période comptable introuvable.")
 
         cur.execute(
-            "SELECT id FROM work_requests WHERE tenant_id = %s AND client_entity_id = %s AND accounting_period_id = %s;",
+            # A cancelled or failed file does not count (as in work_requests_one_active_per_period): after a
+            # cancel the period may get a new file (phase 8d).
+            "SELECT id FROM work_requests WHERE tenant_id = %s AND client_entity_id = %s AND accounting_period_id = %s "
+            "AND status NOT IN ('cancelled', 'failed');",
             (session.tenant_id, body.client_entity_id, body.accounting_period_id),
         )
         if cur.fetchone():
@@ -178,6 +186,24 @@ async def get_work_request(
     return _resolve_work_request_scope(conn, session, id)
 
 
+@router.post("/work-requests/{id}:cancel", operation_id="cancelWorkRequest")
+async def cancel_work_request(
+    id: uuid.UUID,
+    body: CancelInput,
+    session: Annotated[UserSession, Depends(get_current_session)],
+    conn: Annotated[psycopg.Connection, Depends(get_db)],
+) -> dict[str, Any]:
+    """Cancels the monthly file (D.1, phase 8d). Owner and manager only; the reason goes in its history."""
+    if session.role == "client_user":
+        raise HTTPException(status_code=404, detail="Dossier de travail introuvable.")
+    _resolve_work_request_scope(conn, session, id)
+    if session.role not in cancelling.CANCEL_ROLES:
+        raise HTTPException(status_code=403, detail="Seuls le responsable et le gérant du cabinet peuvent annuler un dossier.")
+    cancelling.cancel(conn, session.tenant_id, id, str(session.user_id), session.role, body.reason)
+    conn.commit()
+    return _resolve_work_request_scope(conn, session, id)
+
+
 @router.post("/work-requests/{id}/uploads")
 async def init_upload_for_work_request(
     id: uuid.UUID,
@@ -187,9 +213,13 @@ async def init_upload_for_work_request(
     response: Response,
 ) -> dict[str, Any]:
     # 1. Scope-first check: returns 404 if work request is out of scope
-    _resolve_work_request_scope(conn, session, id)
+    wr = _resolve_work_request_scope(conn, session, id)
 
-    # 2. Role permission check: operator cannot upload documents
+    # 2. A cancelled or failed file takes no more documents (phase 8d)
+    if wr["status"] in cancelling.CLOSED:
+        raise HTTPException(status_code=409, detail="Ce dossier est annulé : il ne reçoit plus de pièces.")
+
+    # 3. Role permission check: operator cannot upload documents
     if session.role == "operator":
         raise HTTPException(status_code=403, detail="Les opérateurs ne peuvent pas téléverser de documents.")
 

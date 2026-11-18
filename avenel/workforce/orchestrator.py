@@ -22,6 +22,7 @@ from avenel.proposals.service import (
 )
 from avenel.reconciliation.service import generate_reconciliation_matches
 from avenel.workflow import state as workflow
+from avenel.workflow.cancel import is_closed
 from avenel.workforce.agents import AGENT_FOR_STEP, AGENTS, require
 
 # Document types the entry builder knows how to propose an entry for (entry_builder.py).
@@ -149,6 +150,11 @@ def after_step(conn: psycopg.Connection, job: Job, summary: dict[str, Any] | Non
     agent = AGENT_FOR_STEP[job.step].name
     summary = summary or {}
     t, w = job.tenant_id, job.work_request_id
+    # Phase 8d: a file cancelled while this step ran keeps the step's own work but hands nothing on. No row
+    # lock here (the read hand-off takes its advisory lock first); a cancel committed just after this check
+    # leaves at most a queued job, which the worker ends as 'cancelled'.
+    if is_closed(conn, t, w):
+        return
 
     if job.step in ("read_document", "ai_fill"):
         # Two workers (reading, AI) can finish jobs of the same file at the same moment; each would see the

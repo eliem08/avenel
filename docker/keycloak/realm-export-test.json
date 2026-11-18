@@ -128,6 +128,28 @@
           "credentialData": "{\"subType\": \"totp\", \"digits\": 6, \"period\": 30, \"algorithm\": \"HmacSHA1\", \"counter\": 0}"
         }
       ]
+    },
+    {
+      "username": "ci-manager@test.internal",
+      "enabled": true,
+      "email": "ci-manager@test.internal",
+      "firstName": "CI",
+      "lastName": "Manager",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "eBSeXwPuAZWZ5jOXeR9Ul9Ak-Mg7",
+          "temporary": false
+        },
+        {
+          "type": "otp",
+          "userLabel": "CI Ephemeral Authenticator",
+          "secretData": "{\"value\": \"gu7GlinWEAC9jmrc\"}",
+          "credentialData": "{\"subType\": \"totp\", \"digits\": 6, \"period\": 30, \"algorithm\": \"HmacSHA1\"}"
+        }
+      ],
+      "id": "5c1e2e00-0000-4000-8000-000000000004",
+      "emailVerified": true
     }
   ],
   "authenticatorConfig": [

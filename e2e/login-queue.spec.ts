@@ -25,8 +25,9 @@ test('accountant logs in with TOTP, sees seeded queue from the API, logs out', a
   await expect(page.getByTestId('firm-switcher')).toHaveAttribute('data-tenant-id', seed.tenant_id);
   await page.screenshot({ path: `${SHOTS}/03-queue.png`, fullPage: true });
 
+  // The client names come with the list itself (client_legal_name, phase 8c): the queue makes no
+  // /client-entities call any more, which only returned the first 50 clients.
   await expect.poll(() => apiLines.some((l) => l.includes('GET http://localhost:8000/v1/work-requests -> 200 bearer_jwt=true'))).toBe(true);
-  await expect.poll(() => apiLines.some((l) => l.includes('GET http://localhost:8000/v1/client-entities -> 200 bearer_jwt=true'))).toBe(true);
 
   // 4. Through the API directly, with the browser's own token: session tenant equals the seed tenant.
   expect(bearer).toMatch(/^Bearer ey/);

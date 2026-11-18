@@ -370,6 +370,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/work-requests/{id}:cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel a monthly file
+         * @description Moves the file to cancelled (ARCHITECTURE.md D.1) with the reason in its status history. A pending approval and the file's queued jobs are cancelled; documents, proposals, issues and the audit trail are kept. The period may then get a new file. Firm owner and manager only.
+         */
+        post: operations["cancelWorkRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/work-requests/{id}/status-history": {
         parameters: {
             query?: never;
@@ -1508,6 +1528,10 @@ export interface components {
             /** Format: date-time */
             occurred_at: string;
         };
+        CancelWorkRequestInput: {
+            /** @description Why the file is cancelled; kept in its status history. */
+            reason: string;
+        };
         StatusChangeList: {
             items: components["schemas"]["StatusChange"][];
         };
@@ -2423,6 +2447,39 @@ export interface operations {
                 };
             };
             404: components["responses"]["ProblemDetails"];
+        };
+    };
+    cancelWorkRequest: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": components["parameters"]["IdempotencyKeyHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelWorkRequestInput"];
+            };
+        };
+        responses: {
+            /** @description The cancelled file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkRequest"];
+                };
+            };
+            401: components["responses"]["ProblemDetails"];
+            403: components["responses"]["ProblemDetails"];
+            404: components["responses"]["ProblemDetails"];
+            409: components["responses"]["ProblemDetails"];
+            422: components["responses"]["ProblemDetails"];
         };
     };
     listWorkRequestStatusHistory: {

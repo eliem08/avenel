@@ -1,6 +1,6 @@
 """Integrity check for frozen database migrations (Rule A.6).
 
-Freezes migrations 001–017 (016 and 017 added 18 Nov 2026; 015 added 17 Nov 2026; 009–013 added 11 Nov 2026; they were applied but not yet pinned). Fails CI if any committed migration file's SHA-256 hash changes.
+Freezes migrations 001–018 (016, 017 and 018 added 18 Nov 2026; 015 added 17 Nov 2026; 009–013 added 11 Nov 2026; they were applied but not yet pinned). Fails CI if any committed migration file's SHA-256 hash changes.
 All schema changes from now on must be placed in new migrations (e.g. 004_...).
 """
 
@@ -46,6 +46,8 @@ FROZEN_MIGRATION_HASHES: dict[str, str] = {
     "016_document_ocr_and_ai_fill.up.sql": "14079425e9aaacb52632fd6a852971211392e2f0354ca6eddd4280a1e7ceef3d",
     "017_claim_jobs_by_step.down.sql": "6e8c383af6b203ad70364329f1b76b517ef77a02fc1830da3c9bc50ed3c656af",
     "017_claim_jobs_by_step.up.sql": "c823bfce181ce6d80922d47c3a67786f9adb2b54fecd460df129be4514778969",
+    "018_job_cancelled.down.sql": "f5d72162ec91fdf28ca9c458a4516e40716b61cf8f456da250b2b539708c061a",
+    "018_job_cancelled.up.sql": "7785877c7baf69bf58df693bee3071a88949fd3d63395817de9edfe61a73816e",
 }
 
 
@@ -85,7 +87,7 @@ def check_frozen_migrations() -> int:
             print(f"- {err}", file=sys.stderr)
         return 1
 
-    print(f"SUCCESS: All {len(FROZEN_MIGRATION_HASHES)} frozen migration files (001–017) verified intact.")
+    print(f"SUCCESS: All {len(FROZEN_MIGRATION_HASHES)} frozen migration files (001–018) verified intact.")
     return 0
 
 

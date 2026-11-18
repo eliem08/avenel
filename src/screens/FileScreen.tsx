@@ -48,6 +48,9 @@ interface FileInfo {
 }
 
 const ACTIVE_ISSUE = new Set(['open', 'assigned', 'waiting_client']);
+// A cancelled or failed file takes nothing more (phase 8d); a finished one cannot be cancelled.
+const CLOSED = new Set(['cancelled', 'failed']);
+const FINISHED = new Set(['completed', 'completed_with_open_items', 'cancelled', 'failed']);
 const ACCEPT = '.pdf,.png,.jpg,.jpeg,.tif,.tiff';
 
 export function FileScreen() {
@@ -93,6 +96,7 @@ export function FileScreen() {
 
   const active = issues.filter((x) => ACTIVE_ISSUE.has(x.status));
   const blocking = active.filter((x) => x.severity === 'blocking').length;
+  const closed = CLOSED.has(info.status);
 
   return (
     <>
@@ -104,6 +108,11 @@ export function FileScreen() {
         Dossier mensuel · {WORK_REQUEST_STATUS_FR[info.status] ?? info.status}
       </p>
       <StatusHistory items={history} />
+      {closed && (
+        <p className="mt-3 border-l-[3px] border-l-line bg-surface px-3 py-2 text-sm" data-testid="file-closed">
+          Ce dossier est annulé : il ne reçoit plus de pièces. Ses pièces, ses écritures et son historique restent consultables.
+        </p>
+      )}
 
       {active.length > 0 && (
         <div className="mt-4 border-l-[3px] border-l-pink bg-pink-wash px-3 py-2 text-sm" data-testid="issue-strip">
@@ -118,17 +127,20 @@ export function FileScreen() {
         <Link to={`/files/${id}/review`} className="text-sky-ink hover:underline" data-testid="link-review">
           Revoir les écritures proposées
         </Link>
-        {can(me, 'write') && <RequestApprovalButton workRequestId={id} onDone={(text, ok) => { setNotice({ text, ok }); void load(); }} />}
+        {!closed && can(me, 'write') && <RequestApprovalButton workRequestId={id} onDone={(text, ok) => { setNotice({ text, ok }); void load(); }} />}
+        {!FINISHED.has(info.status) && can(me, 'cancel') && (
+          <CancelFileButton workRequestId={id} onDone={(text, ok) => { setNotice({ text, ok }); void load(); }} />
+        )}
       </div>
 
-      <Uploader workRequestId={id} onDone={() => void load()} />
+      {!closed && <Uploader workRequestId={id} onDone={() => void load()} />}
 
       <section className="mt-8" aria-labelledby="docs-title">
         <h2 id="docs-title" className="text-xl">Pièces</h2>
         {notice && <Message kind={notice.ok ? 'ok' : 'error'}>{notice.text}</Message>}
         {docs === null && <LoadingState label="Chargement des pièces…" />}
         {docs === 'error' && <ErrorState title="Les pièces n'ont pas pu être chargées." detail={NETWORK_ERROR} />}
-        {Array.isArray(docs) && docs.length === 0 && <EmptyState title="Aucune pièce. Déposez les pièces du mois pour commencer." />}
+        {Array.isArray(docs) && docs.length === 0 && <EmptyState title={closed ? 'Aucune pièce.' : 'Aucune pièce. Déposez les pièces du mois pour commencer.'} />}
         {Array.isArray(docs) && docs.length > 0 && (
           <table className="mt-3 w-full border-collapse text-sm" data-testid="docs-table">
             <thead className="bg-surface text-left text-ink-2">
@@ -428,6 +440,48 @@ function IssueActions({ issue, onDone }: { issue: Issue; onDone: (text: string, 
         {mode === 'ack' ? 'Acquitter' : 'Envoyer'}
       </Button>
       <Button variant="quiet" onClick={() => setMode('idle')}>Annuler</Button>
+    </span>
+  );
+}
+
+function CancelFileButton({ workRequestId, onDone }: { workRequestId: string; onDone: (text: string, ok: boolean) => void }) {
+  const raw = useRawFetch();
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState('');
+  async function cancel() {
+    const r = await raw(`/work-requests/${workRequestId}:cancel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason: reason.trim() }),
+    }).catch(() => null);
+    if (!r) return onDone(NETWORK_ERROR, false);
+    const body = await r.json().catch(() => ({}));
+    if (!r.ok) return onDone(problemMessage(body, "Le dossier n'a pas été annulé."), false);
+    setOpen(false);
+    setReason('');
+    onDone('Dossier annulé. Un nouveau dossier peut être ouvert pour cette période.', true);
+  }
+  if (!open)
+    return (
+      <Button variant="quiet" onClick={() => setOpen(true)} data-testid="btn-cancel-file">
+        Annuler le dossier
+      </Button>
+    );
+  return (
+    <span className="flex items-center gap-2" role="group" aria-label="Annulation du dossier">
+      <input
+        aria-label="Motif de l'annulation"
+        className="h-8 w-72 rounded-input border border-line bg-paper px-2 text-sm"
+        placeholder="Motif (obligatoire)"
+        maxLength={500}
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+        data-testid="input-cancel-reason"
+      />
+      <Button variant="danger" disabled={!reason.trim()} onClick={() => void cancel()} data-testid="btn-cancel-confirm">
+        Confirmer l'annulation
+      </Button>
+      <Button variant="quiet" onClick={() => setOpen(false)}>Garder le dossier</Button>
     </span>
   );
 }

@@ -266,7 +266,9 @@ def list_portal_requests(
                    i.code, i.severity, i.evidence_refs, i.created_at
             FROM issues i
             JOIN client_entities ce ON ce.id = i.client_entity_id AND ce.tenant_id = i.tenant_id
+            JOIN work_requests wr ON wr.id = i.work_request_id AND wr.tenant_id = i.tenant_id
             WHERE i.tenant_id = %s AND i.status = 'waiting_client'
+              AND wr.status NOT IN ('cancelled', 'failed')  -- phase 8d: a closed file asks nothing more
         """
         params: list[Any] = [tenant_id]
         if client_entity_id:
@@ -318,9 +320,11 @@ def answer_portal_request(
     with conn.cursor() as cur:
         cur.execute(
             """
-            SELECT id, evidence_refs, client_entity_id, work_request_id
-            FROM issues
-            WHERE tenant_id = %s AND id = %s AND status = 'waiting_client';
+            SELECT i.id, i.evidence_refs, i.client_entity_id, i.work_request_id
+            FROM issues i
+            JOIN work_requests wr ON wr.id = i.work_request_id AND wr.tenant_id = i.tenant_id
+            WHERE i.tenant_id = %s AND i.id = %s AND i.status = 'waiting_client'
+              AND wr.status NOT IN ('cancelled', 'failed');
             """,
             (tenant_id, issue_id),
         )

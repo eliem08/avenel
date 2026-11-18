@@ -30,5 +30,10 @@
     "name": "CI Expert",
     "professional_title": "expert_comptable",
     "professional_registration_no": "OEC-E2E-0001 (synthétique)"
+  },
+  "manager": {
+    "subject": "5c1e2e00-0000-4000-8000-000000000004",
+    "email": "ci-manager@test.internal",
+    "name": "CI Manager"
   }
 }

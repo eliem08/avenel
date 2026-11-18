@@ -22,6 +22,7 @@ from avenel.documents.service import QuarantineError, process_uploaded_document
 from avenel.extraction.ai_fill import ai_configured, fill_document_in_background
 from avenel.jobs.queue import Job, claim_next, enqueue, mark_succeeded, record_failure
 from avenel.tenancy.auth import set_rls_context
+from avenel.workflow.cancel import is_closed
 from avenel.workforce import orchestrator
 from avenel.workforce.agents import AGENTS, require
 
@@ -88,10 +89,19 @@ HANDLERS: dict[str, Handler] = {
 
 
 def run_job(db_url: str, job: Job, handlers: dict[str, Handler] | None = None) -> str:
-    """Runs one claimed job. Returns "succeeded", "retry" or "failed"."""
+    """Runs one claimed job. Returns "succeeded", "retry", "failed" or "cancelled"."""
     handlers = HANDLERS if handlers is None else handlers
     with psycopg.connect(db_url, autocommit=False) as conn:
         set_rls_context(conn, job.tenant_id)
+        if is_closed(conn, job.tenant_id, job.work_request_id):  # phase 8d: nothing more is done on the file
+            conn.execute(
+                "UPDATE jobs SET status = 'cancelled', finished_at = now(), locked_at = NULL, "
+                "last_error = 'dossier annulé' WHERE id = %s;",
+                (job.id,),
+            )
+            conn.commit()
+            logger.info("job %s (%s): its monthly file is closed, not run", job.id, job.step)
+            return "cancelled"
         error: BaseException | str
         if job.exhausted:
             error = "worker stopped during the last attempt"

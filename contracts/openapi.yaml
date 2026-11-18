@@ -680,6 +680,47 @@ paths:
         "404":
           $ref: "#/components/responses/ProblemDetails"
 
+  /work-requests/{id}:cancel:
+    post:
+      operationId: cancelWorkRequest
+      tags:
+        - Work
+      summary: Cancel a monthly file
+      description: >-
+        Moves the file to cancelled (ARCHITECTURE.md D.1) with the reason in its status history. A pending approval
+        and the file's queued jobs are cancelled; documents, proposals, issues and the audit trail are kept. The
+        period may then get a new file. Firm owner and manager only.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/IdempotencyKeyHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CancelWorkRequestInput"
+      responses:
+        "200":
+          description: The cancelled file
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkRequest"
+        "401":
+          $ref: "#/components/responses/ProblemDetails"
+        "403":
+          $ref: "#/components/responses/ProblemDetails"
+        "404":
+          $ref: "#/components/responses/ProblemDetails"
+        "409":
+          $ref: "#/components/responses/ProblemDetails"
+        "422":
+          $ref: "#/components/responses/ProblemDetails"
   /work-requests/{id}/status-history:
     get:
       operationId: listWorkRequestStatusHistory
@@ -2922,6 +2963,16 @@ components:
         occurred_at:
           type: string
           format: date-time
+    CancelWorkRequestInput:
+      type: object
+      additionalProperties: false
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Why the file is cancelled; kept in its status history.
     StatusChangeList:
       type: object
       required: [items]

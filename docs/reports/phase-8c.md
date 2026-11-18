@@ -42,8 +42,9 @@ Spec: ARCHITECTURE.md D.1. Plan: `docs/plans/phase-8c-workflow.md`.
 - **A rejection** used to set `needs_attention`. D.1 says `preparing`, as a new revision, and that is what it
   does now. No existing test asserted the old behaviour.
 - **Request for approval from a later status:**
-  - From `awaiting_approval`, it still works: the previous pending approval is cancelled and the status is
-    kept.
+  - From `awaiting_approval`: **wrong, corrected 18 Nov 2026.** This report said it still works. It was not
+    tested, and it answers 500: cancelling the earlier pending approval breaks a database check, as it has
+    since phase 5. Recorded as D-24; not fixed yet, it needs a decision.
   - From any status after approval, such as `completed`, it is refused with a 409.
 - **Interpretation of the `extracting → preparing` guard.** D.1 says "every document read, needs_review or
   rejected; none processing". The guard waits for no document in `processing` and no reading job queued or

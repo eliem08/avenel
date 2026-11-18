@@ -26,6 +26,24 @@ from avenel.tenancy.auth import set_rls_context
 SEED = json.loads((Path(__file__).with_name("e2e_seed.json")).read_text(encoding="utf-8"))
 
 
+def _ensure_manager(cur: psycopg.Cursor, t_id: uuid.UUID) -> None:
+    """Firm manager (phase 8d): may cancel a monthly file. Added to stacks seeded before 18 Nov 2026 too."""
+    mg = SEED["manager"]
+    cur.execute("SELECT 1 FROM users WHERE identity_subject = %s;", (mg["subject"],))
+    if cur.fetchone():
+        return
+    mg_id = uuid.uuid4()
+    cur.execute(
+        "INSERT INTO users (id, identity_subject, email, full_name, status) VALUES (%s, %s, %s, %s, 'active');",
+        (mg_id, mg["subject"], mg["email"], mg["name"]),
+    )
+    cur.execute(
+        "INSERT INTO memberships (id, user_id, tenant_id, role, status) VALUES (%s, %s, %s, 'manager', 'active');",
+        (uuid.uuid4(), mg_id, t_id),
+    )
+    print("seed_e2e: firm manager added")
+
+
 def main() -> None:
     url = os.environ["SEED_DATABASE_URL"]
     t_id = uuid.UUID(SEED["tenant_id"])
@@ -33,7 +51,9 @@ def main() -> None:
         with conn.cursor() as cur:
             cur.execute("SELECT 1 FROM tenants WHERE id = %s;", (t_id,))
             if cur.fetchone():
-                print(f"seed_e2e: tenant {t_id} already present, nothing to do")
+                _ensure_manager(cur, t_id)
+                conn.commit()
+                print(f"seed_e2e: tenant {t_id} already present, nothing else to do")
                 return
             cur.execute(
                 "INSERT INTO tenants (id, legal_name, data_residency_policy, status) VALUES (%s, %s, 'MA_ONLY', 'active');",
@@ -72,6 +92,7 @@ def main() -> None:
                    VALUES (%s, %s, %s, 'accountant', 'active', %s, %s);""",
                 (uuid.uuid4(), ex_id, t_id, ex["professional_title"], ex["professional_registration_no"]),
             )
+            _ensure_manager(cur, t_id)
         set_rls_context(conn, t_id, u_id)
         for c in SEED["clients"]:
             client = create_client_entity(conn, t_id, c["legal_name"], str(u_id), ice=c["ice"])

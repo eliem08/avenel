@@ -11,6 +11,7 @@ const realm = JSON.parse(readFileSync('docker/keycloak/realm-export-test.json', 
 export const ACCOUNTANT = 'ci-accountant@test.internal';
 export const CLIENT_USER = 'ci-client@test.internal';
 export const EXPERT = 'ci-expert@test.internal';
+export const MANAGER = 'ci-manager@test.internal'; // firm manager: may cancel a monthly file (phase 8d)
 
 function credentials(username: string): { password: string; otpSecret: string } {
   const u = realm.users.find((x) => x.username === username);

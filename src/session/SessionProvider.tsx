@@ -34,10 +34,12 @@ export function useSession(): SessionValue {
 // Only hides actions the API would refuse; it never grants anything.
 const WRITE_ROLES = new Set(['owner', 'manager', 'accountant']);
 const ARCHIVE_ROLES = new Set(['owner', 'manager']);
+const CANCEL_ROLES = new Set(['owner', 'manager']); // avenel/workflow/cancel.py CANCEL_ROLES
 
-export function can(me: UserSession | null, action: 'write' | 'archive' | 'compliance'): boolean {
+export function can(me: UserSession | null, action: 'write' | 'archive' | 'compliance' | 'cancel'): boolean {
   if (!me) return false;
   if (action === 'write') return WRITE_ROLES.has(me.role);
   if (action === 'archive') return ARCHIVE_ROLES.has(me.role);
+  if (action === 'cancel') return CANCEL_ROLES.has(me.role);
   return me.role !== 'client_user';
 }

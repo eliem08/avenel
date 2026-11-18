@@ -277,3 +277,27 @@ async def list_issues(
     from avenel.issues.service import list_work_request_issues
     items = list_work_request_issues(conn, session.tenant_id, client_id, id)
     return {"items": items}
+
+
+@router.get("/work-requests/{id}/agent-tasks", operation_id="listWorkRequestAgentTasks")
+async def list_agent_tasks(
+    id: uuid.UUID,
+    session: Annotated[UserSession, Depends(get_current_session)],
+    conn: Annotated[psycopg.Connection, Depends(get_db)],
+) -> dict[str, Any]:
+    """What the agents did on this monthly file, in order (Phase 8a). Firm staff only."""
+    if session.role == "client_user":  # internal working record: not shown in the client portal
+        raise HTTPException(status_code=404, detail="Demande de travail introuvable.")
+    _resolve_work_request_scope(conn, session, id)
+    rows = conn.execute(
+        """
+        SELECT id, agent, step, outcome, handed_off_to, summary, created_at
+        FROM agent_tasks WHERE tenant_id = %s AND work_request_id = %s ORDER BY created_at;
+        """,
+        (session.tenant_id, id),
+    ).fetchall()
+    return {"items": [
+        {"id": str(r[0]), "agent": r[1], "step": r[2], "outcome": r[3], "handed_off_to": r[4],
+         "summary": r[5], "created_at": r[6].isoformat()}
+        for r in rows
+    ]}

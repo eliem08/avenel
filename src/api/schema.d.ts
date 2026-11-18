@@ -370,6 +370,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/work-requests/{id}/agent-tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List agent tasks for a work request
+         * @description What each agent did on the work request and who it handed off to, in order. Firm staff only.
+         */
+        get: operations["listWorkRequestAgentTasks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/documents/{id}": {
         parameters: {
             query?: never;
@@ -1437,6 +1457,25 @@ export interface components {
             status: "open" | "assigned" | "resolved" | "dismissed";
             details: Record<string, never>;
         };
+        AgentTask: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            agent: "document" | "bookkeeping" | "reconciliation" | "orchestrator";
+            step: string;
+            /** @enum {string} */
+            outcome: "done" | "handed_off" | "escalated" | "ready_for_review";
+            /** @description document, bookkeeping, reconciliation or human; null when the task handed off to no one. */
+            handed_off_to: string | null;
+            summary: {
+                [key: string]: unknown;
+            };
+            /** Format: date-time */
+            created_at: string;
+        };
+        AgentTaskList: {
+            items: components["schemas"]["AgentTask"][];
+        };
         IssueList: {
             items: components["schemas"]["IssueDetail"][];
         };
@@ -2343,6 +2382,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IssueList"];
+                };
+            };
+            404: components["responses"]["ProblemDetails"];
+        };
+    };
+    listWorkRequestAgentTasks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Agent tasks */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentTaskList"];
                 };
             };
             404: components["responses"]["ProblemDetails"];

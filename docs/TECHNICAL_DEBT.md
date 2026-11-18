@@ -27,3 +27,11 @@ are in `ENGINEERING_BACKLOG.md`.
 | D-20 | On the dev stack, freshclam stopped checking for updates for about 24 h, and clamd missed one reload (its connection was refused at the time). Signatures reached 67.8 h old and intake paused, as designed. A freshclam restart fixed it. | `docker-compose.yml` (freshclam, clamav) | Intake stops until someone acts; there is no alert outside the API log. | Health check on the signature age in the freshclam/clamav containers, plus an alert on `clamav_intake_paused`. |
 | D-21 | Fixed 15 Nov 2026: a second client with the same ICE (or a second client without ICE, because of `UNIQUE NULLS NOT DISTINCT` in migration 001) crashed the API with a 500. It now gets a 409 with a French message. Allowing several clients without an ICE is a product decision and is still open. | `apps/api/routes/clients.py` | A firm can register only one client without an ICE. | Decide whether to allow several clients without an ICE (this needs a new migration). |
 | D-22 | AI provider (B-02) is NVIDIA's hosted API, which is outside Morocco and the EU. It is used only by firms set to GLOBAL_ALLOWED; on the dev stack that is only the synthetic demo firm, with the founder's approval of 15 Nov 2026. Identifiers are masked, but names, addresses and amounts still leave the country. The free endpoint is slow (about 45 s per page) and sometimes answers 503. The model asked for, `moonshotai/kimi-k3.1-pro`, does not exist on this key, and `kimi-k2.6` answers 404, so MiniMax M3.1 Flash is used instead. | `avenel/extraction/ai_fill.py`, `docker-compose.yml` | No real client data may use it before a CNDP route exists (Part I item 8). | CNDP decision; a paid or Morocco/EU-hosted endpoint; a field-level accuracy run (B-03). |
+
+## D-23 — Duplicate RIB returns 500, and browser tests reuse a fixed RIB (found 17 Nov 2026)
+`POST /v1/bank-accounts` with a RIB already registered in the firm raises `UniqueViolation`
+(`bank_accounts_tenant_id_rib_sha256_key`) and the API answers 500; it should answer 409 with a clear message,
+as D-21 did for a duplicate ICE. The phase 4 and phase 6 browser tests use a fixed RIB, so on a reused stack
+their second run fails at "Ajouter le compte". Fix: map the violation to 409 and give each run a fresh valid
+RIB (key computed per run). Not fixed in phase 8a.
+

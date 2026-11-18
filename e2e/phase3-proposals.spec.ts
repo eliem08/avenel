@@ -67,9 +67,20 @@ test('expert approves VAT account, proposes an entry from a read invoice, review
   await page.getByRole('link', { name: FILE }).click();
   await page.getByTestId('input-upload').setInputFiles({ name: 'facture-atlas.pdf', mimeType: 'application/pdf', buffer: SCANNED });
   await expect(page.getByTestId('msg-ok')).toContainText('facture-atlas.pdf lue', { timeout: 120_000 });
+  // Phase 8a: once the invoice is read, the bookkeeping agent proposes the entry on its own (no click).
+  // A click afterwards must not create a second entry: the API answers 409 and the page says so.
   const docRow = page.getByTestId('doc-row').filter({ hasText: 'facture-atlas.pdf' });
+  const wrIdAgent = page.url().split('/files/')[1].split('/')[0];
+  await expect
+    .poll(async () => {
+      const r = await request.get(`${API_ORIGIN}/v1/work-requests/${wrIdAgent}/agent-tasks`, { headers: { Authorization: bearer } });
+      const items = ((await r.json()) as { items: { agent: string; outcome: string }[] }).items;
+      return items.map((t) => `${t.agent}:${t.outcome}`);
+    }, { timeout: 60_000 })
+    .toEqual(['document:handed_off', 'bookkeeping:done', 'orchestrator:ready_for_review']);
+  console.log(`[phase3-expert] agent chain reached the API for ${wrIdAgent}`);
   await docRow.getByRole('button', { name: "Proposer l'écriture" }).click();
-  await expect(page.getByTestId('msg-ok').filter({ hasText: 'Écriture proposée' })).toBeVisible();
+  await expect(page.getByTestId('msg-ok').filter({ hasText: 'Écriture déjà proposée (agent comptable)' })).toBeVisible();
 
   // 3. Review: balanced entry, VAT line, evidence box on the source page
   await page.getByTestId('link-review').click();
@@ -109,7 +120,9 @@ test('expert approves VAT account, proposes an entry from a read invoice, review
   expect(sum('credit_mad')).toBe(12000);
   for (const l of lines) expect(l.evidence_refs.some((e) => Array.isArray(e.bbox))).toBe(true);
 
-  for (const p of ['PUT http://localhost:8000/v1/client-entities/', ':generate-proposal -> 200', '/proposals -> 200']) {
+  for (const p of ['PUT http://localhost:8000/v1/client-entities/', '/proposals -> 200']) {
     await expect.poll(() => log.some((l) => l.includes(p) && !/-> [45]\d\d/.test(l)), { message: `expected API call: ${p}` }).toBe(true);
   }
+  // The click after the agent proposed is refused (one active entry per document), not a second entry.
+  expect(log.some((l) => l.includes(':generate-proposal -> 409'))).toBe(true);
 });

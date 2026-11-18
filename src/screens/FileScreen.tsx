@@ -328,7 +328,8 @@ function ProposeButton({ documentId, onDone }: { documentId: string; onDone: (te
     try {
       const r = await raw(`/documents/${documentId}:generate-proposal`, { method: 'POST' });
       const body = (await r.json().catch(() => ({}))) as { status?: string; issue_code?: string; detail?: string };
-      if (!r.ok) onDone(problemMessage(body, "L'écriture n'a pas pu être proposée."), false);
+      if (r.status === 409) onDone('Écriture déjà proposée (agent comptable). Revoyez-la dans les écritures proposées.', true);
+      else if (!r.ok) onDone(problemMessage(body, "L'écriture n'a pas pu être proposée."), false);
       else if (body.status === 'blocked')
         onDone(
           body.issue_code === 'ACCOUNT_UNMAPPED'

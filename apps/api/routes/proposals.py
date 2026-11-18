@@ -15,6 +15,7 @@ from avenel.proposals.service import (
     ProposalImmutableError,
     ProposalNotFoundError,
     ProposalUnbalancedError,
+    active_proposal_for_document,
     create_proposal_revision,
     generate_and_save_proposal_for_document,
     get_proposal_by_id,
@@ -147,6 +148,10 @@ async def generate_proposal_endpoint(
             raise HTTPException(status_code=404, detail="Document introuvable.")
 
         work_request_id = uuid.UUID(str(row[2]))
+
+    if active_proposal_for_document(conn, session.tenant_id, id) is not None:
+        conn.rollback()
+        raise HTTPException(status_code=409, detail="Une écriture est déjà proposée pour cette pièce.")
 
     try:
         proposal = generate_and_save_proposal_for_document(

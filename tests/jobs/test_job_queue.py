@@ -98,7 +98,11 @@ def test_success_commits_the_work_and_the_job_together(db_conn, env, postgres_ur
     assert db_conn.execute("SELECT due_at::date::text FROM work_requests WHERE id = %s", (env["wr"],)).fetchone() == (
         "2030-01-01",
     )
-    assert run_once(postgres_url, {STEP: handler}) is None  # nothing left to do
+    # The read job is never run again; the only job left is the handoff to the bookkeeping agent.
+    queued = db_conn.execute(
+        "SELECT step, subject_id FROM jobs WHERE work_request_id = %s AND status = 'queued';", (env["wr"],)
+    ).fetchall()
+    assert queued == [("prepare_proposals", env["wr"])]
 
 
 def test_failure_rolls_back_the_work_and_schedules_a_retry(db_conn, env, postgres_url):  # noqa: F811

@@ -65,6 +65,28 @@ def _as_user_uuid(actor_id: str | None) -> uuid.UUID | None:
         return None
 
 
+def active_proposal_for_document(
+    conn: psycopg.Connection, tenant_id: uuid.UUID, document_id: uuid.UUID
+) -> uuid.UUID | None:
+    """Locks the document row, then returns its active proposal, if any.
+
+    Phase 8a, found on the real stack: the bookkeeping agent proposed an entry and a click on
+    "Proposer l'écriture" seconds later created a second active entry for the same invoice. Callers that
+    create a proposal call this first, in the same transaction; the row lock makes a click and the agent
+    acting at the same moment take turns.
+    """
+    conn.execute("SELECT 1 FROM documents WHERE tenant_id = %s AND id = %s FOR UPDATE;", (tenant_id, document_id))
+    row = conn.execute(
+        """
+        SELECT id FROM journal_proposals
+        WHERE tenant_id = %s AND source_document_id = %s AND status NOT IN ('superseded', 'rejected')
+        ORDER BY created_at DESC LIMIT 1;
+        """,
+        (tenant_id, document_id),
+    ).fetchone()
+    return uuid.UUID(str(row[0])) if row else None
+
+
 def generate_and_save_proposal_for_document(
     conn: psycopg.Connection,
     tenant_id: uuid.UUID,

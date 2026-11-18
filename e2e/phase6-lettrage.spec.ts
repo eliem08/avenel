@@ -69,7 +69,8 @@ test('accountant books the invoice, reconciles the payment and requests approval
   await page.getByTestId('input-upload').setInputFiles({ name: 'facture-atlas.pdf', mimeType: 'application/pdf', buffer: INVOICE });
   await expect(page.getByTestId('msg-ok')).toContainText('facture-atlas.pdf lue', { timeout: 120_000 });
   await page.getByTestId('doc-row').filter({ hasText: 'facture-atlas.pdf' }).getByRole('button', { name: "Proposer l'écriture" }).click();
-  await expect(page.getByTestId('msg-ok').filter({ hasText: 'Écriture proposée' })).toBeVisible();
+  // Phase 8a: the bookkeeping agent may have proposed it first; either way there is one entry.
+  await expect(page.getByTestId('msg-ok').filter({ hasText: /Écriture (déjà )?proposée/ })).toBeVisible();
 
   await page.locator('input[name="rib"]').fill(RIB);
   await page.getByRole('button', { name: 'Ajouter le compte' }).click();
@@ -91,6 +92,8 @@ test('accountant books the invoice, reconciles the payment and requests approval
     await ackButtons.first().click();
     await page.getByTestId(`input-issue-${id}`).fill('Vérifié sur la facture et le relevé.');
     await page.getByTestId(`btn-issue-submit-${id}`).click();
+    // The field closes only after the API confirmed; the button alone is hidden as soon as the field opens.
+    await expect(page.getByTestId(`input-issue-${id}`)).toHaveCount(0);
     await expect(page.getByTestId(`btn-ack-${id}`)).toHaveCount(0);
   }
   await page.getByTestId('btn-request-approval').click();

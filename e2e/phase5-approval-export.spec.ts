@@ -63,7 +63,8 @@ test('accountant uploads, proposes, acknowledges and requests approval', async (
   await page.getByTestId('input-upload').setInputFiles({ name: 'facture-souss.pdf', mimeType: 'application/pdf', buffer: INVOICE });
   await expect(page.getByTestId('msg-ok')).toContainText('facture-souss.pdf lue', { timeout: 120_000 });
   await page.getByTestId('doc-row').filter({ hasText: 'facture-souss.pdf' }).getByRole('button', { name: "Proposer l'écriture" }).click();
-  await expect(page.getByTestId('msg-ok').filter({ hasText: 'Écriture proposée' })).toBeVisible();
+  // Phase 8a: the bookkeeping agent may have proposed it first; either way there is one entry.
+  await expect(page.getByTestId('msg-ok').filter({ hasText: /Écriture (déjà )?proposée/ })).toBeVisible();
 
   // Every open review issue is acknowledged with a reason, by a person. Wait for the file screen
   // to show the issue raised by the proposal before looking for the buttons.
@@ -74,6 +75,8 @@ test('accountant uploads, proposes, acknowledges and requests approval', async (
     await ackButtons.first().click();
     await page.getByTestId(`input-issue-${id}`).fill('Compte de charge vérifié sur la facture.');
     await page.getByTestId(`btn-issue-submit-${id}`).click();
+    // The field closes only after the API confirmed; the button alone is hidden as soon as the field opens.
+    await expect(page.getByTestId(`input-issue-${id}`)).toHaveCount(0);
     await expect(page.getByTestId(`btn-ack-${id}`)).toHaveCount(0);
   }
   await page.getByTestId('btn-request-approval').click();

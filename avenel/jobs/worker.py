@@ -13,6 +13,7 @@ import os
 import sys
 import time
 from collections.abc import Callable
+from typing import Any
 
 import psycopg
 
@@ -20,13 +21,15 @@ from avenel.documents.scanner import check_intake_health
 from avenel.documents.service import QuarantineError, process_uploaded_document
 from avenel.jobs.queue import Job, claim_next, mark_succeeded, record_failure
 from avenel.tenancy.auth import set_rls_context
+from avenel.workforce import orchestrator
+from avenel.workforce.agents import AGENTS, require
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger("avenel.worker")
 
 IDLE_POLL_SECONDS = 5.0
 
-Handler = Callable[[psycopg.Connection, Job], None]
+Handler = Callable[[psycopg.Connection, Job], dict[str, Any] | None]
 
 
 class IntakePausedError(RuntimeError):
@@ -34,7 +37,8 @@ class IntakePausedError(RuntimeError):
 
 
 def read_document(conn: psycopg.Connection, job: Job) -> None:
-    """Reads one uploaded document (scan, render, OCR, classify, extract, validate)."""
+    """Document agent: reads one uploaded document (scan, render, OCR, classify, extract, validate)."""
+    require(AGENTS["document"], "document.read")
     already = conn.execute(
         """
         SELECT 1 FROM extractions e
@@ -61,7 +65,11 @@ def read_document(conn: psycopg.Connection, job: Job) -> None:
         logger.info("job %s: document %s quarantined", job.id, job.subject_id)
 
 
-HANDLERS: dict[str, Handler] = {"read_document": read_document}
+HANDLERS: dict[str, Handler] = {
+    "read_document": read_document,
+    "prepare_proposals": orchestrator.prepare_proposals,
+    "reconcile": orchestrator.reconcile,
+}
 
 
 def run_job(db_url: str, job: Job, handlers: dict[str, Handler] | None = None) -> str:
@@ -74,7 +82,8 @@ def run_job(db_url: str, job: Job, handlers: dict[str, Handler] | None = None) -
             error = "worker stopped during the last attempt"
         else:
             try:
-                handlers[job.step](conn, job)
+                summary = handlers[job.step](conn, job)
+                orchestrator.after_step(conn, job, summary)  # hand off to the next agent, same transaction
                 mark_succeeded(conn, job)
                 conn.commit()
                 return "succeeded"

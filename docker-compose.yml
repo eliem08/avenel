@@ -168,6 +168,40 @@ services:
     volumes:
       - docstore:/var/lib/avenel/storage
     environment:
+      # Reading and the agents; the slow AI help runs in worker-ai (migration 017).
+      AVENEL_WORKER_STEPS: "read_document,prepare_proposals,reconcile"
+      # AI help for fields the rules miss (B-02). Key from the git-ignored .env; calls happen only for a firm
+      # whose data_residency_policy allows the region (NVIDIA hosted API: GLOBAL_ALLOWED).
+      NVIDIA_API_KEY: "${NVIDIA_API_KEY:-}"
+      AVENEL_AI_MODEL: "${AVENEL_AI_MODEL:-minimaxai/minimax-m3.1-flash}"
+      AVENEL_AI_BASE_URL: "${AVENEL_AI_BASE_URL:-https://integrate.api.nvidia.com/v1}"
+      DATABASE_URL: "postgresql://avenel_app:avenel_app_secret@postgres:5432/avenel"
+      AVENEL_KMS_KEY: "avenel-dev-kms-key-for-docker-compose-only-32c"
+      AVENEL_CLAMAV_HOST: "clamav"
+      AVENEL_CLAMAV_PORT: "3310"
+      KEYCLOAK_ISSUER: "http://localhost:8080/realms/avenel"
+      KEYCLOAK_AUDIENCE: "avenel-api"
+      KEYCLOAK_JWKS_URI: "http://keycloak:8080/realms/avenel/protocol/openid-connect/certs"
+      STORAGE_BACKEND: "filesystem"
+      STORAGE_DIR: "/var/lib/avenel/storage"
+    depends_on:
+      api: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os,sys; sys.exit(0 if os.path.exists('/proc/1/cmdline') and b'avenel.jobs.worker' in open('/proc/1/cmdline','rb').read() else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  worker-ai:
+    build: { context: ., dockerfile: docker/Dockerfile.api }
+    container_name: avenel-worker-ai
+    restart: unless-stopped
+    command: ["python", "-m", "avenel.jobs.worker"]
+    volumes:
+      - docstore:/var/lib/avenel/storage
+    environment:
+      # Only the AI help for empty fields: minutes per call on the hosted provider, never in front of reading.
+      AVENEL_WORKER_STEPS: "ai_fill"
       # AI help for fields the rules miss (B-02). Key from the git-ignored .env; calls happen only for a firm
       # whose data_residency_policy allows the region (NVIDIA hosted API: GLOBAL_ALLOWED).
       NVIDIA_API_KEY: "${NVIDIA_API_KEY:-}"

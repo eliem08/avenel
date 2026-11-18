@@ -60,9 +60,17 @@ def enqueue(
     return row is not None
 
 
-def claim_next(conn: psycopg.Connection, stale_seconds: int = STALE_RUNNING_SECONDS) -> Job | None:
-    """Takes the next due job, across tenants, and commits the claim so other workers skip it."""
-    row = conn.execute("SELECT * FROM app.claim_next_job(%s);", (stale_seconds,)).fetchone()
+def claim_next(
+    conn: psycopg.Connection, stale_seconds: int = STALE_RUNNING_SECONDS, steps: list[str] | None = None
+) -> Job | None:
+    """Takes the next due job, across tenants, and commits the claim so other workers skip it.
+
+    `steps` limits the worker to some job steps (migration 017); None takes any step.
+    """
+    if steps:
+        row = conn.execute("SELECT * FROM app.claim_next_job_for_steps(%s, %s);", (stale_seconds, steps)).fetchone()
+    else:
+        row = conn.execute("SELECT * FROM app.claim_next_job(%s);", (stale_seconds,)).fetchone()
     conn.commit()
     if row is None:
         return None

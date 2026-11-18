@@ -143,20 +143,26 @@ def after_step(conn: psycopg.Connection, job: Job, summary: dict[str, Any] | Non
     summary = summary or {}
     t, w = job.tenant_id, job.work_request_id
 
-    if job.step == "read_document":
-        # Wait only for documents actually being read. An upload that was started but never completed stays
-        # 'received' with no job; waiting for it would stall the file (seen on the stack, 17 Nov 2026).
-        # Known limit: two workers finishing reads at the same instant could each wait for the other; the
-        # stack runs one worker, one job at a time.
+    if job.step in ("read_document", "ai_fill"):
+        # Two workers (reading, AI) can finish jobs of the same file at the same moment; each would see the
+        # other's job as still running and neither would hand off. This lock makes them take turns: the
+        # second one sees the first one's job finished and hands off.
+        conn.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s, 0));", (f"handoff:{w}",))
+        # Wait only for documents actually being read or getting AI help (including this document's own
+        # 'ai_fill' job, queued by its reading). An upload started but never completed stays 'received' with
+        # no job; waiting for it would stall the file (seen on the stack, 17 Nov 2026).
+        # Known limit: two workers finishing at the same instant could each wait for the other; the stack
+        # runs one worker, one job at a time.
         pending = conn.execute(
             """
             SELECT count(*) FROM documents d
-            WHERE d.tenant_id = %(t)s AND d.work_request_id = %(w)s AND d.id <> %(d)s
-              AND (d.status = 'processing'
+            WHERE d.tenant_id = %(t)s AND d.work_request_id = %(w)s
+              AND ((d.status = 'processing' AND d.id <> %(d)s)
                    OR EXISTS (SELECT 1 FROM jobs j WHERE j.tenant_id = d.tenant_id AND j.subject_id = d.id
-                                AND j.step = 'read_document' AND j.status IN ('queued', 'running')));
+                                AND j.step IN ('read_document', 'ai_fill') AND j.id <> %(j)s
+                                AND j.status IN ('queued', 'running')));
             """,
-            {"t": t, "w": w, "d": job.subject_id},
+            {"t": t, "w": w, "d": job.subject_id, "j": job.id},
         ).fetchone()
         if pending and pending[0]:  # other documents still being read: the last one hands off
             record_task(conn, job, t, w, agent, job.step, "done", None, {"documents_pending": int(pending[0])})

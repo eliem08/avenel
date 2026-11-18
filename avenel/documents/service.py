@@ -214,8 +214,13 @@ def process_uploaded_document(
     tenant_id: uuid.UUID,
     document_id: uuid.UUID,
     data: bytes | None = None,
+    defer_ai: bool = False,
 ) -> dict[str, Any]:
-    """Completes upload, executes malware scan, rendering, OCR, classification, extraction, and validation."""
+    """Completes upload, executes malware scan, rendering, OCR, classification, extraction, and validation.
+
+    With defer_ai (the background worker), the AI help for empty fields is not awaited here: the OCR result
+    is kept and the caller queues the 'ai_fill' job, so the document is read in seconds.
+    """
     storage = get_storage()
 
     # 0. Check system intake health (ClamAV availability and signature freshness <= 48h)
@@ -364,8 +369,16 @@ def process_uploaded_document(
     extracted_fields = extract_fields_from_ocr(ocr_res, doc_type)
     # AI help for fields the rules missed (B-02): only under a residency policy that allows the provider,
     # identifiers masked, amounts kept only if printed, every AI value marked for review.
-    from avenel.extraction.ai_fill import fill_missing_fields
-    ai_fill = fill_missing_fields(conn, tenant_id, ocr_res, extracted_fields)
+    from avenel.extraction.ai_fill import (
+        fill_missing_fields,
+        missing_fields,
+        save_document_ocr,
+    )
+    save_document_ocr(conn, tenant_id, version_id, ocr_res)
+    if defer_ai:
+        ai_fill: dict[str, Any] = {"status": "deferred", "filled": [], "provider_call_id": None}
+    else:
+        ai_fill = fill_missing_fields(conn, tenant_id, ocr_res, extracted_fields)
     val_report = validate_invoice_extraction(
         fields=extracted_fields,
         doc_type=doc_type,
@@ -406,6 +419,7 @@ def process_uploaded_document(
         "extraction_id": str(extraction_id),
         "fields": extracted_fields,
         "validation": val_report.to_dict(),
+        "ai_pending": bool(defer_ai and missing_fields(extracted_fields)),
     }
 
 

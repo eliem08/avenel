@@ -53,3 +53,19 @@ scoped like the other work-request routes).
 ## Open questions
 - Should "escalated" also assign the work request to the firm manager? (Not done here.)
 - Client Operations agent (8b) needs an email provider inside the firm's residency policy: decision needed.
+
+## Addendum, 18 Nov 2026 — AI help in its own job (migrations 016, 017)
+On the stack the hosted AI provider took 1.5–4 min per document, inside the reading, so documents stayed
+"En lecture" for minutes and the browser tests timed out.
+- The worker's reading no longer calls the AI. It keeps the OCR result (`document_ocr`, append-only, RLS) and
+  queues an `ai_fill` job when fields are still empty and the AI is configured. Reading in the upload request
+  itself (non-background mode) is unchanged.
+- `ai_fill` (document agent, action `document.ai_fill`) fills only empty fields of the latest extraction and
+  writes a new extraction (`engine = 'ai_fill'`) with an `ai_fill` evidence record, then validation runs again,
+  as for a person's correction. A value a person set is never replaced.
+- The document agent hands off to bookkeeping after `ai_fill`, so proposals use the AI-filled fields.
+- Two workers: `worker` (reading and agents) and `worker-ai` (`ai_fill` only), chosen with
+  `AVENEL_WORKER_STEPS` and `app.claim_next_job_for_steps` (017). A per-work-request advisory lock in the
+  handoff stops the two from each waiting for the other.
+- **Deployment rule:** if any worker is limited to some steps, another worker must take `ai_fill`, or files
+  with empty fields are never handed to bookkeeping.

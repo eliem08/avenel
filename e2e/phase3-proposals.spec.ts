@@ -17,6 +17,7 @@ const SCANNED = Buffer.concat([readFileSync('e2e/assets/invoice-scanned.pdf'), B
 const FILE = `Atlas E2E ${Date.now()} SARL`;
 
 test('expert approves VAT account, proposes an entry from a read invoice, reviews it', async ({ page, request }) => {
+  test.setTimeout(420_000); // the AI job may take minutes before the agents hand off
   const log = recordApiTraffic(page, 'phase3-expert');
   let bearer = '';
   page.on('request', (r) => {
@@ -75,8 +76,10 @@ test('expert approves VAT account, proposes an entry from a read invoice, review
     .poll(async () => {
       const r = await request.get(`${API_ORIGIN}/v1/work-requests/${wrIdAgent}/agent-tasks`, { headers: { Authorization: bearer } });
       const items = ((await r.json()) as { items: { agent: string; outcome: string }[] }).items;
-      return items.map((t) => `${t.agent}:${t.outcome}`);
-    }, { timeout: 60_000 })
+      // After the reading, the AI help for empty fields runs in its own job (it can take minutes on the
+      // hosted provider); the document agent hands off after it.
+      return items.map((t) => `${t.agent}:${t.outcome}`).slice(-3);
+    }, { timeout: 300_000, intervals: [3_000] }) // not 5 s: uvicorn closes idle keep-alive connections at 5 s
     .toEqual(['document:handed_off', 'bookkeeping:done', 'orchestrator:ready_for_review']);
   console.log(`[phase3-expert] agent chain reached the API for ${wrIdAgent}`);
   await docRow.getByRole('button', { name: "Proposer l'écriture" }).click();

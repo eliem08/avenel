@@ -231,3 +231,16 @@ def test_scanner_unavailable_during_the_scan_is_retried_not_quarantined(db_conn,
     assert db_conn.execute(
         "SELECT count(*) FROM issues WHERE subject_document_id = %s AND code = 'DOC_MALWARE'", (subject,)
     ).fetchone() == (0,)
+
+
+def test_a_worker_limited_to_some_steps_only_takes_those(db_conn, env, postgres_url):  # noqa: F811
+    """Migration 017: the reading worker never picks the slow AI job, and the AI worker never picks a reading."""
+    subject = _queue(db_conn, env)  # a read_document job
+    assert enqueue(db_conn, env["t"], uuid.UUID(str(env["wr"])), "ai_fill", uuid.uuid4()) is True
+    db_conn.commit()
+    with psycopg.connect(postgres_url, autocommit=False) as conn:
+        job = claim_next(conn, steps=["ai_fill"])
+        assert job is not None and job.step == "ai_fill"
+        assert claim_next(conn, steps=["ai_fill"]) is None  # the reading is left for the reading worker
+        job = claim_next(conn, steps=["read_document", "prepare_proposals", "reconcile"])
+        assert job is not None and (job.step, job.subject_id) == ("read_document", subject)

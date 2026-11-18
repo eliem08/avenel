@@ -140,6 +140,11 @@ def _tenant_policy(conn: psycopg.Connection, tenant_id: uuid.UUID) -> str:
     return str(row[0]) if row else "MA_ONLY"
 
 
+def missing_fields(fields: dict[str, Any]) -> list[str]:
+    """The fields the AI may be asked for that are still empty."""
+    return [n for n in TEXT_FIELDS + AMOUNT_FIELDS if isinstance(fields.get(n), dict) and fields[n].get("value") is None]
+
+
 def fill_missing_fields(
     conn: psycopg.Connection,
     tenant_id: uuid.UUID,
@@ -148,7 +153,7 @@ def fill_missing_fields(
     router: ProviderRouter | None = None,
 ) -> dict[str, Any]:
     """Asks the AI provider for the fields still empty. Returns {"status", "filled", "provider_call_id"}."""
-    missing = [n for n in TEXT_FIELDS + AMOUNT_FIELDS if isinstance(fields.get(n), dict) and fields[n].get("value") is None]
+    missing = missing_fields(fields)
     if not missing or not ai_configured() or not ocr.full_text.strip():
         return {"status": "not_needed" if not missing else "not_configured", "filled": [], "provider_call_id": None}
 
@@ -170,3 +175,105 @@ def fill_missing_fields(
         return {"status": resp.status, "filled": [], "provider_call_id": resp.provider_call_id}
     filled = merge_ai_fields(fields, resp.result, ocr)
     return {"status": "succeeded", "filled": filled, "provider_call_id": resp.provider_call_id}
+
+
+# ------------------------------------------------------------------ AI help in its own job (after reading)
+
+def save_document_ocr(conn: psycopg.Connection, tenant_id: uuid.UUID, version_id: uuid.UUID, ocr: OcrResult) -> None:
+    """Keeps what OCR read for a document version (append-only), for the later 'ai_fill' job."""
+    lines = [{"text": ln.text, "confidence": ln.confidence, "page": ln.page, "bbox": ln.bbox} for ln in ocr.lines]
+    conn.execute(
+        """
+        INSERT INTO document_ocr (tenant_id, document_version_id, engine, engine_version, page_count, full_text, lines)
+        VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb)
+        ON CONFLICT (tenant_id, document_version_id) DO NOTHING;
+        """,
+        (tenant_id, version_id, ocr.engine, ocr.engine_version, ocr.page_count, ocr.full_text, json.dumps(lines)),
+    )
+
+
+def load_document_ocr(conn: psycopg.Connection, tenant_id: uuid.UUID, version_id: uuid.UUID) -> OcrResult | None:
+    from avenel.ocr.adapter import OcrLine
+
+    row = conn.execute(
+        "SELECT full_text, page_count, lines, engine, engine_version FROM document_ocr "
+        "WHERE tenant_id = %s AND document_version_id = %s;",
+        (tenant_id, version_id),
+    ).fetchone()
+    if row is None:
+        return None
+    raw_lines = row[2] if isinstance(row[2], list) else json.loads(row[2])
+    lines = [OcrLine(text=x["text"], confidence=float(x["confidence"]), page=int(x["page"]), bbox=list(x["bbox"]),
+                     words=[]) for x in raw_lines]
+    return OcrResult(full_text=row[0], page_count=int(row[1]), lines=lines, words=[], engine=row[3],
+                     engine_version=row[4])
+
+
+def fill_document_in_background(
+    conn: psycopg.Connection,
+    tenant_id: uuid.UUID,
+    document_id: uuid.UUID,
+    router: ProviderRouter | None = None,
+) -> dict[str, Any]:
+    """The 'ai_fill' job: asks the AI for the fields of the latest extraction that are still empty.
+
+    When it fills something, a new extraction row is written (extractions are append-only) with an
+    evidence record, and validation runs again, exactly as for a person's correction. Fields set since the
+    reading (by a person) are never replaced: only empty ones are filled.
+    """
+    from avenel.extraction.validation import (
+        persist_validation_results,
+        validate_invoice_extraction,
+    )
+    from avenel.infrastructure.storage import compute_sha256
+
+    row = conn.execute(
+        """
+        SELECT d.client_entity_id, d.work_request_id, d.doc_type, dv.id, e.id, e.fields, ap.starts_on, ap.ends_on
+        FROM documents d
+        JOIN document_versions dv ON dv.document_id = d.id AND dv.tenant_id = d.tenant_id
+        JOIN extractions e ON e.document_version_id = dv.id AND e.tenant_id = d.tenant_id
+        JOIN work_requests wr ON wr.id = d.work_request_id AND wr.tenant_id = d.tenant_id
+        JOIN accounting_periods ap ON ap.id = wr.accounting_period_id AND ap.tenant_id = d.tenant_id
+        WHERE d.tenant_id = %s AND d.id = %s
+        ORDER BY e.created_at DESC LIMIT 1;
+        """,
+        (tenant_id, document_id),
+    ).fetchone()
+    if row is None:
+        return {"status": "no_extraction", "filled": []}
+    client_id, wr_id, doc_type, version_id, prev_extraction_id = row[0], row[1], row[2], row[3], row[4]
+    fields = row[5] if isinstance(row[5], dict) else json.loads(row[5])
+    ocr = load_document_ocr(conn, tenant_id, version_id)
+    if ocr is None:
+        return {"status": "no_ocr", "filled": []}
+
+    result = fill_missing_fields(conn, tenant_id, ocr, fields, router=router)
+    if not result["filled"]:
+        return {"status": result["status"], "filled": []}
+
+    report = validate_invoice_extraction(fields=fields, doc_type=doc_type, period_start=row[6], period_end=row[7])
+    new_id = uuid.uuid4()
+    conn.execute(
+        """
+        INSERT INTO extractions (id, tenant_id, document_version_id, schema_version, engine, engine_version,
+                                 provider_call_id, status, fields, validation)
+        VALUES (%s, %s, %s, '1.0.0', 'ai_fill', '1.0.0', %s, 'succeeded', %s, %s);
+        """,
+        (new_id, tenant_id, version_id, result["provider_call_id"], json.dumps(fields), json.dumps(report.to_dict())),
+    )
+    evidence = {"action": "ai_fill", "document_id": str(document_id), "previous_extraction_id": str(prev_extraction_id),
+                "new_extraction_id": str(new_id), "fields_filled": result["filled"],
+                "provider_call_id": str(result["provider_call_id"])}
+    conn.execute(
+        """
+        INSERT INTO evidence_records (tenant_id, work_request_id, subject_type, subject_id, kind, payload, content_sha256)
+        VALUES (%s, %s, 'extraction', %s, 'ai_fill', %s, %s);
+        """,
+        (tenant_id, wr_id, new_id, json.dumps(evidence),
+         compute_sha256(json.dumps(evidence, sort_keys=True).encode("utf-8"))),
+    )
+    persist_validation_results(conn=conn, tenant_id=tenant_id, client_entity_id=client_id, work_request_id=wr_id,
+                               document_id=document_id, extraction_id=new_id, report=report)
+    return {"status": "succeeded", "filled": result["filled"]}
+

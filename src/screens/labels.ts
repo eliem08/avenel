@@ -16,6 +16,14 @@ export const WORK_REQUEST_STATUS_FR: Record<string, string> = {
   failed: 'En échec',
 };
 
+// Who changed a file's status (Phase 8c): an agent's name, or a person.
+export const STATUS_ACTOR_FR: Record<string, string> = {
+  'agent:document': 'Agent documents',
+  'agent:bookkeeping': 'Agent comptable',
+  'agent:reconciliation': 'Agent rapprochement',
+  'agent:orchestrator': 'Orchestrateur',
+};
+
 export const DOCUMENT_STATUS_FR: Record<string, string> = {
   received: 'Reçue',
   processing: 'En lecture',

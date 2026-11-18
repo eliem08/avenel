@@ -12,6 +12,7 @@ import {
   ISSUE_CODE_FR,
   NEEDS_PERSON_DOC,
   SEVERITY_FR,
+  STATUS_ACTOR_FR,
   WORK_REQUEST_STATUS_FR,
 } from './labels';
 import { BankSection } from './BankSection';
@@ -31,6 +32,14 @@ interface Issue {
   status: string;
   subject_document_id: string | null;
 }
+interface StatusChange {
+  from_status: string;
+  to_status: string;
+  reason: string | null;
+  actor_type: string;
+  actor_id: string | null;
+  occurred_at: string;
+}
 interface FileInfo {
   id: string;
   client_entity_id: string;
@@ -48,6 +57,7 @@ export function FileScreen() {
   const [info, setInfo] = useState<FileInfo | null | 'error' | 'missing'>(null);
   const [docs, setDocs] = useState<Doc[] | null | 'error'>(null);
   const [issues, setIssues] = useState<Issue[]>([]);
+  const [history, setHistory] = useState<StatusChange[]>([]);
   const [notice, setNotice] = useState<{ text: string; ok: boolean } | null>(null);
 
   const load = useCallback(async () => {
@@ -58,12 +68,14 @@ export function FileScreen() {
       const wrData = wr.data as unknown as { id: string; client_entity_id: string; status: string };
       const ce = await api.GET('/client-entities/{id}', { params: { path: { id: wrData.client_entity_id } } });
       setInfo({ ...wrData, client_name: ce.data?.legal_name ?? '—' });
-      const [d, i] = await Promise.all([
+      const [d, i, h] = await Promise.all([
         api.GET('/work-requests/{id}/documents', { params: { path: { id } } }),
         api.GET('/work-requests/{id}/issues', { params: { path: { id } } }),
+        api.GET('/work-requests/{id}/status-history', { params: { path: { id } } }),
       ]);
       setDocs(d.data ? ((d.data as unknown as { items: Doc[] }).items) : 'error');
       setIssues(i.data ? ((i.data as unknown as { items: Issue[] }).items) : []);
+      setHistory(h.data ? h.data.items : []); // staff only: a client user gets 404 and sees no history
     } catch {
       setInfo('error');
     }
@@ -88,7 +100,10 @@ export function FileScreen() {
         <Link to="/queue" className="text-sky-ink hover:underline">File de travail</Link>
       </p>
       <h1 className="mt-1 text-[1.75rem]" data-testid="file-title">{info.client_name}</h1>
-      <p className="mt-1 text-sm text-ink-2">Dossier mensuel · {WORK_REQUEST_STATUS_FR[info.status] ?? info.status}</p>
+      <p className="mt-1 text-sm text-ink-2" data-testid="file-status" data-status={info.status}>
+        Dossier mensuel · {WORK_REQUEST_STATUS_FR[info.status] ?? info.status}
+      </p>
+      <StatusHistory items={history} />
 
       {active.length > 0 && (
         <div className="mt-4 border-l-[3px] border-l-pink bg-pink-wash px-3 py-2 text-sm" data-testid="issue-strip">
@@ -317,6 +332,30 @@ function Uploader({ workRequestId, onDone }: { workRequestId: string; onDone: ()
       {busy && <p role="status" className="mt-2 text-sm text-ink-2" data-testid="upload-progress">{state.step}</p>}
       {state.kind === 'done' && <Message kind={state.ok ? 'ok' : 'error'}>{state.text}</Message>}
     </section>
+  );
+}
+
+function StatusHistory({ items }: { items: StatusChange[] }) {
+  if (items.length === 0) return null;
+  return (
+    <details className="mt-1 text-sm" data-testid="status-history">
+      <summary className="cursor-pointer text-sky-ink">Historique du dossier ({items.length})</summary>
+      <ol className="mt-2 space-y-1 border-l border-line pl-3">
+        {items.map((h, n) => (
+          <li key={n} data-testid="status-change" data-to={h.to_status}>
+            <span className="tabular-nums text-ink-2">
+              {new Date(h.occurred_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}
+            </span>{' '}
+            {WORK_REQUEST_STATUS_FR[h.from_status] ?? h.from_status} → {WORK_REQUEST_STATUS_FR[h.to_status] ?? h.to_status}
+            <span className="text-ink-2">
+              {' · '}
+              {h.actor_type === 'agent' ? (STATUS_ACTOR_FR[h.actor_id ?? ''] ?? 'Agent') : 'Membre du cabinet'}
+              {h.reason ? ` · ${h.reason}` : ''}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </details>
   );
 }
 

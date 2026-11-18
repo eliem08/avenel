@@ -38,6 +38,7 @@ from apps.api.routes import (
 from avenel.bank.rib import get_rib_encryption_raw_key
 from avenel.documents.scanner import check_intake_health
 from avenel.tenancy.jwt import MfaRequiredError
+from avenel.workflow.state import WorkflowError
 
 
 @asynccontextmanager
@@ -94,6 +95,22 @@ async def mfa_required_handler(request: Request, exc: MfaRequiredError) -> JSONR
             "title": "MFA requise",
             "status": 401,
             "detail": exc.detail or "L'authentification multi-facteurs (MFA) est requise pour effectuer cette opération.",
+            "instance": str(request.url.path),
+        },
+    )
+
+
+@app.exception_handler(WorkflowError)
+async def workflow_error_handler(request: Request, exc: WorkflowError) -> JSONResponse:
+    """A refused status change (D.1 graph or guard): 409, the transaction is rolled back by get_db."""
+    return JSONResponse(
+        status_code=409,
+        media_type="application/problem+json",
+        content={
+            "type": "avenel/workflow-transition-refused",
+            "title": "Conflit d'état",
+            "status": 409,
+            "detail": str(exc),
             "instance": str(request.url.path),
         },
     )

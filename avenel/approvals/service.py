@@ -17,6 +17,7 @@ import psycopg
 
 from avenel.approvals.hashing import compute_proposal_set_hash
 from avenel.tenancy.auth import require_tenant_context
+from avenel.workflow import state as workflow
 
 
 class ApprovalError(Exception):
@@ -266,6 +267,18 @@ def request_work_request_approval(
     # 1. Quality gate
     check_work_request_quality_gate(conn, tenant_id, client_entity_id, work_request_id)
 
+    # 1b. Status (D.1): walk the file to quality_check with each guard, then to awaiting_approval.
+    # A new request while one is pending keeps 'awaiting_approval' (the previous one is cancelled below).
+    if workflow.current_status(conn, tenant_id, work_request_id, lock=True) != "awaiting_approval":
+        role_row = conn.execute(
+            "SELECT role FROM memberships WHERE tenant_id = %s AND user_id = %s AND status = 'active';",
+            (tenant_id, prepared_by),
+        ).fetchone()
+        role = str(role_row[0]) if role_row else None
+        workflow.advance_to(conn, tenant_id, work_request_id, "quality_check", "user", str(prepared_by), role,
+                            strict=True)
+        workflow.transition(conn, tenant_id, work_request_id, "awaiting_approval", "user", str(prepared_by), role)
+
     # 2. Check that at least one proposal exists
     proposals, _ = get_work_request_canonical_proposals_and_matches(
         conn, tenant_id, client_entity_id, work_request_id
@@ -333,16 +346,6 @@ def request_work_request_approval(
             ),
         )
         app_row = cur.fetchone()
-
-        # Update work request status
-        cur.execute(
-            """
-            UPDATE work_requests
-            SET status = 'awaiting_approval', updated_at = now()
-            WHERE tenant_id = %s AND id = %s;
-            """,
-            (tenant_id, work_request_id),
-        )
 
     assert app_row is not None
     return {
@@ -496,14 +499,8 @@ def decide_work_request_approval(
             # Work request remains in 'awaiting_approval' until create_export
             # explicitly transitions it: awaiting_approval -> exporting -> completed / completed_with_open_items
         elif decision == "rejected":
-            cur.execute(
-                """
-                UPDATE work_requests
-                SET status = 'needs_attention', updated_at = now()
-                WHERE tenant_id = %s AND id = %s;
-                """,
-                (tenant_id, wr_id),
-            )
+            # D.1: a rejection sends the file back to preparation as a new revision.
+            workflow.transition(conn, tenant_id, wr_id, "preparing", "user", str(decider_id), reason=reason)
 
     assert updated is not None
     return {

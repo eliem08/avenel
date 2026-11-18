@@ -25,6 +25,7 @@ from avenel.infrastructure.storage import MAX_DOCUMENT_BYTE_SIZE, get_storage
 from avenel.jobs.queue import enqueue
 from avenel.ocr.adapter import OcrUnavailableError, PageExtractionError
 from avenel.tenancy.auth import UserSession, set_rls_context
+from avenel.workflow import state as workflow
 
 router = APIRouter(prefix="/v1", tags=["Documents"])
 
@@ -140,6 +141,17 @@ def read_in_background() -> bool:
     return os.environ.get("AVENEL_READ_IN_BACKGROUND", "").strip().lower() in ("1", "true", "yes")
 
 
+def _submit_on_upload(conn: psycopg.Connection, session: UserSession, document_id: uuid.UUID) -> None:
+    """D.1: a firm member's completed upload submits the file (draft -> intake) and starts the reading
+    (intake -> extracting). A client user's upload does not submit it: the guard leaves it where it is."""
+    row = conn.execute(
+        "SELECT work_request_id FROM documents WHERE tenant_id = %s AND id = %s;", (session.tenant_id, document_id)
+    ).fetchone()
+    if row and row[0] is not None:
+        workflow.advance_to(conn, session.tenant_id, uuid.UUID(str(row[0])), "extracting", "user",
+                            str(session.user_id), session.role)
+
+
 def _queue_reading(conn: psycopg.Connection, session: UserSession, id: uuid.UUID) -> JSONResponse:
     set_rls_context(conn, session.tenant_id, session.user_id)
     row = conn.execute(
@@ -156,6 +168,7 @@ def _queue_reading(conn: psycopg.Connection, session: UserSession, id: uuid.UUID
         "UPDATE documents SET status = 'processing' WHERE tenant_id = %s AND id = %s AND status = 'received';",
         (session.tenant_id, id),
     )
+    _submit_on_upload(conn, session, id)
     conn.commit()
     return JSONResponse(status_code=202, content={"document_id": str(id), "status": "processing", "queued": True})
 
@@ -183,6 +196,7 @@ async def complete_upload(
             tenant_id=session.tenant_id,
             document_id=id,
         )
+        _submit_on_upload(conn, session, id)
         conn.commit()
         return {
             "document_id": res["document_id"],

@@ -680,6 +680,31 @@ paths:
         "404":
           $ref: "#/components/responses/ProblemDetails"
 
+  /work-requests/{id}/status-history:
+    get:
+      operationId: listWorkRequestStatusHistory
+      tags:
+        - Work
+      summary: List status changes of a work request
+      description: >-
+        Every change of the work request's status (ARCHITECTURE.md D.1), oldest first, from the audit trail,
+        with who made it (a person or an agent). Firm staff only.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Status changes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusChangeList"
+        "404":
+          $ref: "#/components/responses/ProblemDetails"
   /work-requests/{id}/agent-tasks:
     get:
       operationId: listWorkRequestAgentTasks
@@ -2473,6 +2498,9 @@ components:
           type: string
         current_revision:
           type: integer
+        client_legal_name:
+          type: string
+          description: The client company's name (returned by the list, so the queue needs no second call).
 
     CreateWorkRequestInput:
       type: object
@@ -2873,6 +2901,35 @@ components:
         created_at:
           type: string
           format: date-time
+    StatusChange:
+      type: object
+      required: [from_status, to_status, reason, actor_type, actor_id, occurred_at]
+      properties:
+        from_status:
+          type: string
+          enum: [draft, intake, extracting, preparing, reconciling, quality_check, needs_attention, awaiting_approval, exporting, completed, completed_with_open_items, cancelled, failed]
+        to_status:
+          type: string
+          enum: [draft, intake, extracting, preparing, reconciling, quality_check, needs_attention, awaiting_approval, exporting, completed, completed_with_open_items, cancelled, failed]
+        reason:
+          type: [string, "null"]
+        actor_type:
+          type: string
+          enum: [user, agent, system, operator]
+        actor_id:
+          type: [string, "null"]
+          description: "A user id, or agent:<name> for an agent."
+        occurred_at:
+          type: string
+          format: date-time
+    StatusChangeList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/StatusChange"
     AgentTaskList:
       type: object
       required: [items]

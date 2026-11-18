@@ -370,6 +370,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/work-requests/{id}/status-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List status changes of a work request
+         * @description Every change of the work request's status (ARCHITECTURE.md D.1), oldest first, from the audit trail, with who made it (a person or an agent). Firm staff only.
+         */
+        get: operations["listWorkRequestStatusHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/work-requests/{id}/agent-tasks": {
         parameters: {
             query?: never;
@@ -1298,6 +1318,8 @@ export interface components {
             accounting_period_id: string;
             status: string;
             current_revision?: number;
+            /** @description The client company's name (returned by the list, so the queue needs no second call). */
+            client_legal_name?: string;
         };
         CreateWorkRequestInput: {
             /** Format: uuid */
@@ -1472,6 +1494,22 @@ export interface components {
             };
             /** Format: date-time */
             created_at: string;
+        };
+        StatusChange: {
+            /** @enum {string} */
+            from_status: "draft" | "intake" | "extracting" | "preparing" | "reconciling" | "quality_check" | "needs_attention" | "awaiting_approval" | "exporting" | "completed" | "completed_with_open_items" | "cancelled" | "failed";
+            /** @enum {string} */
+            to_status: "draft" | "intake" | "extracting" | "preparing" | "reconciling" | "quality_check" | "needs_attention" | "awaiting_approval" | "exporting" | "completed" | "completed_with_open_items" | "cancelled" | "failed";
+            reason: string | null;
+            /** @enum {string} */
+            actor_type: "user" | "agent" | "system" | "operator";
+            /** @description A user id, or agent:<name> for an agent. */
+            actor_id: string | null;
+            /** Format: date-time */
+            occurred_at: string;
+        };
+        StatusChangeList: {
+            items: components["schemas"]["StatusChange"][];
         };
         AgentTaskList: {
             items: components["schemas"]["AgentTask"][];
@@ -2382,6 +2420,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IssueList"];
+                };
+            };
+            404: components["responses"]["ProblemDetails"];
+        };
+    };
+    listWorkRequestStatusHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Status changes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatusChangeList"];
                 };
             };
             404: components["responses"]["ProblemDetails"];

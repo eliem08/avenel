@@ -38,6 +38,7 @@ from avenel.exports.sage_csv import format_sage100_csv
 from avenel.exports.sage_pnm import format_sage100_pnm
 from avenel.infrastructure.storage import get_storage
 from avenel.tenancy.auth import require_tenant_context
+from avenel.workflow import state as workflow
 
 
 class ExportError(Exception):
@@ -294,15 +295,12 @@ def create_export(
                 f"L'exportation requiert un dossier validé (statut actuel : {app_status})."
             )
 
-        # Transition work request status: awaiting_approval -> exporting
-        cur.execute(
-            """
-            UPDATE work_requests
-            SET status = 'exporting', updated_at = now()
-            WHERE tenant_id = %s AND id = %s;
-            """,
-            (tenant_id, work_request_id),
-        )
+        # Status (D.1): awaiting_approval -> exporting. Exporting an already completed file again (another
+        # format, a second download) delivers the same approved content and does not change the status.
+        first_export = workflow.current_status(conn, tenant_id, work_request_id, lock=True) not in (
+            "completed", "completed_with_open_items")
+        if first_export:
+            workflow.transition(conn, tenant_id, work_request_id, "exporting", "user", actor_id)
 
         # 2. Invariant #7: Verify proposal hash has not changed between approval and export!
         current_hash = compute_work_request_subject_hash(
@@ -522,15 +520,9 @@ def create_export(
         has_open_items = cur.fetchone() is not None
         final_wr_status = "completed_with_open_items" if has_open_items else "completed"
 
-        # Transition work request status: exporting -> completed or completed_with_open_items
-        cur.execute(
-            """
-            UPDATE work_requests
-            SET status = %s, completed_at = now(), updated_at = now()
-            WHERE tenant_id = %s AND id = %s;
-            """,
-            (final_wr_status, tenant_id, work_request_id),
-        )
+        # Status (D.1): exporting -> completed or completed_with_open_items
+        if first_export:
+            workflow.transition(conn, tenant_id, work_request_id, final_wr_status, "user", actor_id)
 
     # 11. Record billable usage record (idempotent ON CONFLICT DO NOTHING)
     record_export_usage(

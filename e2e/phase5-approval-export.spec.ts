@@ -82,6 +82,8 @@ test('accountant uploads, proposes, acknowledges and requests approval', async (
   await page.getByTestId('btn-request-approval').click();
   await expect(page.getByTestId('msg-ok').filter({ hasText: 'Validation demandée' })).toBeVisible();
   await expect.poll(() => log.some((l) => /\/approvals -> 201/.test(l))).toBe(true);
+  // Phase 8c: the request moved the file to "À valider" through the D.1 graph.
+  await expect(page.getByTestId('file-status')).toHaveAttribute('data-status', 'awaiting_approval');
   await page.getByTestId('btn-logout').click();
   await page.waitForURL((u) => u.pathname === '/');
 });
@@ -89,6 +91,7 @@ test('accountant uploads, proposes, acknowledges and requests approval', async (
 test('expert approves after a real MFA step-up, then exports', async ({ page }) => {
   test.setTimeout(10 * 60_000);
   const log = recordApiTraffic(page, 'phase5-expert');
+  const bearer = bearerOf(page);
   await loginThroughKeycloak(page, { username: EXPERT });
 
   await page.getByRole('link', { name: 'Validations' }).click();
@@ -131,4 +134,11 @@ test('expert approves after a real MFA step-up, then exports', async ({ page }) 
   for (const p of [':decide -> 200', '/exports -> 201', '/file -> 200']) {
     await expect.poll(() => log.some((l) => l.includes(p)), { message: `expected API call: ${p}` }).toBe(true);
   }
+
+  // Phase 8c: the export completed the file, and the whole path is in its status history.
+  const res = await page.request.get(`${API_ORIGIN}/v1/work-requests/${process.env.E2E_P5_WR}/status-history`, { headers: { Authorization: bearer() } });
+  expect(res.status()).toBe(200);
+  const path8c = ((await res.json()) as { items: { to_status: string }[] }).items.map((h) => h.to_status);
+  console.log(`[phase5-expert] status history ${path8c.join(' > ')}`);
+  expect(path8c.slice(-3)).toEqual(['awaiting_approval', 'exporting', 'completed_with_open_items']);
 });

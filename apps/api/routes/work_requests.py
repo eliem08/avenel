@@ -16,6 +16,7 @@ from avenel.documents.service import (
     init_document_upload,
 )
 from avenel.tenancy.auth import UserSession
+from avenel.workflow import state as workflow
 
 router = APIRouter(prefix="/v1", tags=["Work"])
 
@@ -73,8 +74,10 @@ async def list_work_requests(
 ) -> dict[str, Any]:
     with conn.cursor() as cur:
         query = """
-            SELECT wr.id, wr.tenant_id, wr.client_entity_id, wr.accounting_period_id, wr.status, wr.current_revision
+            SELECT wr.id, wr.tenant_id, wr.client_entity_id, wr.accounting_period_id, wr.status, wr.current_revision,
+                   ce.legal_name
             FROM work_requests wr
+            JOIN client_entities ce ON ce.tenant_id = wr.tenant_id AND ce.id = wr.client_entity_id
             WHERE wr.tenant_id = %s
         """
         params: list[Any] = [session.tenant_id]
@@ -100,6 +103,8 @@ async def list_work_requests(
                 "accounting_period_id": str(r[3]),
                 "status": r[4],
                 "current_revision": r[5],
+                # The queue showed "—" for files of clients beyond the first page of /client-entities.
+                "client_legal_name": r[6],
             })
         return {"items": items}
 
@@ -277,6 +282,19 @@ async def list_issues(
     from avenel.issues.service import list_work_request_issues
     items = list_work_request_issues(conn, session.tenant_id, client_id, id)
     return {"items": items}
+
+
+@router.get("/work-requests/{id}/status-history", operation_id="listWorkRequestStatusHistory")
+async def list_status_history(
+    id: uuid.UUID,
+    session: Annotated[UserSession, Depends(get_current_session)],
+    conn: Annotated[psycopg.Connection, Depends(get_db)],
+) -> dict[str, Any]:
+    """Status changes of this monthly file, oldest first, from the audit trail (Phase 8c). Firm staff only."""
+    if session.role == "client_user":  # internal working record: not shown in the client portal
+        raise HTTPException(status_code=404, detail="Demande de travail introuvable.")
+    _resolve_work_request_scope(conn, session, id)
+    return {"items": workflow.history(conn, session.tenant_id, id)}
 
 
 @router.get("/work-requests/{id}/agent-tasks", operation_id="listWorkRequestAgentTasks")

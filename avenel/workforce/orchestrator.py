@@ -1,8 +1,10 @@
 """Orchestrator: hands a work request from one agent to the next through the job queue (Phase 8a).
 
 Runs inside the worker, in the same transaction as the step that just succeeded, so a handoff commits
-together with the work it follows. Nothing here approves, exports or changes a work request's status:
-the chain ends with the file "ready for review" for a person, or "escalated" when blocking issues are open.
+together with the work it follows. Nothing here approves or exports. The work request's status follows the
+agents through the D.1 state machine (phase 8c): extracting -> preparing -> reconciling -> quality_check, and
+needs_attention when blocking issues are open. The chain ends with the file "ready for review" for a person,
+or "escalated".
 """
 
 from __future__ import annotations
@@ -19,6 +21,7 @@ from avenel.proposals.service import (
     generate_and_save_proposal_for_document,
 )
 from avenel.reconciliation.service import generate_reconciliation_matches
+from avenel.workflow import state as workflow
 from avenel.workforce.agents import AGENT_FOR_STEP, AGENTS, require
 
 # Document types the entry builder knows how to propose an entry for (entry_builder.py).
@@ -130,6 +133,10 @@ def _finish(conn: psycopg.Connection, job: Job, agent: str, summary: dict[str, A
         (job.tenant_id, job.work_request_id),
     ).fetchone()
     n = int(row[0]) if row else 0
+    t, w = job.tenant_id, job.work_request_id
+    if workflow.advance_to(conn, t, w, "quality_check", "agent", f"agent:{agent}") == "quality_check" and n:
+        workflow.transition(conn, t, w, "needs_attention", "agent", "agent:orchestrator",
+                            reason=f"{n} anomalie(s) bloquante(s)")
     record_task(conn, job, job.tenant_id, job.work_request_id, agent, job.step, "done", "human", summary)
     record_task(conn, None, job.tenant_id, job.work_request_id, "orchestrator", "finish",
                 "escalated" if n else "ready_for_review", "human", {"blocking_issues": n})
@@ -168,6 +175,7 @@ def after_step(conn: psycopg.Connection, job: Job, summary: dict[str, Any] | Non
             record_task(conn, job, t, w, agent, job.step, "done", None, {"documents_pending": int(pending[0])})
             return
         enqueue(conn, t, w, "prepare_proposals", w)
+        workflow.advance_to(conn, t, w, "preparing", "agent", f"agent:{agent}", finishing_job_id=job.id)
         record_task(conn, job, t, w, agent, job.step, "handed_off", "bookkeeping", summary)
         return
 
@@ -178,6 +186,7 @@ def after_step(conn: psycopg.Connection, job: Job, summary: dict[str, Any] | Non
         ).fetchone()
         if has_bank:
             enqueue(conn, t, w, "reconcile", w)
+            workflow.advance_to(conn, t, w, "reconciling", "agent", f"agent:{agent}")
             record_task(conn, job, t, w, agent, job.step, "handed_off", "reconciliation", summary)
             return
 

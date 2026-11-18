@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '@/api/useApi';
-import type { ClientEntity, WorkRequest } from '@/api/client';
+import type { WorkRequest } from '@/api/client';
 import { Button } from '@/components/ui/Button';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/States';
 
@@ -27,7 +27,7 @@ const NEEDS_PERSON = new Set(['needs_attention', 'awaiting_approval']);
 type State =
   | { kind: 'loading' }
   | { kind: 'error' }
-  | { kind: 'ready'; rows: WorkRequest[]; clients: Map<string, ClientEntity> };
+  | { kind: 'ready'; rows: WorkRequest[] };
 
 export function QueueScreen() {
   const api = useApi();
@@ -36,9 +36,9 @@ export function QueueScreen() {
   const load = useCallback(async () => {
     setState({ kind: 'loading' });
     try {
-      const [wr, ce] = await Promise.all([api.GET('/work-requests'), api.GET('/client-entities')]);
-      if (!wr.data || wr.error || !ce.data || ce.error) throw new Error('api');
-      setState({ kind: 'ready', rows: wr.data.items, clients: new Map(ce.data.items.map((c) => [c.id, c])) });
+      const wr = await api.GET('/work-requests');
+      if (!wr.data || wr.error) throw new Error('api');
+      setState({ kind: 'ready', rows: wr.data.items });
     } catch {
       setState({ kind: 'error' });
     }
@@ -84,7 +84,6 @@ export function QueueScreen() {
             </thead>
             <tbody>
               {state.rows.map((r) => {
-                const c = state.clients.get(r.client_entity_id);
                 const needsPerson = NEEDS_PERSON.has(r.status);
                 return (
                   <tr
@@ -94,7 +93,7 @@ export function QueueScreen() {
                     className={`h-9 border-b border-l-[3px] border-b-line ${needsPerson ? 'border-l-pink' : 'border-l-transparent'}`}
                   >
                     <td className="px-3">
-                      <Link to={`/files/${r.id}`} className="text-sky-ink hover:underline">{c?.legal_name ?? '—'}</Link>
+                      <Link to={`/files/${r.id}`} className="text-sky-ink hover:underline">{r.client_legal_name ?? '—'}</Link>
                     </td>
                     <td className={`px-3 ${needsPerson ? 'text-pink-ink' : 'text-ink'}`}>
                       {STATUS_FR[r.status] ?? r.status}

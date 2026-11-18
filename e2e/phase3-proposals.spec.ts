@@ -85,6 +85,20 @@ test('expert approves VAT account, proposes an entry from a read invoice, review
   await docRow.getByRole('button', { name: "Proposer l'écriture" }).click();
   await expect(page.getByTestId('msg-ok').filter({ hasText: 'Écriture déjà proposée (agent comptable)' })).toBeVisible();
 
+  // Phase 8c: the file's status followed the agents (D.1), and every change is in the audit trail.
+  const history = ((await (await request.get(`${API_ORIGIN}/v1/work-requests/${wrIdAgent}/status-history`, { headers: { Authorization: bearer } })).json()) as {
+    items: { to_status: string; actor_type: string; actor_id: string | null }[];
+  }).items;
+  console.log(`[phase3-expert] status history ${history.map((h) => `${h.to_status}(${h.actor_type === 'agent' ? h.actor_id : 'user'})`).join(' > ')}`);
+  expect(history.map((h) => h.to_status)).toEqual(['intake', 'extracting', 'preparing', 'reconciling', 'quality_check']);
+  expect(history.map((h) => (h.actor_type === 'agent' ? h.actor_id : h.actor_type))).toEqual(['user', 'user', 'agent:document', 'agent:bookkeeping', 'agent:bookkeeping']);
+  await expect(page.getByTestId('file-status')).toHaveAttribute('data-status', 'quality_check');
+  await expect(page.getByTestId('file-status')).toContainText('Contrôle');
+  await page.getByTestId('status-history').locator('summary').click();
+  await expect(page.getByTestId('status-change')).toHaveCount(5);
+  await expect(page.getByTestId('status-history')).toContainText('Agent comptable');
+  await page.screenshot({ path: `${SHOTS}/05-status-history.png`, fullPage: true });
+
   // 3. Review: balanced entry, VAT line, evidence box on the source page
   await page.getByTestId('link-review').click();
   await expect(page.getByTestId('review-screen')).toBeVisible();

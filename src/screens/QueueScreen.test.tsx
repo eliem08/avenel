@@ -53,7 +53,7 @@ describe('QueueScreen states (stubbed fetch)', () => {
       'fetch',
       vi.fn(async (req: Request) =>
         req.url.includes('/work-requests')
-          ? json({ items: [{ id: 'w1', tenant_id: 't', client_entity_id: 'c1', accounting_period_id: 'p', status: 'awaiting_approval', current_revision: 2 }] })
+          ? json({ items: [{ id: 'w1', tenant_id: 't', client_entity_id: 'c1', accounting_period_id: 'p', status: 'awaiting_approval', current_revision: 2, client_legal_name: 'Société A' }] })
           : json({ items: [{ id: 'c1', tenant_id: 't', legal_name: 'Société A', functional_currency: 'MAD' }] }),
       ),
     );

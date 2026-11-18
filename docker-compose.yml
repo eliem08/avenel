@@ -78,12 +78,19 @@ services:
     image: clamav/clamav:1.4.3@sha256:75fb5fd95fcbe1d7e6d240c369c1572b686ee2c95949d1042b5148de8eddebb4
     container_name: avenel-freshclam
     restart: unless-stopped
-    command: ["freshclam", "-d", "--foreground", "-c", "24", "--daemon-notify=/etc/clamav/notify-clamd.conf"]
-    # The image healthcheck pings clamd, which does not run in this container.
+    # One freshclam run per hour, each a new process with a 15 min limit (D-20: the daemon stalled twice).
+    command: ["/bin/sh", "/opt/avenel/freshclam-loop.sh"]
+    # Unhealthy when no run succeeded in 2 h or the signatures are 24 h old (intake pauses at 48 h).
     healthcheck:
-      disable: true
+      test: ["CMD", "/bin/sh", "/opt/avenel/freshclam-health.sh"]
+      interval: 5m
+      timeout: 30s
+      retries: 1
+      start_period: 20m
     volumes:
       - ./docker/clamav/notify-clamd.conf:/etc/clamav/notify-clamd.conf:ro
+      - ./docker/clamav/freshclam-loop.sh:/opt/avenel/freshclam-loop.sh:ro
+      - ./docker/clamav/freshclam-health.sh:/opt/avenel/freshclam-health.sh:ro
       - clamav_db:/var/lib/clamav
 
   ocr:

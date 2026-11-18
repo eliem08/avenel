@@ -41,7 +41,18 @@ RIB (key computed per run). Not fixed in phase 8a.
 seeded invoice that an earlier run has already matched, so a second run finds nothing to match; it needs a
 fresh company and invoice per run, as phase 3 has.
 
+**Fixed 18 Nov 2026:** phase 4 now creates its own company, September file, approved VAT account and invoice
+entry each run, so its reconciliation no longer depends on the seeded "Atlas Distribution SARL" invoice.
+
 ## D-20 (again, 18 Nov 2026)
 Freshclam stalled a second time: signatures reached 53 h and intake paused until freshclam was restarted.
 Restarting by hand is not a fix; freshclam needs a health check that restarts it when signatures pass 24 h.
+
+**Changed 18 Nov 2026:** the freshclam daemon is replaced by `docker/clamav/freshclam-loop.sh`: one run per
+hour, each a new process killed after 15 min, so a stuck run no longer holds updates (restarting the container
+by hand did exactly this). `docker/clamav/freshclam-health.sh` marks the container unhealthy when no run
+succeeded in 2 h or the daily signatures are 24 h old (checked on the stack: healthy, a 2.5 h old run, no run,
+and the 24 h case with the clock moved forward in a copy of the script). Still open: Docker Compose does not
+restart an unhealthy container and nothing alerts a person yet; that needs production monitoring (an alert on
+the health status and on `clamav_intake_paused`).
 

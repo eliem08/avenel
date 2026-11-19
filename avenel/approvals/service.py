@@ -56,6 +56,10 @@ class SegregationOfDutiesError(ApprovalError):
     """Raised when preparer attempts to approve without single_person_policy."""
 
 
+class ApprovalPendingError(ApprovalError):
+    """A request for approval is already pending on this file (D-24): it must be decided first."""
+
+
 class MissingRegistrationNumberError(ApprovalError):
     """Raised when the approver lacks a professional registration number."""
 
@@ -264,11 +268,23 @@ def request_work_request_approval(
     """Submits a work request for formal approval, creating a pending approval with subject_hash."""
     require_tenant_context(conn)
 
+    # 0. One pending request at a time (D-24, founder's decision of 19 Nov 2026). The file row is locked first,
+    # so two requests at the same moment cannot both pass. The earlier code cancelled the pending request with
+    # only its status, which the approvals check in 001 refuses (who, when and why; separation of duties): 500.
+    workflow.current_status(conn, tenant_id, work_request_id, lock=True)
+    if conn.execute(
+        "SELECT 1 FROM approvals WHERE tenant_id = %s AND work_request_id = %s AND status = 'pending';",
+        (tenant_id, work_request_id),
+    ).fetchone():
+        raise ApprovalPendingError(
+            "Une demande de validation est déjà en attente pour ce dossier : elle doit être validée ou refusée "
+            "avant une nouvelle demande."
+        )
+
     # 1. Quality gate
     check_work_request_quality_gate(conn, tenant_id, client_entity_id, work_request_id)
 
     # 1b. Status (D.1): walk the file to quality_check with each guard, then to awaiting_approval.
-    # A new request while one is pending keeps 'awaiting_approval' (the previous one is cancelled below).
     if workflow.current_status(conn, tenant_id, work_request_id, lock=True) != "awaiting_approval":
         role_row = conn.execute(
             "SELECT role FROM memberships WHERE tenant_id = %s AND user_id = %s AND status = 'active';",
@@ -300,16 +316,6 @@ def request_work_request_approval(
             )
             ce_row = cur.fetchone()
             single_person_policy = bool(ce_row[0]) if ce_row else False
-
-        # Cancel any previous pending approvals for this work request
-        cur.execute(
-            """
-            UPDATE approvals
-            SET status = 'cancelled'
-            WHERE tenant_id = %s AND work_request_id = %s AND status = 'pending';
-            """,
-            (tenant_id, work_request_id),
-        )
 
         # Determine revision number
         cur.execute(

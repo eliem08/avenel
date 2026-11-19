@@ -44,7 +44,7 @@ Spec: ARCHITECTURE.md D.1. Plan: `docs/plans/phase-8c-workflow.md`.
 - **Request for approval from a later status:**
   - From `awaiting_approval`: **wrong, corrected 18 Nov 2026.** This report said it still works. It was not
     tested, and it answers 500: cancelling the earlier pending approval breaks a database check, as it has
-    since phase 5. Recorded as D-24; not fixed yet, it needs a decision.
+    since phase 5. Recorded as D-24. Fixed 19 Nov 2026: a second request while one is pending answers 409.
   - From any status after approval, such as `completed`, it is refused with a 409.
 - **Interpretation of the `extracting → preparing` guard.** D.1 says "every document read, needs_review or
   rejected; none processing". The guard waits for no document in `processing` and no reading job queued or

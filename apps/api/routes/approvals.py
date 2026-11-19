@@ -13,6 +13,7 @@ from apps.api.deps import get_current_session, get_db
 from avenel.approvals.service import (
     ApprovalError,
     ApprovalHashMismatchError,
+    ApprovalPendingError,
     ApprovalStaleError,
     ApprovalStateError,
     BlockingIssuesExistError,
@@ -80,7 +81,7 @@ def request_approval(
         )
         conn.commit()
         return app_res
-    except (BlockingIssuesExistError, UnacknowledgedReviewIssuesError) as e:
+    except (BlockingIssuesExistError, UnacknowledgedReviewIssuesError, ApprovalPendingError) as e:
         conn.rollback()
         raise HTTPException(status_code=409, detail=str(e))
     except (UnbalancedProposalError, NoProposalsError) as e:

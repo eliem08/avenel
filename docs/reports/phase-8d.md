@@ -46,9 +46,9 @@ state ──cancel──> cancelled") and Part C (`POST /work-requests/{id}:canc
 1. **My first version broke a database rule.** Closing the pending approval with only `status = 'cancelled'`
    failed the 001 check: a decided approval must say who, when and why. Caught by the first API test, then
    fixed.
-2. **An older bug, not fixed (D-24):** asking for approval a second time while one is pending answers 500, for
-   the same reason. It dates from phase 5. The phase 8c report wrongly said this case worked; it is corrected.
-   Fixing it changes approval behaviour, so it needs a decision.
+2. **An older bug (D-24):** asking for approval a second time while one is pending answered 500, for the same
+   reason. It dates from phase 5. The phase 8c report wrongly said this case worked; it is corrected. Fixed on
+   19 Nov 2026 after the founder chose to refuse: the second request now answers 409 and changes nothing.
 3. **The login-queue browser test on CI** expected the queue to call `/v1/client-entities`. Since phase 8c the
    queue gets client names from `/v1/work-requests`, so that call no longer happens. The test now checks the
    work-request call only. This is what failed it on CI after the demo-script fix.
@@ -77,4 +77,3 @@ state ──cancel──> cancelled") and Part C (`POST /work-requests/{id}:canc
 - **Timeouts that escalate to the firm manager** (D.1): the spec gives no duration and there is no way to tell
   the manager outside the app yet.
 - **`failed`:** D.1 does not say what is unrecoverable. Not built until a real case needs it.
-- **D-24**, above.

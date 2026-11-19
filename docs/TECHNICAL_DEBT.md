@@ -62,6 +62,8 @@ the health status and on `clamav_intake_paused`).
 file from deciding on it (unless the firm allows one-person approval). So the second request crashes (checked
 through the API: 201, then 500). It has been there since phase 5; no test covered it, and the phase 8c report
 wrongly said it worked. Phase 8d's cancel does record who, when and why, and refuses the preparer.
-**Needs a decision:** refuse a second request while one is pending (409), or let a different person withdraw
-the pending one first.
+**Fixed 19 Nov 2026** (founder's decision: refuse). A second request while one is pending now answers 409
+with a French message and changes nothing; the file row is locked first, so two requests at once cannot both
+pass. The step that cancelled the pending request is removed. Once the pending request is decided (approved or
+rejected), a new request is accepted. Tests: `tests/api/test_approval_request_once.py`.
 
